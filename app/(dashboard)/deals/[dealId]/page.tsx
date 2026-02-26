@@ -186,9 +186,9 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
                         {contact.role && (
                           <p className="text-xs text-text-muted">{contact.role}</p>
                         )}
-                        {contact.email && (
+                        {contact.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email) && (
                           <a
-                            href={`mailto:${contact.email}`}
+                            href={`mailto:${encodeURIComponent(contact.email)}`}
                             className="text-xs text-accent-primary hover:underline"
                           >
                             {contact.email}

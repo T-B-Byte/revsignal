@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { CompetitiveIntel } from "@/types/database";
@@ -6,9 +7,18 @@ import type { CompetitiveIntel } from "@/types/database";
 export default async function CompetePage() {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const { data: intel } = await supabase
     .from("competitive_intel")
     .select("*")
+    .eq("user_id", user.id)
     .order("competitor")
     .order("category");
 

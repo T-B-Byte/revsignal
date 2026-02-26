@@ -184,10 +184,24 @@ export async function deleteDeal(
   return { success: true };
 }
 
+const dealStageSchema = z.enum([
+  "lead",
+  "qualified",
+  "discovery",
+  "poc_trial",
+  "proposal",
+  "negotiation",
+  "closed_won",
+  "closed_lost",
+] as const);
+
 export async function updateDealStage(
   dealId: string,
   stage: DealStage
 ): Promise<{ success: boolean } | { error: string }> {
+  const parsedStage = dealStageSchema.safeParse(stage);
+  if (!parsedStage.success) return { error: "Invalid stage" };
+
   const supabase = await createClient();
 
   const {
@@ -198,7 +212,7 @@ export async function updateDealStage(
   const now = new Date().toISOString();
 
   const updateData: Record<string, unknown> = {
-    stage,
+    stage: parsedStage.data,
     last_activity_date: now,
     updated_at: now,
   };

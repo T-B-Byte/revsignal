@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
+import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Contact } from "@/types/database";
@@ -7,9 +8,18 @@ import Link from "next/link";
 export default async function ContactsPage() {
   const supabase = await createClient();
 
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
   const { data: contacts } = await supabase
     .from("contacts")
     .select("*")
+    .eq("user_id", user.id)
     .order("company")
     .order("name");
 

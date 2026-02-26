@@ -168,7 +168,8 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/deals] PATCH failed:", error.message);
+    return NextResponse.json({ error: "Failed to update deal" }, { status: 500 });
   }
 
   if (!data) {
@@ -201,7 +202,8 @@ export async function DELETE(request: NextRequest, context: RouteContext) {
     .eq("user_id", user.id);
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/deals] DELETE failed:", error.message);
+    return NextResponse.json({ error: "Failed to delete deal" }, { status: 500 });
   }
 
   return NextResponse.json({ success: true });

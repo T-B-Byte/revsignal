@@ -2,8 +2,14 @@ import { createClient } from "@/lib/supabase/server";
 import { NextResponse } from "next/server";
 
 function sanitizeRedirectPath(path: string): string {
-  if (!path.startsWith("/") || path.startsWith("//")) return "/";
-  return path;
+  if (!path.startsWith("/") || path.startsWith("//") || path.startsWith("/\\")) return "/";
+  try {
+    const url = new URL(path, "http://localhost");
+    if (url.host !== "localhost") return "/";
+    return url.pathname + url.search;
+  } catch {
+    return "/";
+  }
 }
 
 export async function GET(request: Request) {

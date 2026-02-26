@@ -34,7 +34,8 @@ export async function updateSession(request: NextRequest) {
     request.nextUrl.pathname === "/login" ||
     request.nextUrl.pathname === "/signup" ||
     request.nextUrl.pathname === "/reset-password" ||
-    request.nextUrl.pathname.startsWith("/auth/") ||
+    request.nextUrl.pathname === "/auth/callback" ||
+    request.nextUrl.pathname === "/auth/confirm" ||
     request.nextUrl.pathname.startsWith("/api/webhooks/");
 
   // Protect all non-public routes — redirect to login if not authenticated

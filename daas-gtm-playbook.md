@@ -177,6 +177,7 @@ As a solo DaaS sales leader, your personal brand IS the product's brand. You nee
   - Industry-specific events for non-obvious verticals
 - [ ] **Partner co-marketing** — Once you have technology partners, co-market: joint case studies, co-branded webinars, integration launch announcements
 - [ ] **Data marketplace listings** — Get pharosIQ's data listed on:
+  - Clay.com Integration Marketplace (GTM engineers building enrichment workflows — highest-signal audience for contact-level intent data)
   - Snowflake Marketplace
   - AWS Data Exchange
   - Databricks Marketplace
@@ -195,6 +196,7 @@ You can't close 10+ $100K deals alone in Year 1 without leverage. Partnerships a
   - **Referral partners**: Consultants, agencies, system integrators who recommend data providers. They send you deals, you pay a referral fee (10-15% of Year 1 ACV).
   - **Reseller/OEM partners**: Companies that white-label your data inside their own product. This is the big-money lane. An OEM deal with a major ABM platform could be $500K+ annually.
 - [ ] **Technology integration roadmap** — Prioritize integrations by buyer demand:
+  - **Clay.com** (GTM orchestration platform — 300K+ users, $5B valuation, 75+ data providers. No first-party contact-level intent provider in their marketplace today. Apply via Clay's Integration Partner Program. They build the connector to your REST API. ~30-60 day integration timeline. Contact: Data Partnerships team via clay.com or partnerships@clay.com. **Check with Jeff in Week 1 whether pharosIQ has an existing Clay relationship before reaching out.**)
   - Salesforce AppExchange (data enrichment app)
   - HubSpot App Marketplace
   - Snowflake Marketplace (native share)
@@ -273,6 +275,10 @@ You're joining a company with existing politics, relationships, and power dynami
   - Trajectory / projection
   - Competitive positioning (where pharosIQ's DaaS fits in the market)
   - Make Jeff's job easy by having your data ready before he asks
+- [ ] **Day 1-30: Confirm off-limits companies with Jeff** — Jeff flagged Intentsify as a no-sell (direct competitor). Get the full list. Specifically ask about:
+  - Clay.com (distribution partner, not competitor — they're a platform that aggregates data providers, not an intent data company. But they acquired Avenue for intent signals, so worth confirming Jeff's view)
+  - Any ABM platforms pharosIQ already has relationships with (Demandbase, 6sense, etc.)
+  - Any existing data licensing partnerships or exclusivity agreements that constrain your outreach
 - [ ] **Relationship with Ben Luck (Chief Data Scientist)** — Ben is your champion. Keep him close:
   - Meet weekly during Month 1
   - Involve him in data quality discussions and customer technical questions

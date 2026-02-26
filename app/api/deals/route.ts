@@ -72,13 +72,17 @@ export async function GET(request: NextRequest) {
   }
 
   if (limit) {
-    query = query.limit(Number(limit));
+    const n = Number(limit);
+    if (Number.isFinite(n) && n > 0 && n <= 200) {
+      query = query.limit(n);
+    }
   }
 
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/deals] GET failed:", error.message);
+    return NextResponse.json({ error: "Failed to fetch deals" }, { status: 500 });
   }
 
   return NextResponse.json({ deals: data });
@@ -136,7 +140,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/deals] POST failed:", error.message);
+    return NextResponse.json({ error: "Failed to create deal" }, { status: 500 });
   }
 
   return NextResponse.json({ deal: data }, { status: 201 });

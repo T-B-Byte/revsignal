@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import { ACTIVE_STAGES, type DealStage } from '@/types/database';
 import { RevenueTracker } from '@/components/dashboard/revenue-tracker';
 import { PipelineSummary, type PipelineStageData } from '@/components/dashboard/pipeline-summary';
@@ -15,7 +16,9 @@ export default async function DashboardPage() {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const userId = user?.id;
+  if (!user) {
+    redirect('/login');
+  }
 
   // --- Fetch all dashboard data in parallel ---
   const [
@@ -29,21 +32,21 @@ export default async function DashboardPage() {
     supabase
       .from('deals')
       .select('acv')
-      .eq('user_id', userId ?? '')
+      .eq('user_id', user.id)
       .eq('stage', 'closed_won'),
 
     // 2. Active deals (for pipeline + days since contact)
     supabase
       .from('deals')
       .select('deal_id, company, stage, acv, last_activity_date')
-      .eq('user_id', userId ?? '')
+      .eq('user_id', user.id)
       .in('stage', ACTIVE_STAGES),
 
     // 3. Action items for follow-up alerts
     supabase
       .from('action_items')
       .select('item_id, description, due_date, owner, escalation_level, deal_id')
-      .eq('user_id', userId ?? '')
+      .eq('user_id', user.id)
       .in('status', ['pending', 'overdue'])
       .order('escalation_level', { ascending: true }),
 
@@ -51,7 +54,7 @@ export default async function DashboardPage() {
     supabase
       .from('conversations')
       .select('conversation_id, date, channel, ai_summary, deal_id, contact_id')
-      .eq('user_id', userId ?? '')
+      .eq('user_id', user.id)
       .order('date', { ascending: false })
       .limit(10),
 
@@ -59,7 +62,7 @@ export default async function DashboardPage() {
     supabase
       .from('playbook_items')
       .select('workstream, status')
-      .eq('user_id', userId ?? ''),
+      .eq('user_id', user.id),
   ]);
 
   // --- Process closed revenue ---

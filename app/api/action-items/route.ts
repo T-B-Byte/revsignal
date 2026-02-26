@@ -57,13 +57,17 @@ export async function GET(request: NextRequest) {
   }
 
   if (limit) {
-    query = query.limit(Number(limit));
+    const n = Number(limit);
+    if (Number.isFinite(n) && n > 0 && n <= 200) {
+      query = query.limit(n);
+    }
   }
 
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/action-items] GET failed:", error.message);
+    return NextResponse.json({ error: "Failed to fetch action items" }, { status: 500 });
   }
 
   return NextResponse.json({ action_items: data });
@@ -129,7 +133,8 @@ export async function PATCH(request: NextRequest) {
     .select();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/action-items] PATCH failed:", error.message);
+    return NextResponse.json({ error: "Failed to update action items" }, { status: 500 });
   }
 
   return NextResponse.json({

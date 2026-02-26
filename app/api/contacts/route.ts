@@ -51,7 +51,7 @@ export async function GET(request: NextRequest) {
 
   if (search) {
     // Sanitize search to prevent PostgREST filter injection
-    const sanitized = search.replace(/[%,.*()]/g, "");
+    const sanitized = search.replace(/[%,.*()\\:]/g, "");
     if (sanitized) {
       query = query.or(
         `name.ilike.%${sanitized}%,company.ilike.%${sanitized}%,email.ilike.%${sanitized}%`
@@ -60,13 +60,17 @@ export async function GET(request: NextRequest) {
   }
 
   if (limit) {
-    query = query.limit(Number(limit));
+    const n = Number(limit);
+    if (Number.isFinite(n) && n > 0 && n <= 200) {
+      query = query.limit(n);
+    }
   }
 
   const { data, error } = await query;
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/contacts] GET failed:", error.message);
+    return NextResponse.json({ error: "Failed to fetch contacts" }, { status: 500 });
   }
 
   return NextResponse.json({ contacts: data });
@@ -120,7 +124,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    console.error("[api/contacts] POST failed:", error.message);
+    return NextResponse.json({ error: "Failed to create contact" }, { status: 500 });
   }
 
   return NextResponse.json({ contact: data }, { status: 201 });
