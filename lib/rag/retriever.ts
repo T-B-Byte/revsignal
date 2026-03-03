@@ -1,0 +1,585 @@
+/**
+ * RAG Retriever — Context retrieval before every agent call.
+ *
+ * Every agent MUST call a retrieval function here before prompting Claude.
+ * Raw text is never sent to the model — we send ai_summary (conversations),
+ * brief_text (deal briefs), and structured data (action items, contacts, etc.).
+ *
+ * Scoping rules:
+ *  - All queries scoped by user_id
+ *  - Deal-specific queries additionally scoped by deal_id (context silo)
+ *  - Never cross-contaminate deal contexts
+ */
+
+import { SupabaseClient } from "@supabase/supabase-js";
+import type {
+  Deal,
+  Contact,
+  Conversation,
+  ActionItem,
+  DealBrief,
+  PlaybookItem,
+  CompetitiveIntel,
+  Prospect,
+  DealStage,
+} from "@/types/database";
+
+// ── Types ──────────────────────────────────────────────────────────────
+
+/** Context for a single deal — everything an agent needs to reason about it. */
+export interface DealContext {
+  deal: Deal;
+  contacts: Contact[];
+  /** Recent conversations with ai_summary (NOT raw_text). Ordered newest-first. */
+  conversations: ConversationSummary[];
+  actionItems: ActionItem[];
+  brief: DealBrief | null;
+}
+
+/** Conversation with raw_text stripped — agents only see summaries. */
+export interface ConversationSummary {
+  conversation_id: string;
+  contact_id: string | null;
+  deal_id: string | null;
+  date: string;
+  channel: string;
+  subject: string | null;
+  ai_summary: string | null;
+  action_items: { description: string; owner: string; due_date?: string }[];
+  follow_up_date: string | null;
+  /** Resolved contact name for citation purposes. */
+  contact_name?: string;
+}
+
+/** Full pipeline context for daily briefings and weekly digests. */
+export interface PipelineContext {
+  activeDeals: Deal[];
+  closedWonDeals: Deal[];
+  closedLostDeals: Deal[];
+  totalClosedRevenue: number;
+  overdueItems: ActionItem[];
+  upcomingItems: ActionItem[];
+  recentConversations: ConversationSummary[];
+  playbook: PlaybookItem[];
+  staleDeals: Deal[];
+}
+
+/** Context specifically for The Strategist's morning briefing. */
+export interface BriefingContext {
+  pipeline: PipelineContext;
+  dealBriefs: { deal: Deal; brief: DealBrief }[];
+  competitiveIntel: CompetitiveIntel[];
+  neglectedPlaybookItems: PlaybookItem[];
+}
+
+// ── Active stages constant (avoids circular import) ────────────────────
+
+const ACTIVE_DEAL_STAGES: DealStage[] = [
+  "lead",
+  "qualified",
+  "discovery",
+  "poc_trial",
+  "proposal",
+  "negotiation",
+];
+
+// ── Deal Context Retrieval ─────────────────────────────────────────────
+
+/**
+ * Retrieve full context for a single deal.
+ * This is the primary retrieval for deal-specific agent calls.
+ */
+export async function retrieveDealContext(
+  supabase: SupabaseClient,
+  userId: string,
+  dealId: string,
+  options: { conversationLimit?: number } = {}
+): Promise<DealContext | null> {
+  const conversationLimit = options.conversationLimit ?? 20;
+
+  // Parallel fetch — same pattern as deal detail page
+  const [dealResult, convoResult, actionResult, briefResult] =
+    await Promise.all([
+      supabase
+        .from("deals")
+        .select("*")
+        .eq("deal_id", dealId)
+        .eq("user_id", userId)
+        .single(),
+      supabase
+        .from("conversations")
+        .select(
+          "conversation_id, contact_id, deal_id, date, channel, subject, ai_summary, action_items, follow_up_date"
+        )
+        .eq("deal_id", dealId)
+        .eq("user_id", userId)
+        .order("date", { ascending: false })
+        .limit(conversationLimit),
+      supabase
+        .from("action_items")
+        .select("*")
+        .eq("deal_id", dealId)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false }),
+      supabase
+        .from("deal_briefs")
+        .select("*")
+        .eq("deal_id", dealId)
+        .eq("user_id", userId)
+        .order("last_updated", { ascending: false })
+        .limit(1)
+        .maybeSingle(),
+    ]);
+
+  if (dealResult.error || !dealResult.data) return null;
+
+  const deal = dealResult.data as Deal;
+
+  // Resolve contacts from deal.contacts[] refs
+  const contactIds = (deal.contacts || []).map((c) => c.contact_id);
+  let contacts: Contact[] = [];
+  if (contactIds.length > 0) {
+    const { data } = await supabase
+      .from("contacts")
+      .select("*")
+      .eq("user_id", userId)
+      .in("contact_id", contactIds);
+    contacts = (data as Contact[]) || [];
+  }
+
+  // Build contact name map for citation
+  const contactMap = new Map(contacts.map((c) => [c.contact_id, c.name]));
+
+  const conversations: ConversationSummary[] = (
+    (convoResult.data as Conversation[]) || []
+  ).map((c) => ({
+    conversation_id: c.conversation_id,
+    contact_id: c.contact_id,
+    deal_id: c.deal_id,
+    date: c.date,
+    channel: c.channel,
+    subject: c.subject,
+    ai_summary: c.ai_summary,
+    action_items: c.action_items || [],
+    follow_up_date: c.follow_up_date,
+    contact_name: c.contact_id
+      ? contactMap.get(c.contact_id) ?? undefined
+      : undefined,
+  }));
+
+  return {
+    deal,
+    contacts,
+    conversations,
+    actionItems: (actionResult.data as ActionItem[]) || [],
+    brief: (briefResult.data as DealBrief) || null,
+  };
+}
+
+// ── Pipeline Context Retrieval ─────────────────────────────────────────
+
+/**
+ * Retrieve full pipeline context for briefings and strategy.
+ * Used by The Strategist for morning briefings and weekly memos.
+ */
+export async function retrievePipelineContext(
+  supabase: SupabaseClient,
+  userId: string,
+  options: { conversationLimit?: number; staleDays?: number } = {}
+): Promise<PipelineContext> {
+  const conversationLimit = options.conversationLimit ?? 15;
+  const staleDays = options.staleDays ?? 7;
+
+  const staleDate = new Date();
+  staleDate.setDate(staleDate.getDate() - staleDays);
+  const staleDateStr = staleDate.toISOString();
+
+  const now = new Date().toISOString();
+
+  const [
+    activeResult,
+    closedWonResult,
+    closedLostResult,
+    overdueResult,
+    upcomingResult,
+    convoResult,
+    playbookResult,
+  ] = await Promise.all([
+    // Active deals
+    supabase
+      .from("deals")
+      .select("*")
+      .eq("user_id", userId)
+      .in("stage", ACTIVE_DEAL_STAGES)
+      .order("last_activity_date", { ascending: false }),
+    // Closed won
+    supabase
+      .from("deals")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("stage", "closed_won")
+      .order("closed_date", { ascending: false }),
+    // Closed lost (last 30 days only — for pattern recognition)
+    supabase
+      .from("deals")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("stage", "closed_lost")
+      .gte(
+        "closed_date",
+        new Date(Date.now() - 30 * 86400000).toISOString()
+      )
+      .order("closed_date", { ascending: false }),
+    // Overdue action items
+    supabase
+      .from("action_items")
+      .select("*")
+      .eq("user_id", userId)
+      .in("status", ["pending", "overdue"])
+      .lt("due_date", now)
+      .order("due_date", { ascending: true }),
+    // Upcoming action items (next 7 days)
+    supabase
+      .from("action_items")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .gte("due_date", now)
+      .lte(
+        "due_date",
+        new Date(Date.now() + 7 * 86400000).toISOString()
+      )
+      .order("due_date", { ascending: true }),
+    // Recent conversations (across all deals)
+    supabase
+      .from("conversations")
+      .select(
+        "conversation_id, contact_id, deal_id, date, channel, subject, ai_summary, action_items, follow_up_date"
+      )
+      .eq("user_id", userId)
+      .order("date", { ascending: false })
+      .limit(conversationLimit),
+    // Playbook items
+    supabase
+      .from("playbook_items")
+      .select("*")
+      .eq("user_id", userId)
+      .order("sort_order", { ascending: true }),
+  ]);
+
+  const activeDeals = (activeResult.data as Deal[]) || [];
+  const closedWonDeals = (closedWonResult.data as Deal[]) || [];
+
+  // Identify stale deals — active but no activity in staleDays
+  const staleDeals = activeDeals.filter(
+    (d) => d.last_activity_date < staleDateStr
+  );
+
+  // Sum closed revenue
+  const totalClosedRevenue = closedWonDeals.reduce(
+    (sum, d) => sum + (d.acv || 0),
+    0
+  );
+
+  return {
+    activeDeals,
+    closedWonDeals,
+    closedLostDeals: (closedLostResult.data as Deal[]) || [],
+    totalClosedRevenue,
+    overdueItems: (overdueResult.data as ActionItem[]) || [],
+    upcomingItems: (upcomingResult.data as ActionItem[]) || [],
+    recentConversations: (
+      (convoResult.data as Conversation[]) || []
+    ).map((c) => ({
+      conversation_id: c.conversation_id,
+      contact_id: c.contact_id,
+      deal_id: c.deal_id,
+      date: c.date,
+      channel: c.channel,
+      subject: c.subject,
+      ai_summary: c.ai_summary,
+      action_items: c.action_items || [],
+      follow_up_date: c.follow_up_date,
+    })),
+    playbook: (playbookResult.data as PlaybookItem[]) || [],
+    staleDeals,
+  };
+}
+
+// ── Briefing Context Retrieval ─────────────────────────────────────────
+
+/**
+ * Retrieve everything The Strategist needs for a morning briefing.
+ * Combines pipeline context with deal briefs and competitive intel.
+ */
+export async function retrieveBriefingContext(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<BriefingContext> {
+  // Get pipeline context first
+  const pipeline = await retrievePipelineContext(supabase, userId);
+
+  // Parallel: deal briefs for active deals + competitive intel + neglected playbook
+  const activeDealIds = pipeline.activeDeals.map((d) => d.deal_id);
+
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+
+  const [briefsResult, competitiveResult] = await Promise.all([
+    activeDealIds.length > 0
+      ? supabase
+          .from("deal_briefs")
+          .select("*")
+          .eq("user_id", userId)
+          .in("deal_id", activeDealIds)
+          .order("last_updated", { ascending: false })
+      : Promise.resolve({ data: [], error: null }),
+    supabase
+      .from("competitive_intel")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("captured_date", thirtyDaysAgo)
+      .order("captured_date", { ascending: false })
+      .limit(20),
+  ]);
+
+  // Match briefs to deals (one brief per deal, most recent)
+  const briefsByDeal = new Map<string, DealBrief>();
+  for (const brief of (briefsResult.data as DealBrief[]) || []) {
+    if (!briefsByDeal.has(brief.deal_id)) {
+      briefsByDeal.set(brief.deal_id, brief);
+    }
+  }
+
+  const dealBriefs = pipeline.activeDeals
+    .filter((d) => briefsByDeal.has(d.deal_id))
+    .map((d) => ({ deal: d, brief: briefsByDeal.get(d.deal_id)! }));
+
+  // Neglected playbook items — not touched in 30+ days and not completed
+  const neglectedPlaybookItems = pipeline.playbook.filter(
+    (p) =>
+      p.status !== "completed" &&
+      p.status !== "deprecated" &&
+      (!p.last_touched || p.last_touched < thirtyDaysAgo)
+  );
+
+  return {
+    pipeline,
+    dealBriefs,
+    competitiveIntel: (competitiveResult.data as CompetitiveIntel[]) || [],
+    neglectedPlaybookItems,
+  };
+}
+
+// ── Conversation Retrieval (for summarization) ─────────────────────────
+
+/**
+ * Retrieve conversations that need AI summarization.
+ * Used by the summarizer to process un-summarized conversations.
+ */
+export async function retrieveUnsummarizedConversations(
+  supabase: SupabaseClient,
+  userId: string,
+  options: { limit?: number } = {}
+): Promise<Conversation[]> {
+  const limit = options.limit ?? 50;
+
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("*")
+    .eq("user_id", userId)
+    .is("ai_summary", null)
+    .not("raw_text", "is", null)
+    .order("date", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error("[rag/retriever] Error fetching unsummarized conversations:", error.message);
+    return [];
+  }
+
+  return (data as Conversation[]) || [];
+}
+
+/**
+ * Retrieve all conversations for a deal, with raw_text included.
+ * Used ONLY by the summarizer for deal brief generation — never for agent prompts.
+ */
+export async function retrieveDealConversationsForBrief(
+  supabase: SupabaseClient,
+  userId: string,
+  dealId: string
+): Promise<Conversation[]> {
+  const { data, error } = await supabase
+    .from("conversations")
+    .select("*")
+    .eq("deal_id", dealId)
+    .eq("user_id", userId)
+    .not("ai_summary", "is", null)
+    .order("date", { ascending: true });
+
+  if (error) {
+    console.error("[rag/retriever] Error fetching deal conversations for brief:", error.message);
+    return [];
+  }
+
+  return (data as Conversation[]) || [];
+}
+
+// ── Overdue Action Items Retrieval ────────────────────────────────────
+
+/** Overdue action item with resolved deal/contact context and days past due. */
+export interface OverdueActionItemWithContext {
+  item: ActionItem;
+  dealCompany: string | null;
+  contactName: string | null;
+  daysPastDue: number;
+}
+
+/**
+ * Retrieve all overdue action items with deal/contact context for escalation.
+ * Used by the Follow-Up Enforcer.
+ */
+export async function retrieveOverdueActionItems(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<OverdueActionItemWithContext[]> {
+  const now = new Date();
+  const nowStr = now.toISOString();
+
+  const { data, error } = await supabase
+    .from("action_items")
+    .select("*")
+    .eq("user_id", userId)
+    .in("status", ["pending", "overdue"])
+    .not("due_date", "is", null)
+    .lt("due_date", nowStr)
+    .order("due_date", { ascending: true })
+    .limit(200);
+
+  if (error) {
+    console.error(
+      "[rag/retriever] Error fetching overdue action items:",
+      error.message
+    );
+    return [];
+  }
+
+  const items = (data as ActionItem[]) || [];
+  if (items.length === 0) return [];
+
+  // Resolve deal companies and contact names in parallel
+  const dealIds = [
+    ...new Set(items.filter((i) => i.deal_id).map((i) => i.deal_id!)),
+  ];
+  const contactIds = [
+    ...new Set(items.filter((i) => i.contact_id).map((i) => i.contact_id!)),
+  ];
+
+  const [dealsResult, contactsResult] = await Promise.all([
+    dealIds.length > 0
+      ? supabase
+          .from("deals")
+          .select("deal_id, company")
+          .eq("user_id", userId)
+          .in("deal_id", dealIds)
+      : Promise.resolve({ data: [], error: null }),
+    contactIds.length > 0
+      ? supabase
+          .from("contacts")
+          .select("contact_id, name")
+          .eq("user_id", userId)
+          .in("contact_id", contactIds)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const dealMap = new Map(
+    ((dealsResult.data as { deal_id: string; company: string }[]) || []).map(
+      (d) => [d.deal_id, d.company]
+    )
+  );
+  const contactMap = new Map(
+    (
+      (contactsResult.data as { contact_id: string; name: string }[]) || []
+    ).map((c) => [c.contact_id, c.name])
+  );
+
+  return items.map((item) => {
+    const dueDate = new Date(item.due_date!);
+    const daysPastDue = Math.max(
+      0,
+      Math.floor((now.getTime() - dueDate.getTime()) / 86400000)
+    );
+
+    return {
+      item,
+      dealCompany: item.deal_id ? dealMap.get(item.deal_id) ?? null : null,
+      contactName: item.contact_id
+        ? contactMap.get(item.contact_id) ?? null
+        : null,
+      daysPastDue,
+    };
+  });
+}
+
+// ── Competitive Intel Retrieval ──────────────────────────────────────
+
+/**
+ * Retrieve all competitive intel for a specific competitor.
+ * Used by the Competitive Watcher for battle card generation.
+ */
+export async function retrieveCompetitorIntel(
+  supabase: SupabaseClient,
+  userId: string,
+  competitor: string
+): Promise<CompetitiveIntel[]> {
+  const { data, error } = await supabase
+    .from("competitive_intel")
+    .select("*")
+    .eq("user_id", userId)
+    .ilike("competitor", competitor)
+    .order("captured_date", { ascending: false })
+    .limit(50);
+
+  if (error) {
+    console.error(
+      "[rag/retriever] Error fetching competitor intel:",
+      error.message
+    );
+    return [];
+  }
+
+  return (data as CompetitiveIntel[]) || [];
+}
+
+// ── Prospect Retrieval ─────────────────────────────────────────────────
+
+/**
+ * Retrieve prospects for The Strategist's suggestions.
+ */
+export async function retrieveProspects(
+  supabase: SupabaseClient,
+  userId: string,
+  options: { limit?: number; icpCategory?: string } = {}
+): Promise<Prospect[]> {
+  const limit = options.limit ?? 10;
+
+  let query = supabase
+    .from("prospects")
+    .select("*")
+    .eq("user_id", userId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+
+  if (options.icpCategory) {
+    query = query.eq("icp_category", options.icpCategory);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("[rag/retriever] Error fetching prospects:", error.message);
+    return [];
+  }
+
+  return (data as Prospect[]) || [];
+}

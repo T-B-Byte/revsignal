@@ -5,13 +5,18 @@ import { DealHeader } from "@/components/deals/deal-header";
 import { ConversationTimeline } from "@/components/deals/conversation-timeline";
 import { LogConversation } from "@/components/deals/log-conversation";
 import { DealActionItems } from "@/components/deals/deal-action-items";
+import { DealStrategy } from "@/components/deals/deal-strategy";
+import { TranscriptAnalysis } from "@/components/deals/transcript-analysis";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
-import type {
-  Deal,
-  Conversation,
-  ActionItem,
-  Contact,
-  DealBrief,
+import { PLANS } from "@/lib/stripe/config";
+import {
+  ACTIVE_STAGES,
+  type Deal,
+  type Conversation,
+  type ActionItem,
+  type Contact,
+  type DealBrief,
+  type SubscriptionTier,
 } from "@/types/database";
 
 interface DealDetailPageProps {
@@ -94,15 +99,28 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
     contacts = (contactData as Contact[]) ?? [];
   }
 
-  // Fetch deal brief (if exists)
-  const { data: dealBrief } = await supabase
-    .from("deal_briefs")
-    .select("*")
-    .eq("deal_id", dealId)
-    .eq("user_id", user.id)
-    .order("last_updated", { ascending: false })
-    .limit(1)
-    .maybeSingle();
+  // Fetch deal brief and subscription in parallel
+  const [dealBriefResult, subscriptionResult] = await Promise.all([
+    supabase
+      .from("deal_briefs")
+      .select("*")
+      .eq("deal_id", dealId)
+      .eq("user_id", user.id)
+      .order("last_updated", { ascending: false })
+      .limit(1)
+      .maybeSingle(),
+    supabase
+      .from("subscriptions")
+      .select("tier")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .maybeSingle(),
+  ]);
+
+  const dealBrief = dealBriefResult.data;
+  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? "free";
+  const hasAiAccess = PLANS[userTier].limits.aiBriefings;
+  const hasComposeAccess = PLANS[userTier].limits.integrations;
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -233,6 +251,33 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
               )}
             </CardContent>
           </Card>
+
+          {/* Deal Strategy */}
+          <DealStrategy dealId={dealId} hasAiAccess={hasAiAccess} />
+
+          {/* Transcript Analysis */}
+          <TranscriptAnalysis
+            dealId={dealId}
+            hasAiAccess={hasAiAccess}
+            company={(deal as Deal).company}
+          />
+
+          {/* Quick Compose Link — only for active deals that appear in compose dropdown */}
+          {hasComposeAccess && ACTIVE_STAGES.includes((deal as Deal).stage) && (
+            <Card>
+              <CardContent className="py-4">
+                <Link
+                  href={`/compose?dealId=${dealId}`}
+                  className="flex items-center gap-2 text-sm text-accent-primary hover:underline"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
+                  </svg>
+                  Draft email for this deal
+                </Link>
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

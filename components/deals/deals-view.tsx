@@ -11,11 +11,12 @@ import type { Deal } from "@/types/database";
 interface DealsViewProps {
   deals: Deal[];
   icpCategories: string[];
+  openNewDeal?: boolean;
 }
 
-export function DealsView({ deals, icpCategories }: DealsViewProps) {
+export function DealsView({ deals, icpCategories, openNewDeal }: DealsViewProps) {
   const [viewMode, setViewMode] = useState<ViewMode>("kanban");
-  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCreateDialog, setShowCreateDialog] = useState(openNewDeal ?? false);
   const [filters, setFilters] = useState<DealFilterState>({
     stages: [],
     icpCategory: null,

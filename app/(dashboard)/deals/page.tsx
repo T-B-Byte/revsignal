@@ -8,7 +8,11 @@ export const metadata = {
   description: "Manage your deal pipeline and track revenue progress.",
 };
 
-export default async function DealsPage() {
+export default async function DealsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ new?: string }>;
+}) {
   const supabase = await createClient();
 
   const {
@@ -46,7 +50,14 @@ export default async function DealsPage() {
     )
   ).sort();
 
+  const params = await searchParams;
+  const openNewDeal = params.new === "true";
+
   return (
-    <DealsView deals={(deals as Deal[]) ?? []} icpCategories={icpCategories} />
+    <DealsView
+      deals={(deals as Deal[]) ?? []}
+      icpCategories={icpCategories}
+      openNewDeal={openNewDeal}
+    />
   );
 }

@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { redirect } from 'next/navigation';
-import { ACTIVE_STAGES, type DealStage } from '@/types/database';
+import { ACTIVE_STAGES, type DealStage, type SubscriptionTier } from '@/types/database';
+import { PLANS } from '@/lib/stripe/config';
 import { RevenueTracker } from '@/components/dashboard/revenue-tracker';
 import { PipelineSummary, type PipelineStageData } from '@/components/dashboard/pipeline-summary';
 import { FollowUpAlerts, type FollowUpGroup } from '@/components/dashboard/followup-alerts';
@@ -9,6 +10,7 @@ import { DaysSinceContact, type DealContactInfo } from '@/components/dashboard/d
 import { RevenueMath } from '@/components/dashboard/revenue-math';
 import { PlaybookProgress, type WorkstreamProgress } from '@/components/dashboard/playbook-progress';
 import { QuickActions } from '@/components/dashboard/quick-actions';
+import { StrategistBriefing } from '@/components/dashboard/strategist-briefing';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -27,6 +29,7 @@ export default async function DashboardPage() {
     actionItemsResult,
     recentConversationsResult,
     playbookResult,
+    subscriptionResult,
   ] = await Promise.all([
     // 1. Closed revenue: sum of ACV where stage = 'closed_won'
     supabase
@@ -63,6 +66,14 @@ export default async function DashboardPage() {
       .from('playbook_items')
       .select('workstream, status')
       .eq('user_id', user.id),
+
+    // 6. Subscription tier (for AI access gating)
+    supabase
+      .from('subscriptions')
+      .select('tier')
+      .eq('user_id', user.id)
+      .eq('status', 'active')
+      .maybeSingle(),
   ]);
 
   // --- Process closed revenue ---
@@ -70,6 +81,10 @@ export default async function DashboardPage() {
     (sum, d) => sum + (d.acv ?? 0),
     0
   );
+
+  // --- Check AI access ---
+  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'free';
+  const hasAiAccess = PLANS[userTier].limits.aiBriefings;
 
   // --- Process pipeline stages ---
   const stageMap = new Map<DealStage, { count: number; totalAcv: number }>();
@@ -210,6 +225,9 @@ export default async function DashboardPage() {
         </p>
       </div>
 
+      {/* Row 0: The Strategist Briefing */}
+      <StrategistBriefing hasAiAccess={hasAiAccess} />
+
       {/* Row 1: Revenue Tracker (wide) + Quick Actions */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
         <div className="lg:col-span-2">
@@ -223,7 +241,7 @@ export default async function DashboardPage() {
       {/* Row 2: Pipeline Summary + Follow-Up Alerts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <PipelineSummary stages={pipelineStages} />
-        <FollowUpAlerts groups={followUpGroups} />
+        <FollowUpAlerts groups={followUpGroups} hasAiAccess={hasAiAccess} />
       </div>
 
       {/* Row 3: Days Since Contact + Activity Feed */}
