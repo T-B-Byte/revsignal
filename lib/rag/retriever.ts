@@ -22,6 +22,12 @@ import type {
   CompetitiveIntel,
   Prospect,
   DealStage,
+  MeetingAttendee,
+  Stakeholder,
+  StrategicNote,
+  CoachingMessage,
+  Nudge,
+  NoteCategory,
 } from "@/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -64,12 +70,71 @@ export interface PipelineContext {
   staleDeals: Deal[];
 }
 
+/** Summary of a meeting note for agent consumption (no raw content beyond truncation). */
+export interface MeetingNoteSummary {
+  note_id: string;
+  title: string;
+  meeting_date: string;
+  meeting_type: string;
+  attendees: MeetingAttendee[];
+  ai_summary: string | null;
+  action_items: { description: string; owner: string; due_date?: string }[];
+  tags: string[];
+  deal_id: string | null;
+}
+
 /** Context specifically for The Strategist's morning briefing. */
 export interface BriefingContext {
   pipeline: PipelineContext;
   dealBriefs: { deal: Deal; brief: DealBrief }[];
   competitiveIntel: CompetitiveIntel[];
   neglectedPlaybookItems: PlaybookItem[];
+  recentMeetingNotes: MeetingNoteSummary[];
+  activeNudges?: Nudge[];
+  recentStrategicNotes?: StrategicNote[];
+}
+
+/** Strategic context for The Strategist's coaching mode. */
+export interface StrategicContextResult {
+  strategicNotes: StrategicNote[];
+  stakeholders: Stakeholder[];
+  activeNudges: Nudge[];
+  recentCoachingHistory: CoachingMessage[];
+}
+
+/** Deep context on a specific stakeholder. */
+export interface StakeholderContextResult {
+  stakeholder: Stakeholder;
+  relatedNotes: StrategicNote[];
+  relatedMeetings: MeetingNoteSummary[];
+  relatedConversations: ConversationSummary[];
+}
+
+/** Context for meeting preparation. */
+export interface MeetingPrepContextResult {
+  stakeholderContexts: StakeholderContextResult[];
+  dealContext: DealContext | null;
+  relevantNudges: Nudge[];
+  recentStrategicNotes: StrategicNote[];
+}
+
+// ── Helpers ─────────────────────────────────────────────────────────────
+
+/** Truncate text at the last sentence boundary within maxLen, appending "[...]" if cut. */
+function truncateAtSentence(text: string | null | undefined, maxLen: number): string | null {
+  if (!text) return null;
+  if (text.length <= maxLen) return text;
+  const truncated = text.slice(0, maxLen);
+  const lastSentenceEnd = Math.max(
+    truncated.lastIndexOf(". "),
+    truncated.lastIndexOf(".\n"),
+    truncated.lastIndexOf("! "),
+    truncated.lastIndexOf("? ")
+  );
+  if (lastSentenceEnd > maxLen * 0.3) {
+    return truncated.slice(0, lastSentenceEnd + 1) + " [...]";
+  }
+  return truncated + " [...]";
 }
 
 // ── Active stages constant (avoids circular import) ────────────────────
@@ -324,7 +389,9 @@ export async function retrieveBriefingContext(
 
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
-  const [briefsResult, competitiveResult] = await Promise.all([
+  const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
+
+  const [briefsResult, competitiveResult, meetingNotesResult, nudgesResult, strategicNotesResult] = await Promise.all([
     activeDealIds.length > 0
       ? supabase
           .from("deal_briefs")
@@ -340,6 +407,27 @@ export async function retrieveBriefingContext(
       .gte("captured_date", thirtyDaysAgo)
       .order("captured_date", { ascending: false })
       .limit(20),
+    supabase
+      .from("meeting_notes")
+      .select("note_id, title, meeting_date, meeting_type, attendees, ai_summary, content, action_items, tags, deal_id")
+      .eq("user_id", userId)
+      .order("meeting_date", { ascending: false })
+      .limit(10),
+    supabase
+      .from("nudges")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "pending")
+      .order("priority", { ascending: false })
+      .order("created_at", { ascending: false })
+      .limit(5),
+    supabase
+      .from("strategic_notes")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("created_at", sevenDaysAgo)
+      .order("created_at", { ascending: false })
+      .limit(10),
   ]);
 
   // Match briefs to deals (one brief per deal, most recent)
@@ -362,11 +450,42 @@ export async function retrieveBriefingContext(
       (!p.last_touched || p.last_touched < thirtyDaysAgo)
   );
 
+  // Map meeting notes to summaries (agents see ai_summary or truncated content, not full text)
+  let recentMeetingNotes: MeetingNoteSummary[] = [];
+  if (meetingNotesResult.error) {
+    console.error("[rag/retriever] Error fetching meeting notes for briefing:", meetingNotesResult.error.message);
+  } else {
+    recentMeetingNotes = (
+      (meetingNotesResult.data as Record<string, unknown>[]) || []
+    ).map((n) => ({
+      note_id: n.note_id as string,
+      title: n.title as string,
+      meeting_date: n.meeting_date as string,
+      meeting_type: n.meeting_type as string,
+      attendees: (n.attendees as MeetingAttendee[]) || [],
+      ai_summary:
+        (n.ai_summary as string) ||
+        truncateAtSentence(n.content as string, 500) ||
+        null,
+      action_items:
+        (n.action_items as {
+          description: string;
+          owner: string;
+          due_date?: string;
+        }[]) || [],
+      tags: (n.tags as string[]) || [],
+      deal_id: (n.deal_id as string) || null,
+    }));
+  }
+
   return {
     pipeline,
     dealBriefs,
     competitiveIntel: (competitiveResult.data as CompetitiveIntel[]) || [],
     neglectedPlaybookItems,
+    recentMeetingNotes,
+    activeNudges: (nudgesResult.data as Nudge[]) || [],
+    recentStrategicNotes: (strategicNotesResult.data as StrategicNote[]) || [],
   };
 }
 
@@ -536,7 +655,7 @@ export async function retrieveCompetitorIntel(
     .from("competitive_intel")
     .select("*")
     .eq("user_id", userId)
-    .ilike("competitor", competitor)
+    .ilike("competitor", escapeIlike(competitor))
     .order("captured_date", { ascending: false })
     .limit(50);
 
@@ -582,4 +701,386 @@ export async function retrieveProspects(
   }
 
   return (data as Prospect[]) || [];
+}
+
+// ── Meeting Notes Retrieval ──────────────────────────────────────────
+
+/**
+ * Retrieve recent meeting notes for The Strategist's general context.
+ * Returns ai_summary when available, falls back to truncated content.
+ */
+export async function retrieveMeetingContext(
+  supabase: SupabaseClient,
+  userId: string,
+  options: {
+    limit?: number;
+    attendeeName?: string;
+    dealId?: string;
+  } = {}
+): Promise<MeetingNoteSummary[]> {
+  const limit = options.limit ?? 15;
+
+  let query = supabase
+    .from("meeting_notes")
+    .select(
+      "note_id, title, meeting_date, meeting_type, attendees, ai_summary, content, action_items, tags, deal_id"
+    )
+    .eq("user_id", userId)
+    .order("meeting_date", { ascending: false })
+    .limit(limit);
+
+  if (options.dealId) {
+    query = query.eq("deal_id", options.dealId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error(
+      "[rag/retriever] Error fetching meeting notes:",
+      error.message
+    );
+    return [];
+  }
+
+  let notes = (data as Record<string, unknown>[]) ?? [];
+
+  // Filter by attendee name client-side (JSONB containment is possible but simpler here)
+  if (options.attendeeName) {
+    const name = options.attendeeName.toLowerCase();
+    notes = notes.filter((n) => {
+      const attendees = Array.isArray(n.attendees)
+        ? (n.attendees as MeetingAttendee[])
+        : [];
+      return attendees.some((a) => a.name.toLowerCase().includes(name));
+    });
+  }
+
+  return notes.map((n) => ({
+    note_id: n.note_id as string,
+    title: n.title as string,
+    meeting_date: n.meeting_date as string,
+    meeting_type: n.meeting_type as string,
+    attendees: (n.attendees as MeetingAttendee[]) || [],
+    ai_summary:
+      (n.ai_summary as string) ||
+      truncateAtSentence(n.content as string, 500) ||
+      null,
+    action_items:
+      (n.action_items as {
+        description: string;
+        owner: string;
+        due_date?: string;
+      }[]) || [],
+    tags: (n.tags as string[]) || [],
+    deal_id: (n.deal_id as string) || null,
+  }));
+}
+
+// ── Strategic Context Retrieval ─────────────────────────────────────
+
+/**
+ * Retrieve strategic context for The Strategist's coaching mode.
+ * This is the coaching equivalent of retrieveBriefingContext().
+ */
+export async function retrieveStrategicContext(
+  supabase: SupabaseClient,
+  userId: string,
+  options: {
+    category?: NoteCategory;
+    stakeholderName?: string;
+    dealId?: string;
+    limit?: number;
+  } = {}
+): Promise<StrategicContextResult> {
+  const noteLimit = options.limit ?? 20;
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+
+  // Build strategic notes query
+  let notesQuery = supabase
+    .from("strategic_notes")
+    .select("*")
+    .eq("user_id", userId)
+    .gte("created_at", thirtyDaysAgo)
+    .order("created_at", { ascending: false })
+    .limit(noteLimit);
+
+  if (options.category) {
+    notesQuery = notesQuery.eq("category", options.category);
+  }
+  if (options.dealId) {
+    notesQuery = notesQuery.eq("related_deal_id", options.dealId);
+  }
+
+  const [notesResult, stakeholdersResult, nudgesResult, coachingResult] =
+    await Promise.all([
+      notesQuery,
+      supabase
+        .from("stakeholders")
+        .select("*")
+        .eq("user_id", userId)
+        .order("name", { ascending: true }),
+      supabase
+        .from("nudges")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .order("priority", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(10),
+      supabase
+        .from("coaching_conversations")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+
+  let strategicNotes = (notesResult.data as StrategicNote[]) || [];
+
+  // If stakeholderName is specified, filter notes by matching stakeholder
+  if (options.stakeholderName) {
+    const stakeholders = (stakeholdersResult.data as Stakeholder[]) || [];
+    const matchName = options.stakeholderName.toLowerCase();
+    // Prefer exact match, then startsWith, then includes
+    const matchedStakeholder =
+      stakeholders.find(
+        (s) => s.name.toLowerCase() === matchName
+      ) ??
+      stakeholders.find((s) =>
+        s.name.toLowerCase().startsWith(matchName)
+      ) ??
+      stakeholders.find((s) =>
+        s.name.toLowerCase().includes(matchName)
+      );
+    if (matchedStakeholder) {
+      // Also fetch notes linked to this stakeholder (may overlap, dedup)
+      const { data: linkedNotes } = await supabase
+        .from("strategic_notes")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("related_stakeholder_id", matchedStakeholder.stakeholder_id)
+        .order("created_at", { ascending: false })
+        .limit(noteLimit);
+      if (linkedNotes) {
+        const existingIds = new Set(strategicNotes.map((n) => n.note_id));
+        for (const note of linkedNotes as StrategicNote[]) {
+          if (!existingIds.has(note.note_id)) {
+            strategicNotes.push(note);
+          }
+        }
+      }
+    }
+  }
+
+  return {
+    strategicNotes,
+    stakeholders: (stakeholdersResult.data as Stakeholder[]) || [],
+    activeNudges: (nudgesResult.data as Nudge[]) || [],
+    recentCoachingHistory: (
+      (coachingResult.data as CoachingMessage[]) || []
+    ).reverse(),
+  };
+}
+
+/**
+ * Retrieve deep context on a specific stakeholder.
+ * Gathers the stakeholder record, related notes, meetings, and conversations.
+ */
+/** Escape ILIKE special characters to prevent wildcard injection. */
+function escapeIlike(s: string): string {
+  return s.replace(/[%_\\]/g, "\\$&");
+}
+
+export async function retrieveStakeholderContext(
+  supabase: SupabaseClient,
+  userId: string,
+  stakeholderName: string
+): Promise<StakeholderContextResult | null> {
+  // Try exact match first, then fall back to partial match
+  let { data: stakeholderData } = await supabase
+    .from("stakeholders")
+    .select("*")
+    .eq("user_id", userId)
+    .ilike("name", escapeIlike(stakeholderName))
+    .maybeSingle();
+
+  if (!stakeholderData) {
+    ({ data: stakeholderData } = await supabase
+      .from("stakeholders")
+      .select("*")
+      .eq("user_id", userId)
+      .ilike("name", `%${escapeIlike(stakeholderName)}%`)
+      .order("name", { ascending: true })
+      .limit(1)
+      .maybeSingle());
+  }
+
+  if (!stakeholderData) return null;
+  const stakeholder = stakeholderData as Stakeholder;
+
+  // Parallel fetch: related notes, meetings where this person attended, conversations via linked contact
+  const [notesResult, meetingNotes, conversationsResult] = await Promise.all([
+    supabase
+      .from("strategic_notes")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("related_stakeholder_id", stakeholder.stakeholder_id)
+      .order("created_at", { ascending: false })
+      .limit(20),
+    retrieveMeetingContext(supabase, userId, {
+      attendeeName: stakeholder.name,
+      limit: 10,
+    }),
+    stakeholder.related_contact_id
+      ? supabase
+          .from("conversations")
+          .select(
+            "conversation_id, contact_id, deal_id, date, channel, subject, ai_summary, action_items, follow_up_date"
+          )
+          .eq("user_id", userId)
+          .eq("contact_id", stakeholder.related_contact_id)
+          .order("date", { ascending: false })
+          .limit(10)
+      : Promise.resolve({ data: [], error: null }),
+  ]);
+
+  const relatedConversations: ConversationSummary[] = (
+    (conversationsResult.data as Conversation[]) || []
+  ).map((c) => ({
+    conversation_id: c.conversation_id,
+    contact_id: c.contact_id,
+    deal_id: c.deal_id,
+    date: c.date,
+    channel: c.channel,
+    subject: c.subject,
+    ai_summary: c.ai_summary,
+    action_items: c.action_items || [],
+    follow_up_date: c.follow_up_date,
+  }));
+
+  return {
+    stakeholder,
+    relatedNotes: (notesResult.data as StrategicNote[]) || [],
+    relatedMeetings: meetingNotes,
+    relatedConversations,
+  };
+}
+
+/**
+ * Retrieve everything needed to prepare for a meeting.
+ * Fetches stakeholder context for each attendee, plus deal context and relevant nudges.
+ */
+export async function retrieveMeetingPrepContext(
+  supabase: SupabaseClient,
+  userId: string,
+  attendeeNames: string[],
+  dealId?: string
+): Promise<MeetingPrepContextResult> {
+  // Cap attendee lookups to prevent unbounded parallel queries
+  const MAX_ATTENDEE_LOOKUPS = 10;
+  const namesToLookup = attendeeNames.slice(0, MAX_ATTENDEE_LOOKUPS);
+  const stakeholderContextPromises = namesToLookup.map((name) =>
+    retrieveStakeholderContext(supabase, userId, name)
+  );
+
+  // Use allSettled for stakeholder lookups so one failure doesn't crash everything
+  const [stakeholderSettled, dealContext, nudgesResult, notesResult] =
+    await Promise.all([
+      Promise.allSettled(stakeholderContextPromises),
+      dealId
+        ? retrieveDealContext(supabase, userId, dealId)
+        : Promise.resolve(null),
+      supabase
+        .from("nudges")
+        .select("*")
+        .eq("user_id", userId)
+        .eq("status", "pending")
+        .order("priority", { ascending: false })
+        .limit(5),
+      supabase
+        .from("strategic_notes")
+        .select("*")
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(10),
+    ]);
+
+  // Filter out nulls and failures
+  const stakeholderContexts = stakeholderSettled
+    .filter(
+      (r): r is PromiseFulfilledResult<StakeholderContextResult | null> =>
+        r.status === "fulfilled"
+    )
+    .map((r) => r.value)
+    .filter((ctx): ctx is StakeholderContextResult => ctx !== null);
+
+  return {
+    stakeholderContexts,
+    dealContext,
+    relevantNudges: (nudgesResult.data as Nudge[]) || [],
+    recentStrategicNotes: (notesResult.data as StrategicNote[]) || [],
+  };
+}
+
+// ── Meeting Notes Search ───────────────────────────────────────────
+
+/**
+ * Full-text search across meeting notes using PostgreSQL tsvector.
+ */
+export async function searchMeetingNotes(
+  supabase: SupabaseClient,
+  userId: string,
+  searchQuery: string,
+  options: { limit?: number } = {}
+): Promise<MeetingNoteSummary[]> {
+  const limit = options.limit ?? 20;
+
+  // Convert to tsquery-compatible format (strip special chars to prevent syntax errors)
+  const tsquery = searchQuery
+    .trim()
+    .replace(/[!|&():*<>\\'"]/g, "")
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(" & ");
+
+  if (!tsquery) return [];
+
+  const { data, error } = await supabase
+    .from("meeting_notes")
+    .select(
+      "note_id, title, meeting_date, meeting_type, attendees, ai_summary, content, action_items, tags, deal_id"
+    )
+    .eq("user_id", userId)
+    .textSearch("search_vector", tsquery)
+    .order("meeting_date", { ascending: false })
+    .limit(limit);
+
+  if (error) {
+    console.error(
+      "[rag/retriever] Meeting notes search error:",
+      error.message
+    );
+    return [];
+  }
+
+  return ((data as Record<string, unknown>[]) ?? []).map((n) => ({
+    note_id: n.note_id as string,
+    title: n.title as string,
+    meeting_date: n.meeting_date as string,
+    meeting_type: n.meeting_type as string,
+    attendees: (n.attendees as MeetingAttendee[]) || [],
+    ai_summary:
+      (n.ai_summary as string) ||
+      truncateAtSentence(n.content as string, 500) ||
+      null,
+    action_items:
+      (n.action_items as {
+        description: string;
+        owner: string;
+        due_date?: string;
+      }[]) || [],
+    tags: (n.tags as string[]) || [],
+    deal_id: (n.deal_id as string) || null,
+  }));
 }

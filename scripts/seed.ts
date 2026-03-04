@@ -5,6 +5,7 @@
  *   1. prospects (ICP categories + example companies)
  *   2. competitive_intel (6 competitors, multiple data points each)
  *   3. playbook_items (GTM playbook checklist from daas-gtm-playbook.md)
+ *   4. stakeholders + strategic_notes (pharosIQ team + foundational context)
  *
  * Usage:
  *   npx tsx scripts/seed.ts
@@ -16,6 +17,7 @@
 import { seedIcps } from './seed-icps';
 import { seedCompetitors } from './seed-competitors';
 import { seedPlaybook } from './seed-playbook';
+import { seedStrategicContext } from './seed-strategic-context';
 
 async function main(): Promise<void> {
   console.log('='.repeat(60));
@@ -25,7 +27,7 @@ async function main(): Promise<void> {
   const results: { name: string; count: number }[] = [];
 
   // 1. ICPs & Prospect Companies
-  console.log('\n--- Step 1/3: Seeding ICP categories & prospect companies ---');
+  console.log('\n--- Step 1/4: Seeding ICP categories & prospect companies ---');
   try {
     const count = await seedIcps();
     results.push({ name: 'ICP Prospects', count });
@@ -35,7 +37,7 @@ async function main(): Promise<void> {
   }
 
   // 2. Competitive Intelligence
-  console.log('\n--- Step 2/3: Seeding competitive intelligence ---');
+  console.log('\n--- Step 2/4: Seeding competitive intelligence ---');
   try {
     const count = await seedCompetitors();
     results.push({ name: 'Competitive Intel', count });
@@ -45,13 +47,23 @@ async function main(): Promise<void> {
   }
 
   // 3. GTM Playbook
-  console.log('\n--- Step 3/3: Seeding GTM playbook items ---');
+  console.log('\n--- Step 3/4: Seeding GTM playbook items ---');
   try {
     const count = await seedPlaybook();
     results.push({ name: 'Playbook Items', count });
   } catch {
     console.error('[seed] Playbook seeding failed.');
     results.push({ name: 'Playbook Items', count: -1 });
+  }
+
+  // 4. Strategic Context (stakeholders + strategic notes)
+  console.log('\n--- Step 4/4: Seeding strategic context ---');
+  try {
+    const count = await seedStrategicContext();
+    results.push({ name: 'Strategic Context', count });
+  } catch {
+    console.error('[seed] Strategic context seeding failed.');
+    results.push({ name: 'Strategic Context', count: -1 });
   }
 
   // Summary

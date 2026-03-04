@@ -11,6 +11,7 @@ import { RevenueMath } from '@/components/dashboard/revenue-math';
 import { PlaybookProgress, type WorkstreamProgress } from '@/components/dashboard/playbook-progress';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { StrategistBriefing } from '@/components/dashboard/strategist-briefing';
+import { NudgeBar } from '@/components/dashboard/nudge-bar';
 
 export default async function DashboardPage() {
   const supabase = await createClient();
@@ -224,6 +225,9 @@ export default async function DashboardPage() {
           Track your path to $1M. Every signal matters.
         </p>
       </div>
+
+      {/* Nudge bar — proactive coaching alerts */}
+      <NudgeBar hasAiAccess={hasAiAccess} />
 
       {/* Row 0: The Strategist Briefing */}
       <StrategistBriefing hasAiAccess={hasAiAccess} />

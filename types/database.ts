@@ -248,6 +248,175 @@ export interface Subscription {
   updated_at: string;
 }
 
+// --- Meeting Notes ---
+
+export type MeetingType =
+  | "one_on_one"
+  | "team"
+  | "strategy"
+  | "cross_functional"
+  | "board"
+  | "standup"
+  | "other";
+
+export interface MeetingAttendee {
+  name: string;
+  role?: string;
+}
+
+export interface MeetingNote {
+  note_id: string;
+  user_id: string;
+  title: string;
+  meeting_date: string;
+  meeting_type: MeetingType;
+  attendees: MeetingAttendee[];
+  content: string;
+  ai_summary: string | null;
+  action_items: ActionItemRef[];
+  tags: string[];
+  deal_id: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const MEETING_TYPES: { value: MeetingType; label: string }[] = [
+  { value: "one_on_one", label: "1:1" },
+  { value: "team", label: "Team Meeting" },
+  { value: "strategy", label: "Strategy" },
+  { value: "cross_functional", label: "Cross-Functional" },
+  { value: "board", label: "Board / Exec" },
+  { value: "standup", label: "Standup" },
+  { value: "other", label: "Other" },
+];
+
+/** pharosIQ leadership team — pre-populated for attendee autocomplete */
+export const PHAROSIQ_TEAM: MeetingAttendee[] = [
+  { name: "Jeff Rokuskie", role: "CEO" },
+  { name: "Anthony Iafolla", role: "SVP Global Sales" },
+  { name: "Raj Hajela", role: "CRO" },
+  { name: "Kristin McShane", role: "CFO" },
+  { name: "Anna Eliot", role: "CMO" },
+  { name: "Ben Luck", role: "Chief Data Scientist" },
+  { name: "Martin Fettig", role: "EVP" },
+  { name: "Chris Vriavas", role: "Head of Strategy" },
+  { name: "Robert Karpovich", role: "VP Sales & Operations" },
+  { name: "James Kelly", role: "CCO" },
+  { name: "Romano Ditoro", role: "CIO" },
+  { name: "Erin Neilan", role: "GVP" },
+  { name: "Maura Kane", role: "SVP Global HR" },
+  { name: "Carolina Barcellos", role: "VP LATAM" },
+];
+
+// --- Strategic Context ---
+
+export type NoteCategory =
+  | "institutional_context"
+  | "stakeholder_insight"
+  | "decision_log"
+  | "political_dynamic"
+  | "meeting_debrief"
+  | "strategic_observation"
+  | "competitive_insight"
+  | "relationship_note";
+
+export type StakeholderRelationship =
+  | "sponsor"
+  | "champion"
+  | "supporter"
+  | "neutral"
+  | "blocker"
+  | "unknown";
+
+export type NudgePriority = "low" | "medium" | "high" | "critical";
+
+export type NudgeStatus = "pending" | "shown" | "dismissed" | "acted_on";
+
+export interface Stakeholder {
+  stakeholder_id: string;
+  user_id: string;
+  name: string;
+  role: string | null;
+  organization: string;
+  is_internal: boolean;
+  relationship: StakeholderRelationship;
+  communication_style: string | null;
+  sensitivities: string | null;
+  motivations: string | null;
+  influence_level: number | null;
+  related_contact_id: string | null;
+  notes: string | null;
+  last_interaction_date: string | null;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface StrategicNote {
+  note_id: string;
+  user_id: string;
+  category: NoteCategory;
+  title: string;
+  content: string;
+  related_stakeholder_id: string | null;
+  related_deal_id: string | null;
+  source: string | null;
+  tags: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CoachingMessage {
+  conversation_id: string;
+  user_id: string;
+  role: "user" | "assistant";
+  content: string;
+  context_used: Record<string, unknown> | null;
+  sources_cited: string[];
+  tokens_used: number | null;
+  created_at: string;
+}
+
+export interface Nudge {
+  nudge_id: string;
+  user_id: string;
+  priority: NudgePriority;
+  status: NudgeStatus;
+  title: string;
+  message: string;
+  action_url: string | null;
+  source_agent: string;
+  context: Record<string, unknown> | null;
+  expires_at: string | null;
+  shown_at: string | null;
+  dismissed_at: string | null;
+  created_at: string;
+}
+
+export const NOTE_CATEGORIES: { value: NoteCategory; label: string }[] = [
+  { value: "institutional_context", label: "Institutional Context" },
+  { value: "stakeholder_insight", label: "Stakeholder Insight" },
+  { value: "decision_log", label: "Decision Log" },
+  { value: "political_dynamic", label: "Political Dynamic" },
+  { value: "meeting_debrief", label: "Meeting Debrief" },
+  { value: "strategic_observation", label: "Strategic Observation" },
+  { value: "competitive_insight", label: "Competitive Insight" },
+  { value: "relationship_note", label: "Relationship Note" },
+];
+
+export const STAKEHOLDER_RELATIONSHIPS: {
+  value: StakeholderRelationship;
+  label: string;
+  color: string;
+}[] = [
+  { value: "sponsor", label: "Sponsor", color: "#22c55e" },
+  { value: "champion", label: "Champion", color: "#3b82f6" },
+  { value: "supporter", label: "Supporter", color: "#06b6d4" },
+  { value: "neutral", label: "Neutral", color: "#6b7280" },
+  { value: "blocker", label: "Blocker", color: "#ef4444" },
+  { value: "unknown", label: "Unknown", color: "#9ca3af" },
+];
+
 // --- Pipeline Stage Config ---
 
 export const DEAL_STAGES: { value: DealStage; label: string; color: string }[] = [

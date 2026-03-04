@@ -22,14 +22,21 @@ import { getAnthropic, MODEL } from "@/lib/anthropic/client";
 import {
   retrieveBriefingContext,
   retrieveDealContext,
+  retrieveStrategicContext,
+  retrieveStakeholderContext,
+  retrieveMeetingPrepContext,
   type BriefingContext,
   type DealContext,
+  type StrategicContextResult,
+  type StakeholderContextResult,
+  type MeetingPrepContextResult,
 } from "@/lib/rag/retriever";
 import { logAgentCall, timed } from "./log";
 import {
   REVENUE_TARGET,
   type Deal,
   type PlaybookItem,
+  type NoteCategory,
 } from "@/types/database";
 
 // ── System Prompts ─────────────────────────────────────────────────────
@@ -261,8 +268,13 @@ export async function generateDealStrategy(
 // ── Context Document Builders ──────────────────────────────────────────
 
 function buildBriefingContextDoc(ctx: BriefingContext): string {
-  const { pipeline, dealBriefs, competitiveIntel, neglectedPlaybookItems } =
-    ctx;
+  const {
+    pipeline,
+    dealBriefs,
+    competitiveIntel,
+    neglectedPlaybookItems,
+    recentMeetingNotes,
+  } = ctx;
 
   const sections: string[] = [];
 
@@ -360,6 +372,20 @@ function buildBriefingContextDoc(ctx: BriefingContext): string {
     sections.push(`RECENT COMPETITIVE INTEL:\n${intelLines.join("\n")}`);
   }
 
+  // Recent internal meetings
+  if (recentMeetingNotes.length > 0) {
+    const meetingLines = recentMeetingNotes.map((m) => {
+      const attendeeStr = m.attendees
+        .map((a) => (a.role ? `${a.name} (${a.role})` : a.name))
+        .join(", ");
+      const summary = m.ai_summary || "(no summary)";
+      return `- [${m.meeting_date}] ${m.title} — with ${attendeeStr}\n  ${summary}`;
+    });
+    sections.push(
+      `RECENT INTERNAL MEETINGS:\n${meetingLines.join("\n\n")}`
+    );
+  }
+
   // Neglected playbook items
   if (neglectedPlaybookItems.length > 0) {
     const playbookLines = neglectedPlaybookItems.map(
@@ -377,6 +403,23 @@ function buildBriefingContextDoc(ctx: BriefingContext): string {
     sections.push(
       `PLAYBOOK PROGRESS: ${playbookStats.completed}/${playbookStats.total} items completed (${Math.round((playbookStats.completed / playbookStats.total) * 100)}%)`
     );
+  }
+
+  // Active nudges (coaching prompts)
+  if (ctx.activeNudges && ctx.activeNudges.length > 0) {
+    const nudgeLines = ctx.activeNudges.map(
+      (n) => `- [${n.priority.toUpperCase()}] ${n.title}: ${n.message}`
+    );
+    sections.push(`PENDING COACHING NUDGES:\n${nudgeLines.join("\n")}`);
+  }
+
+  // Recent strategic notes
+  if (ctx.recentStrategicNotes && ctx.recentStrategicNotes.length > 0) {
+    const noteLines = ctx.recentStrategicNotes.map(
+      (n) =>
+        `- [${n.category}] ${n.title}: ${n.content.length > 200 ? n.content.slice(0, 200) + "..." : n.content}`
+    );
+    sections.push(`RECENT STRATEGIC INSIGHTS:\n${noteLines.join("\n")}`);
   }
 
   return sections.join("\n\n");
@@ -766,4 +809,832 @@ function getWeekStart(): string {
   const monday = new Date(now.setDate(diff));
   monday.setHours(0, 0, 0, 0);
   return monday.toISOString().split("T")[0];
+}
+
+// ── Coaching Mode ─────────────────────────────────────────────────────
+
+const COACHING_PROMPT = `${STRATEGIST_IDENTITY}
+
+You are now in coaching mode. You are Tina's strategic advisor for her role as SVP, Data Products & Partnerships at pharosIQ.
+
+In this mode, you help with:
+- Meeting preparation (who to meet, what to ask, what to watch for)
+- Internal stakeholder navigation (relationship dynamics, political sensitivities)
+- Role strategy (how to position yourself, what to prioritize)
+- Communication coaching (email drafts, how to frame requests, tone checks)
+- Tradeshow and event preparation
+- Day-to-day decision support
+
+HOW TO TALK TO TINA:
+
+You are a sharp strategic advisor, not an assistant. Talk to Tina like a smart peer who has full context on her situation and isn't afraid to have an opinion.
+
+Core principles:
+- Be direct. State your point, then support it. No preambles.
+- Have a point of view. Don't list options without a recommendation. If one approach is better, say so and say why.
+- Be concise. If three sentences get the job done, don't write six. Tina scans fast.
+- Push back when something is weak. If she suggests an approach that won't work, say so directly and redirect.
+- Never hedge with filler ("I think maybe...", "You might want to consider...", "It could potentially..."). State it with confidence or flag the uncertainty explicitly ("I don't have data on this, but my read is...").
+- Proactively flag what she's not seeing. If she's focused on one meeting but there's a bigger issue, raise it.
+- Connect the dots across conversations. Reference what she learned in previous meetings and show how it applies now.
+- When she asks "is this too [meek/aggressive/whatever]", give her a straight answer and a better alternative.
+- End with the next move. Every response should make it clear what she should do next.
+- Keep it warm but never sycophantic. No "Great question!" or "That's a really smart approach!" Just answer the question.
+
+CRITICAL FORMAT RULES:
+- NEVER use em-dashes (the long dash). Use commas, periods, colons, semicolons, or parentheses instead.
+- NEVER fabricate stakeholder context, meeting details, or institutional knowledge. If you don't have a record, say "I don't have context on that yet."
+- NEVER be passive or deferential. Tina hired a strategist, not a yes-machine.
+- Reference specific stakeholder context when relevant.
+- When preparing for meetings, suggest specific questions tailored to the person and what's already known.
+- When debriefing, help extract the key insights and suggest what to do with them.`;
+
+export interface CoachingResult {
+  response: string;
+  generatedAt: string;
+  sourcesCited: string[];
+  tokensUsed: number;
+}
+
+/**
+ * Generate a coaching response in freeform advisory mode.
+ * The Strategist as a strategic advisor for internal navigation, meeting prep, role strategy, etc.
+ */
+export async function generateCoachingResponse(
+  supabase: SupabaseClient,
+  userId: string,
+  userMessage: string,
+  options?: { dealId?: string; stakeholderName?: string }
+): Promise<CoachingResult> {
+  // Step 1: RAG retrieval
+  const [strategicCtx, durationRetrieve] = await timed(() =>
+    retrieveStrategicContext(supabase, userId, {
+      stakeholderName: options?.stakeholderName,
+      dealId: options?.dealId,
+    })
+  );
+
+  // Optionally retrieve deeper context
+  let dealContext: DealContext | null = null;
+  let stakeholderCtx: StakeholderContextResult | null = null;
+
+  if (options?.dealId) {
+    dealContext = await retrieveDealContext(supabase, userId, options.dealId);
+  }
+  if (options?.stakeholderName) {
+    stakeholderCtx = await retrieveStakeholderContext(
+      supabase,
+      userId,
+      options.stakeholderName
+    );
+  }
+
+  // Step 2: Build context doc
+  const contextDoc = buildCoachingContextDoc(
+    strategicCtx,
+    dealContext,
+    stakeholderCtx
+  );
+
+  // Step 3: Build messages array with conversation history for multi-turn
+  // Anthropic API requires: starts with "user", strict alternation user/assistant.
+  // Apply a character budget to prevent context window overflow.
+  const messages: { role: "user" | "assistant"; content: string }[] = [];
+  const MAX_HISTORY_CHARS = 8000;
+  let charBudget = MAX_HISTORY_CHARS;
+
+  // Skip leading assistant messages (must start with "user")
+  const history = strategicCtx.recentCoachingHistory;
+  let startIdx = 0;
+  while (startIdx < history.length && history[startIdx].role !== "user") {
+    startIdx++;
+  }
+
+  // Add history with alternation enforcement and character budget
+  let lastRole: string | null = null;
+  for (let i = startIdx; i < history.length; i++) {
+    const msg = history[i];
+    const role = msg.role === "user" ? "user" : "assistant";
+    // Skip consecutive same-role messages (keep only the last one)
+    if (role === lastRole) {
+      messages.pop();
+    }
+    const content =
+      msg.content.length > 2000
+        ? msg.content.slice(0, 2000) + " [...]"
+        : msg.content;
+    if (charBudget - content.length < 0) break;
+    charBudget -= content.length;
+    messages.push({ role, content });
+    lastRole = role;
+  }
+  // If history ends with a user message, remove it (we'll add the current one)
+  if (messages.length > 0 && messages[messages.length - 1].role === "user") {
+    messages.pop();
+  }
+
+  // Add the current user message with context
+  messages.push({
+    role: "user",
+    content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${userMessage}`,
+  });
+
+  // Step 4: Generate response
+  const anthropic = getAnthropic();
+
+  const [response, durationGenerate] = await timed(() =>
+    anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 2000,
+      system: COACHING_PROMPT,
+      messages,
+    })
+  );
+
+  const responseText =
+    response.content.length > 0 && response.content[0].type === "text"
+      ? response.content[0].text
+      : "I wasn't able to generate a response. Try rephrasing your question.";
+
+  const tokensUsed =
+    (response.usage?.input_tokens ?? 0) +
+    (response.usage?.output_tokens ?? 0);
+
+  // Step 5: Save both messages to coaching_conversations
+  const sourcesCited = collectCoachingSources(strategicCtx, stakeholderCtx);
+  const now = new Date().toISOString();
+  const { error: insertError } = await supabase
+    .from("coaching_conversations")
+    .insert([
+      {
+        user_id: userId,
+        role: "user",
+        content: userMessage,
+        created_at: now,
+      },
+      {
+        user_id: userId,
+        role: "assistant",
+        content: responseText,
+        context_used: {
+          stakeholdersProvided: strategicCtx.stakeholders.length,
+          notesProvided: strategicCtx.strategicNotes.length,
+          dealId: options?.dealId ?? null,
+          stakeholderName: options?.stakeholderName ?? null,
+        },
+        sources_cited: sourcesCited,
+        tokens_used: tokensUsed,
+        created_at: new Date(Date.now() + 1).toISOString(), // +1ms to preserve ordering
+      },
+    ]);
+
+  if (insertError) {
+    console.error(
+      "[strategist] Failed to save coaching messages:",
+      insertError.message
+    );
+  }
+
+  // Step 6: Log
+  await logAgentCall({
+    supabase,
+    userId,
+    agentName: "strategist",
+    action: "coaching-chat",
+    inputContext: {
+      stakeholdersProvided: strategicCtx.stakeholders.length,
+      notesProvided: strategicCtx.strategicNotes.length,
+      historyMessages: strategicCtx.recentCoachingHistory.length,
+      dealId: options?.dealId ?? null,
+      stakeholderName: options?.stakeholderName ?? null,
+      retrieveDurationMs: durationRetrieve,
+    },
+    output: responseText.slice(0, 500),
+    sourcesCited,
+    tokensUsed,
+    durationMs: durationRetrieve + durationGenerate,
+  });
+
+  return {
+    response: responseText,
+    generatedAt: new Date().toISOString(),
+    sourcesCited,
+    tokensUsed,
+  };
+}
+
+// ── Meeting Prep Mode ─────────────────────────────────────────────────
+
+const MEETING_PREP_PROMPT = `${STRATEGIST_IDENTITY}
+
+Generate a meeting prep brief. Structure it as:
+
+## Meeting Overview
+What this meeting is about and what you want to accomplish. Be specific to the context provided.
+
+## Attendee Profiles
+For each attendee: their role, communication style, what motivates them, sensitivities to avoid, relationship status. Only include what you know from the data. If you lack context on someone, say so.
+
+## Talking Points
+3-5 specific talking points based on context. Reference recent conversations, deals, or strategic notes.
+
+## Watch For
+Potential landmines, sensitivities, or dynamics between attendees. Political considerations.
+
+## Desired Outcomes
+What success looks like for this meeting. Specific commitments or decisions to aim for.
+
+CRITICAL FORMAT RULES:
+- NEVER use em-dashes (the long dash). Use commas, periods, colons, semicolons, or parentheses instead.
+- NEVER invent facts about people or deals. If you lack context on someone, say "I don't have context on [name] yet."
+- Be specific and actionable.`;
+
+export interface MeetingPrepResult {
+  prep: string;
+  generatedAt: string;
+  sourcesCited: string[];
+  tokensUsed: number;
+}
+
+/**
+ * Generate a meeting prep brief for upcoming meetings.
+ */
+export async function generateMeetingPrep(
+  supabase: SupabaseClient,
+  userId: string,
+  params: {
+    title: string;
+    attendeeNames: string[];
+    agenda?: string;
+    dealId?: string;
+  }
+): Promise<MeetingPrepResult> {
+  // Step 1: RAG retrieval
+  const [prepCtx, durationRetrieve] = await timed(() =>
+    retrieveMeetingPrepContext(
+      supabase,
+      userId,
+      params.attendeeNames,
+      params.dealId
+    )
+  );
+
+  // Step 2: Build context doc
+  const contextDoc = buildMeetingPrepContextDoc(prepCtx, params);
+
+  // Step 3: Generate prep
+  const anthropic = getAnthropic();
+
+  const [response, durationGenerate] = await timed(() =>
+    anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 2000,
+      system: MEETING_PREP_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\n${contextDoc}`,
+        },
+      ],
+    })
+  );
+
+  const prepText =
+    response.content.length > 0 && response.content[0].type === "text"
+      ? response.content[0].text
+      : "Failed to generate meeting prep.";
+
+  const tokensUsed =
+    (response.usage?.input_tokens ?? 0) +
+    (response.usage?.output_tokens ?? 0);
+
+  const sourcesCited = prepCtx.stakeholderContexts.flatMap((sc) =>
+    sc.relatedConversations.map((c) => c.conversation_id)
+  );
+
+  // Step 4: Log
+  await logAgentCall({
+    supabase,
+    userId,
+    agentName: "strategist",
+    action: "meeting-prep",
+    inputContext: {
+      title: params.title,
+      attendees: params.attendeeNames,
+      dealId: params.dealId ?? null,
+      stakeholdersFound: prepCtx.stakeholderContexts.length,
+      retrieveDurationMs: durationRetrieve,
+    },
+    output: prepText.slice(0, 500),
+    sourcesCited,
+    tokensUsed,
+    durationMs: durationRetrieve + durationGenerate,
+  });
+
+  return {
+    prep: prepText,
+    generatedAt: new Date().toISOString(),
+    sourcesCited,
+    tokensUsed,
+  };
+}
+
+// ── Meeting Debrief Mode ──────────────────────────────────────────────
+
+const MEETING_DEBRIEF_PROMPT = `${STRATEGIST_IDENTITY}
+
+Process a meeting debrief. You will receive the meeting details and the user's debrief notes.
+
+Your task:
+1. Summarize the key takeaways
+2. Extract institutional knowledge that should be saved (stakeholder insights, political dynamics, decision rationale)
+3. Identify follow-up actions
+4. Flag anything that contradicts existing records
+
+Output ONLY valid JSON in this format:
+{
+  "debrief_summary": "2-3 paragraph summary of key takeaways",
+  "extracted_notes": [
+    {
+      "category": "<one of: institutional_context, stakeholder_insight, decision_log, political_dynamic, meeting_debrief, strategic_observation, competitive_insight, relationship_note>",
+      "title": "Short descriptive title",
+      "content": "The insight or knowledge to preserve"
+    }
+  ],
+  "follow_up_actions": [
+    {
+      "description": "What needs to happen",
+      "owner": "me or them",
+      "due_suggestion": "suggested date or timeframe"
+    }
+  ],
+  "stakeholder_updates": [
+    {
+      "name": "Person name",
+      "updates": "What to update on their profile (e.g., relationship changed, new sensitivity learned)"
+    }
+  ],
+  "conflicts_detected": ["any contradictions with existing data, or empty array if none"]
+}
+
+CRITICAL FORMAT RULES:
+- NEVER use em-dashes in any text field. Use commas, periods, colons, semicolons, or parentheses instead.
+- Only output valid JSON. No markdown, no commentary outside the JSON.
+- NEVER fabricate information not present in the debrief notes or existing context.`;
+
+export interface DebriefResult {
+  debrief: string;
+  extractedNotes: {
+    category: NoteCategory;
+    title: string;
+    content: string;
+  }[];
+  followUpActions: {
+    description: string;
+    owner: string;
+    due_suggestion: string;
+  }[];
+  stakeholderUpdates: {
+    name: string;
+    updates: string;
+  }[];
+  conflictsDetected: string[];
+  generatedAt: string;
+  sourcesCited: string[];
+  tokensUsed: number;
+}
+
+/**
+ * Process a meeting debrief: extract strategic notes, action items, and stakeholder updates.
+ */
+export async function processMeetingDebrief(
+  supabase: SupabaseClient,
+  userId: string,
+  params: {
+    meetingNoteId: string;
+    debriefNotes: string;
+  }
+): Promise<DebriefResult> {
+  // Step 1: Fetch the meeting note
+  const { data: meetingNote, error: meetingError } = await supabase
+    .from("meeting_notes")
+    .select("*")
+    .eq("note_id", params.meetingNoteId)
+    .eq("user_id", userId)
+    .single();
+
+  if (meetingError || !meetingNote) {
+    throw new Error("Meeting note not found");
+  }
+
+  // Step 2: Retrieve stakeholder context for each attendee
+  const attendees: { name: string }[] = Array.isArray(meetingNote.attendees)
+    ? (meetingNote.attendees as { name: string }[])
+    : [];
+  const attendeeNames = attendees.map((a) => a.name);
+  if (attendeeNames.length === 0) {
+    console.warn(
+      "[strategist] Meeting debrief has no attendees:",
+      params.meetingNoteId
+    );
+  }
+
+  const [prepCtx, durationRetrieve] = await timed(() =>
+    retrieveMeetingPrepContext(supabase, userId, attendeeNames)
+  );
+
+  // Step 3: Build context doc
+  const contextDoc = buildMeetingDebriefContextDoc(
+    meetingNote,
+    prepCtx,
+    params.debriefNotes
+  );
+
+  // Step 4: Generate debrief
+  const anthropic = getAnthropic();
+
+  const [response, durationGenerate] = await timed(() =>
+    anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 2000,
+      system: MEETING_DEBRIEF_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\n${contextDoc}`,
+        },
+      ],
+    })
+  );
+
+  const responseText =
+    response.content.length > 0 && response.content[0].type === "text"
+      ? response.content[0].text
+      : "{}";
+
+  const tokensUsed =
+    (response.usage?.input_tokens ?? 0) +
+    (response.usage?.output_tokens ?? 0);
+
+  // Step 5: Parse JSON response
+  const VALID_NOTE_CATEGORIES = new Set([
+    "institutional_context", "stakeholder_insight", "decision_log",
+    "political_dynamic", "meeting_debrief", "strategic_observation",
+    "competitive_insight", "relationship_note",
+  ]);
+
+  let debriefSummary: string | null = null;
+  let extractedNotes: DebriefResult["extractedNotes"] = [];
+  let followUpActions: DebriefResult["followUpActions"] = [];
+  let stakeholderUpdates: DebriefResult["stakeholderUpdates"] = [];
+  let conflictsDetected: string[] = [];
+
+  try {
+    const parsed = JSON.parse(responseText);
+    debriefSummary =
+      typeof parsed.debrief_summary === "string"
+        ? parsed.debrief_summary
+        : null;
+
+    // Validate each extracted note has required fields and valid category
+    extractedNotes = Array.isArray(parsed.extracted_notes)
+      ? parsed.extracted_notes.filter(
+          (n: unknown): n is DebriefResult["extractedNotes"][number] =>
+            typeof n === "object" &&
+            n !== null &&
+            typeof (n as Record<string, unknown>).category === "string" &&
+            VALID_NOTE_CATEGORIES.has(
+              (n as Record<string, unknown>).category as string
+            ) &&
+            typeof (n as Record<string, unknown>).title === "string" &&
+            typeof (n as Record<string, unknown>).content === "string"
+        )
+      : [];
+
+    // Validate follow-up actions have required fields
+    followUpActions = Array.isArray(parsed.follow_up_actions)
+      ? parsed.follow_up_actions.filter(
+          (a: unknown): a is DebriefResult["followUpActions"][number] =>
+            typeof a === "string" ||
+            (typeof a === "object" &&
+              a !== null &&
+              typeof (a as Record<string, unknown>).description === "string")
+        )
+      : [];
+
+    stakeholderUpdates = Array.isArray(parsed.stakeholder_updates)
+      ? parsed.stakeholder_updates.filter(
+          (s: unknown): s is string => typeof s === "string"
+        )
+      : [];
+
+    conflictsDetected = Array.isArray(parsed.conflicts_detected)
+      ? parsed.conflicts_detected.filter(
+          (c: unknown): c is string => typeof c === "string"
+        )
+      : [];
+  } catch {
+    console.error(
+      "[strategist] Failed to parse debrief JSON response:",
+      responseText.slice(0, 200)
+    );
+  }
+
+  // Step 6: Save validated extracted notes to strategic_notes table
+  if (extractedNotes.length > 0) {
+    const noteRecords = extractedNotes.map((note) => ({
+      user_id: userId,
+      category: note.category,
+      title: note.title,
+      content: note.content,
+      source: `Meeting debrief: ${meetingNote.title} (${meetingNote.meeting_date})`,
+      tags: ["debrief", "auto-extracted"],
+    }));
+
+    const { error: insertError } = await supabase
+      .from("strategic_notes")
+      .insert(noteRecords);
+
+    if (insertError) {
+      console.error(
+        "[strategist] Failed to save extracted notes:",
+        insertError.message
+      );
+    }
+  }
+
+  // Step 7: Update meeting note's ai_summary only if debrief was generated
+  if (debriefSummary) {
+    await supabase
+      .from("meeting_notes")
+      .update({ ai_summary: debriefSummary })
+      .eq("note_id", params.meetingNoteId)
+      .eq("user_id", userId);
+  }
+
+  const sourcesCited = prepCtx.stakeholderContexts.flatMap((sc) =>
+    sc.relatedConversations.map((c) => c.conversation_id)
+  );
+
+  // Step 8: Log
+  await logAgentCall({
+    supabase,
+    userId,
+    agentName: "strategist",
+    action: "meeting-debrief",
+    inputContext: {
+      meetingNoteId: params.meetingNoteId,
+      meetingTitle: meetingNote.title,
+      attendees: attendeeNames,
+      extractedNotesCount: extractedNotes.length,
+      followUpActionsCount: followUpActions.length,
+      retrieveDurationMs: durationRetrieve,
+    },
+    output: (debriefSummary ?? "").slice(0, 500),
+    sourcesCited,
+    tokensUsed,
+    durationMs: durationRetrieve + durationGenerate,
+  });
+
+  return {
+    debrief: debriefSummary ?? "Failed to process debrief.",
+    extractedNotes,
+    followUpActions,
+    stakeholderUpdates,
+    conflictsDetected,
+    generatedAt: new Date().toISOString(),
+    sourcesCited,
+    tokensUsed,
+  };
+}
+
+// ── Coaching Context Doc Builders ─────────────────────────────────────
+
+function buildCoachingContextDoc(
+  ctx: StrategicContextResult,
+  dealCtx: DealContext | null,
+  stakeholderCtx: StakeholderContextResult | null
+): string {
+  const sections: string[] = [];
+
+  // Stakeholder profiles
+  if (ctx.stakeholders.length > 0) {
+    const stakeholderLines = ctx.stakeholders.map((s) => {
+      const parts = [
+        `${s.name} (${s.role || "role unknown"}, ${s.organization})`,
+        `Relationship: ${s.relationship}`,
+        s.communication_style
+          ? `Communication: ${s.communication_style}`
+          : null,
+        s.motivations ? `Motivations: ${s.motivations}` : null,
+        s.sensitivities ? `Sensitivities: ${s.sensitivities}` : null,
+        s.influence_level
+          ? `Influence: ${s.influence_level}/5`
+          : null,
+        s.last_interaction_date
+          ? `Last interaction: ${s.last_interaction_date}`
+          : null,
+      ];
+      return parts.filter(Boolean).join("\n  ");
+    });
+    sections.push(
+      `STAKEHOLDER PROFILES:\n${stakeholderLines.join("\n\n")}`
+    );
+  }
+
+  // Deep stakeholder context (if a specific person was mentioned)
+  if (stakeholderCtx) {
+    const s = stakeholderCtx.stakeholder;
+    const deepParts: string[] = [
+      `\nDEEP CONTEXT ON ${s.name.toUpperCase()}:`,
+    ];
+    if (stakeholderCtx.relatedNotes.length > 0) {
+      const noteLines = stakeholderCtx.relatedNotes.map(
+        (n) => `- [${n.category}] ${n.title}: ${n.content.length > 300 ? n.content.slice(0, 300) + "..." : n.content}`
+      );
+      deepParts.push(`Related notes:\n${noteLines.join("\n")}`);
+    }
+    if (stakeholderCtx.relatedMeetings.length > 0) {
+      const meetingLines = stakeholderCtx.relatedMeetings.map(
+        (m) =>
+          `- [${m.meeting_date}] ${m.title}: ${m.ai_summary || "(no summary)"}`
+      );
+      deepParts.push(`Meetings involving ${s.name}:\n${meetingLines.join("\n")}`);
+    }
+    if (stakeholderCtx.relatedConversations.length > 0) {
+      const convoLines = stakeholderCtx.relatedConversations.map(
+        (c) =>
+          `- [${c.date}] ${c.channel.toUpperCase()}: ${c.ai_summary || "(no summary)"}`
+      );
+      deepParts.push(`Conversations:\n${convoLines.join("\n")}`);
+    }
+    sections.push(deepParts.join("\n"));
+  }
+
+  // Strategic notes
+  if (ctx.strategicNotes.length > 0) {
+    const noteLines = ctx.strategicNotes.map(
+      (n) =>
+        `- [${n.category}] ${n.title} (${n.created_at.split("T")[0]}): ${n.content.length > 200 ? n.content.slice(0, 200) + "..." : n.content}`
+    );
+    sections.push(`STRATEGIC NOTES:\n${noteLines.join("\n")}`);
+  }
+
+  // Active nudges
+  if (ctx.activeNudges.length > 0) {
+    const nudgeLines = ctx.activeNudges.map(
+      (n) => `- [${n.priority.toUpperCase()}] ${n.title}: ${n.message}`
+    );
+    sections.push(`ACTIVE NUDGES:\n${nudgeLines.join("\n")}`);
+  }
+
+  // Deal context (if provided)
+  if (dealCtx) {
+    sections.push(buildDealContextDoc(dealCtx));
+  }
+
+  return sections.join("\n\n");
+}
+
+function buildMeetingPrepContextDoc(
+  ctx: MeetingPrepContextResult,
+  params: { title: string; attendeeNames: string[]; agenda?: string }
+): string {
+  const sections: string[] = [];
+
+  sections.push(
+    `MEETING: ${params.title}\nATTENDEES: ${params.attendeeNames.join(", ")}${params.agenda ? `\nAGENDA: ${params.agenda}` : ""}`
+  );
+
+  // Stakeholder profiles for each attendee
+  for (const sc of ctx.stakeholderContexts) {
+    const s = sc.stakeholder;
+    const parts = [
+      `--- ${s.name} (${s.role || "role unknown"}, ${s.organization}) ---`,
+      `Relationship: ${s.relationship}`,
+      s.communication_style
+        ? `Communication style: ${s.communication_style}`
+        : null,
+      s.motivations ? `Motivations: ${s.motivations}` : null,
+      s.sensitivities ? `Sensitivities: ${s.sensitivities}` : null,
+      s.notes ? `Notes: ${s.notes}` : null,
+    ];
+
+    if (sc.relatedMeetings.length > 0) {
+      const meetingLines = sc.relatedMeetings
+        .slice(0, 5)
+        .map(
+          (m) =>
+            `  - [${m.meeting_date}] ${m.title}: ${m.ai_summary || "(no summary)"}`
+        );
+      parts.push(`Previous meetings:\n${meetingLines.join("\n")}`);
+    }
+
+    if (sc.relatedNotes.length > 0) {
+      const noteLines = sc.relatedNotes
+        .slice(0, 5)
+        .map(
+          (n) => `  - [${n.category}] ${n.title}: ${n.content.length > 200 ? n.content.slice(0, 200) + "..." : n.content}`
+        );
+      parts.push(`Related insights:\n${noteLines.join("\n")}`);
+    }
+
+    sections.push(parts.filter(Boolean).join("\n"));
+  }
+
+  // Flag attendees without stakeholder records
+  const knownNames = new Set(
+    ctx.stakeholderContexts.map((sc) =>
+      sc.stakeholder.name.toLowerCase()
+    )
+  );
+  const unknownAttendees = params.attendeeNames.filter(
+    (name) => !knownNames.has(name.toLowerCase())
+  );
+  if (unknownAttendees.length > 0) {
+    sections.push(
+      `ATTENDEES WITHOUT PROFILES: ${unknownAttendees.join(", ")} (no stakeholder context available)`
+    );
+  }
+
+  // Deal context
+  if (ctx.dealContext) {
+    sections.push(buildDealContextDoc(ctx.dealContext));
+  }
+
+  // Relevant nudges
+  if (ctx.relevantNudges.length > 0) {
+    const nudgeLines = ctx.relevantNudges.map(
+      (n) => `- [${n.priority.toUpperCase()}] ${n.title}: ${n.message}`
+    );
+    sections.push(`RELEVANT NUDGES:\n${nudgeLines.join("\n")}`);
+  }
+
+  return sections.join("\n\n");
+}
+
+function buildMeetingDebriefContextDoc(
+  meetingNote: Record<string, unknown>,
+  prepCtx: MeetingPrepContextResult,
+  debriefNotes: string
+): string {
+  const sections: string[] = [];
+
+  const attendees: { name: string; role?: string }[] = Array.isArray(
+    meetingNote.attendees
+  )
+    ? (meetingNote.attendees as { name: string; role?: string }[])
+    : [];
+  const attendeeStr = attendees
+    .map((a) => (a.role ? `${a.name} (${a.role})` : a.name))
+    .join(", ");
+
+  sections.push(
+    `MEETING: ${meetingNote.title}\nDATE: ${meetingNote.meeting_date}\nTYPE: ${meetingNote.meeting_type}\nATTENDEES: ${attendeeStr || "none listed"}`
+  );
+
+  // Original meeting content (truncate to prevent context window overflow)
+  if (meetingNote.content) {
+    const content = meetingNote.content as string;
+    const truncated =
+      content.length > 3000
+        ? content.slice(0, 3000) + "\n[... truncated ...]"
+        : content;
+    sections.push(`ORIGINAL MEETING NOTES:\n${truncated}`);
+  }
+
+  // Stakeholder context for each attendee
+  for (const sc of prepCtx.stakeholderContexts) {
+    const s = sc.stakeholder;
+    const parts = [
+      `--- Existing context on ${s.name} ---`,
+      `Role: ${s.role || "unknown"}, Relationship: ${s.relationship}`,
+      s.notes ? `Notes: ${s.notes}` : null,
+    ];
+    sections.push(parts.filter(Boolean).join("\n"));
+  }
+
+  // User's debrief input
+  sections.push(`DEBRIEF NOTES (from user):\n${debriefNotes}`);
+
+  return sections.join("\n\n");
+}
+
+function collectCoachingSources(
+  ctx: StrategicContextResult,
+  stakeholderCtx: StakeholderContextResult | null
+): string[] {
+  const sources = new Set<string>();
+  for (const note of ctx.strategicNotes) {
+    sources.add(note.note_id);
+  }
+  if (stakeholderCtx) {
+    for (const c of stakeholderCtx.relatedConversations) {
+      sources.add(c.conversation_id);
+    }
+    for (const m of stakeholderCtx.relatedMeetings) {
+      sources.add(m.note_id);
+    }
+  }
+  return Array.from(sources);
 }
