@@ -52,7 +52,7 @@ export default async function ComposePage({ searchParams }: ComposePageProps) {
     company: string;
     role: string | null;
   }>;
-  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? "free";
+  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasComposeAccess = PLANS[userTier].limits.integrations;
 
   return (

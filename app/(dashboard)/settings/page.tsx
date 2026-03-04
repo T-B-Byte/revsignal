@@ -79,7 +79,7 @@ export default async function SettingsPage() {
     .single();
 
   const subscription = subscriptionData as Subscription | null;
-  const tier: SubscriptionTier = subscription?.tier ?? "free";
+  const tier: SubscriptionTier = subscription?.tier ?? 'power';
   const status: SubscriptionStatus = subscription?.status ?? "active";
   const plan = PLANS[tier];
 

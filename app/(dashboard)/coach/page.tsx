@@ -47,7 +47,7 @@ export default async function CoachPage() {
         .order("name", { ascending: true }),
     ]);
 
-  const tier: SubscriptionTier = subscriptionResult.data?.tier ?? "free";
+  const tier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasAiAccess = PLANS[tier].limits.aiBriefings;
 
   // Reverse history so oldest first (display order)

@@ -31,7 +31,7 @@ export default async function CompetePage() {
   ]);
 
   const intel = (intelResult.data as CompetitiveIntel[]) ?? [];
-  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? "free";
+  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasAiAccess = PLANS[userTier].limits.aiBriefings;
 
   // Group by competitor

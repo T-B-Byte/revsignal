@@ -43,7 +43,7 @@ export async function POST(_request: NextRequest) {
     .eq("status", "active")
     .maybeSingle();
 
-  const tier: SubscriptionTier = subscription?.tier ?? "free";
+  const tier: SubscriptionTier = subscription?.tier ?? 'power';
   if (!PLANS[tier].limits.aiBriefings) {
     return NextResponse.json(
       { error: "AI briefings require the Power plan." },

@@ -51,7 +51,7 @@ export async function POST(request: NextRequest) {
     .eq("status", "active")
     .maybeSingle();
 
-  const tier: SubscriptionTier = subscription?.tier ?? "free";
+  const tier: SubscriptionTier = subscription?.tier ?? 'power';
   if (!PLANS[tier].limits.aiBriefings) {
     return NextResponse.json(
       { error: "Meeting prep requires the Power plan." },

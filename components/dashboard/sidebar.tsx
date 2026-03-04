@@ -11,7 +11,7 @@ const NAV_ITEMS = [
   { href: "/playbook", label: "Playbook", icon: BookIcon },
   { href: "/compete", label: "Compete", icon: ShieldIcon },
   { href: "/compose", label: "Compose", icon: PenIcon },
-  { href: "/coach", label: "Coach", icon: SparklesIcon },
+  { href: "/coach", label: "Strategy", icon: SparklesIcon },
   { href: "/marketing", label: "Marketing", icon: MegaphoneIcon },
   { href: "/settings", label: "Settings", icon: GearIcon },
 ];

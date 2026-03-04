@@ -118,7 +118,7 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
   ]);
 
   const dealBrief = dealBriefResult.data;
-  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? "free";
+  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasAiAccess = PLANS[userTier].limits.aiBriefings;
   const hasComposeAccess = PLANS[userTier].limits.integrations;
 

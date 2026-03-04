@@ -30,7 +30,7 @@ export default async function ProspectsPage() {
   ]);
 
   const prospects = (prospectsResult.data as Prospect[]) ?? [];
-  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? "free";
+  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasResearchAccess = PLANS[userTier].limits.prospectSearches > 0;
 
   // Extract unique ICP categories for filtering

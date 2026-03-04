@@ -84,7 +84,7 @@ export default async function DashboardPage() {
   );
 
   // --- Check AI access ---
-  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'free';
+  const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasAiAccess = PLANS[userTier].limits.aiBriefings;
 
   // --- Process pipeline stages ---

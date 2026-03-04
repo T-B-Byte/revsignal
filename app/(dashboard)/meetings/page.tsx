@@ -39,7 +39,7 @@ export default async function MeetingsPage() {
       .maybeSingle(),
   ]);
 
-  const tier: SubscriptionTier = subscriptionResult.data?.tier ?? "free";
+  const tier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasAiAccess = PLANS[tier].limits.aiBriefings;
 
   const notes = (notesResult.data as MeetingNote[]) ?? [];
