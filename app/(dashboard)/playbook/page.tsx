@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import type { PlaybookItem } from "@/types/database";
+import { PlaybookItemRow } from "@/components/playbook/playbook-item-row";
 
 export default async function PlaybookPage() {
   const supabase = await createClient();
@@ -79,42 +79,12 @@ export default async function PlaybookPage() {
                 <CardContent>
                   <ul className="space-y-2">
                     {items.map((item) => (
-                      <li
+                      <PlaybookItemRow
                         key={item.item_id}
-                        className="flex items-start gap-3 text-sm"
-                      >
-                        <span className="mt-0.5 shrink-0">
-                          {item.status === "completed" ? (
-                            <span className="text-status-green">&#10003;</span>
-                          ) : item.status === "in_progress" ? (
-                            <span className="text-status-yellow">&#9679;</span>
-                          ) : (
-                            <span className="text-text-muted">&#9675;</span>
-                          )}
-                        </span>
-                        <span
-                          className={
-                            item.status === "completed"
-                              ? "text-text-muted line-through"
-                              : "text-text-primary"
-                          }
-                        >
-                          {item.description}
-                        </span>
-                        <Badge
-                          variant={
-                            item.status === "completed"
-                              ? "green"
-                              : item.status === "in_progress"
-                                ? "yellow"
-                                : item.status === "blocked"
-                                  ? "red"
-                                  : "gray"
-                          }
-                        >
-                          {item.status.replace("_", " ")}
-                        </Badge>
-                      </li>
+                        itemId={item.item_id}
+                        description={item.description}
+                        initialStatus={item.status}
+                      />
                     ))}
                   </ul>
                 </CardContent>

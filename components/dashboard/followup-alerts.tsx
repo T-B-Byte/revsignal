@@ -36,6 +36,32 @@ export function FollowUpAlerts({ groups, hasAiAccess }: FollowUpAlertsProps) {
   const [scanSummary, setScanSummary] = useState<string | null>(null);
   const [scanLoading, setScanLoading] = useState(false);
   const [scanError, setScanError] = useState<string | null>(null);
+  const [completedIds, setCompletedIds] = useState<Set<string>>(new Set());
+  const [savingIds, setSavingIds] = useState<Set<string>>(new Set());
+
+  async function handleComplete(itemId: string) {
+    setSavingIds((prev) => new Set(prev).add(itemId));
+
+    try {
+      const res = await fetch('/api/action-items', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ item_ids: [itemId], status: 'completed' }),
+      });
+
+      if (res.ok) {
+        setCompletedIds((prev) => new Set(prev).add(itemId));
+      }
+    } catch {
+      // silently fail — item stays unchecked
+    } finally {
+      setSavingIds((prev) => {
+        const next = new Set(prev);
+        next.delete(itemId);
+        return next;
+      });
+    }
+  }
 
   async function handleRunScan() {
     setScanLoading(true);
@@ -64,7 +90,10 @@ export function FollowUpAlerts({ groups, hasAiAccess }: FollowUpAlertsProps) {
     (a, b) => LEVEL_CONFIG[a.level].sort - LEVEL_CONFIG[b.level].sort
   );
 
-  const totalItems = groups.reduce((sum, g) => sum + g.items.length, 0);
+  const totalItems = groups.reduce(
+    (sum, g) => sum + g.items.filter((i) => !completedIds.has(i.item_id)).length,
+    0
+  );
 
   return (
     <Card>
@@ -109,31 +138,49 @@ export function FollowUpAlerts({ groups, hasAiAccess }: FollowUpAlertsProps) {
         ) : (
           <div className="space-y-4">
             {sorted.map((group) => {
-              if (group.items.length === 0) return null;
+              const visibleItems = group.items.filter((i) => !completedIds.has(i.item_id));
+              if (visibleItems.length === 0) return null;
               const config = LEVEL_CONFIG[group.level];
               return (
                 <div key={group.level}>
                   <div className="mb-2 flex items-center gap-2">
                     <Badge variant={config.variant}>{config.label}</Badge>
                     <span className="font-data text-xs text-text-muted">
-                      {group.items.length}
+                      {visibleItems.length}
                     </span>
                   </div>
                   <ul className="space-y-2">
-                    {group.items.map((item) => (
+                    {visibleItems.map((item) => (
                       <li
                         key={item.item_id}
-                        className="rounded-md bg-surface-tertiary px-3 py-2 text-sm"
+                        className="flex items-start gap-3 rounded-md bg-surface-tertiary px-3 py-2 text-sm"
                       >
-                        <p className="text-text-primary">{item.description}</p>
-                        <div className="mt-1 flex items-center gap-3 text-xs text-text-muted">
-                          {item.deal_company && <span>{item.deal_company}</span>}
-                          {item.due_date && (
-                            <span className="font-data">
-                              {format(new Date(item.due_date), 'MMM d, yyyy')}
-                            </span>
+                        <button
+                          onClick={() => handleComplete(item.item_id)}
+                          disabled={savingIds.has(item.item_id)}
+                          className="mt-0.5 shrink-0 flex h-4 w-4 items-center justify-center rounded border border-border-primary text-transparent transition-colors hover:border-accent-primary hover:text-accent-primary disabled:opacity-50"
+                          title="Mark complete"
+                          aria-label={`Mark complete: ${item.description}`}
+                        >
+                          {savingIds.has(item.item_id) ? (
+                            <span className="h-2 w-2 animate-pulse rounded-full bg-text-muted" />
+                          ) : (
+                            <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M2 6l3 3 5-5" />
+                            </svg>
                           )}
-                          <span className="capitalize">{item.owner}</span>
+                        </button>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-text-primary">{item.description}</p>
+                          <div className="mt-1 flex items-center gap-3 text-xs text-text-muted">
+                            {item.deal_company && <span>{item.deal_company}</span>}
+                            {item.due_date && (
+                              <span className="font-data">
+                                {format(new Date(item.due_date), 'MMM d, yyyy')}
+                              </span>
+                            )}
+                            <span className="capitalize">{item.owner}</span>
+                          </div>
                         </div>
                       </li>
                     ))}

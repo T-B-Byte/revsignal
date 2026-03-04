@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import type { Contact } from "@/types/database";
 import Link from "next/link";
+import { ContactsHeader } from "@/components/contacts/contacts-header";
 
 export default async function ContactsPage() {
   const supabase = await createClient();
@@ -30,17 +31,23 @@ export default async function ContactsPage() {
     (c) => !c.is_internal
   );
 
+  const icpCategories = Array.from(
+    new Set(
+      (contacts as Contact[] | null)
+        ?.map((c) => c.icp_category)
+        .filter(Boolean) as string[]
+    )
+  ).sort();
+
   return (
     <div>
-      <h1 className="mb-6 text-xl font-semibold text-text-primary">
-        Contacts
-      </h1>
+      <ContactsHeader icpCategories={icpCategories} />
 
       {!contacts || contacts.length === 0 ? (
         <Card>
           <CardContent>
             <p className="py-8 text-center text-sm text-text-muted">
-              No contacts yet. Contacts are created when you add them to deals.
+              No contacts yet. Click &quot;+ Add Contact&quot; to add your first contact.
             </p>
           </CardContent>
         </Card>
