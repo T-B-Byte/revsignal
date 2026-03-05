@@ -17,7 +17,8 @@ export type ChannelType =
   | "call"
   | "linkedin"
   | "in_person"
-  | "manual";
+  | "manual"
+  | "internal";
 
 export type ActionOwner = "me" | "them";
 

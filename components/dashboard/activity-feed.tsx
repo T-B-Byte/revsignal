@@ -21,6 +21,7 @@ const CHANNEL_ICONS: Record<ChannelType, { label: string; icon: string }> = {
   call: { label: 'Call', icon: 'C' },
   linkedin: { label: 'LinkedIn', icon: 'in' },
   in_person: { label: 'In Person', icon: 'IP' },
+  internal: { label: 'Internal', icon: 'Int' },
   manual: { label: 'Manual', icon: 'M' },
 };
 
@@ -30,6 +31,7 @@ const CHANNEL_COLORS: Record<ChannelType, string> = {
   call: 'bg-status-green/20 text-status-green',
   linkedin: 'bg-blue-500/20 text-blue-400',
   in_person: 'bg-status-yellow/20 text-status-yellow',
+  internal: 'bg-orange-500/20 text-orange-400',
   manual: 'bg-surface-tertiary text-text-muted',
 };
 

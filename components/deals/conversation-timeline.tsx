@@ -27,6 +27,8 @@ function getChannelConfig(channel: ChannelType): {
       return { label: "In Person", variant: "yellow", icon: "P" };
     case "manual":
       return { label: "Manual", variant: "gray", icon: "M" };
+    case "internal":
+      return { label: "Internal", variant: "yellow", icon: "I" };
     default:
       return { label: channel, variant: "gray", icon: "?" };
   }

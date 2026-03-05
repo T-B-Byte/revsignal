@@ -14,6 +14,7 @@ const createConversationSchema = z.object({
     "linkedin",
     "in_person",
     "manual",
+    "internal",
   ] as const),
   subject: z.string().max(500).optional(),
   raw_text: z.string().min(1, "Content is required").max(50000),
@@ -48,8 +49,8 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Require at least one of deal_id or contact_id
-  if (!parsed.data.deal_id && !parsed.data.contact_id) {
+  // Require at least one of deal_id or contact_id (unless internal)
+  if (!parsed.data.deal_id && !parsed.data.contact_id && parsed.data.channel !== "internal") {
     return NextResponse.json(
       { error: "At least one of deal_id or contact_id is required" },
       { status: 400 }

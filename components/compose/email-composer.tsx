@@ -20,6 +20,7 @@ const LOG_CHANNELS = [
   { value: 'teams', label: 'Teams Chat' },
   { value: 'linkedin', label: 'LinkedIn Message' },
   { value: 'in_person', label: 'In Person' },
+  { value: 'internal', label: 'Internal' },
   { value: 'manual', label: 'Other / Manual' },
 ] as const;
 
@@ -117,14 +118,19 @@ export function EmailComposer({
 
   // Log Conversation state
   const [logChannel, setLogChannel] = useState<LogChannel>('email');
+  const [logContactId, setLogContactId] = useState('');
+  const [logSentTo, setLogSentTo] = useState('');
   const [pasteSubject, setPasteSubject] = useState('');
   const [pasteContent, setPasteContent] = useState('');
   const [pasteSaving, setPasteSaving] = useState(false);
   const [pasteSaved, setPasteSaved] = useState(false);
 
+  const isInternal = logChannel === 'internal';
   const hasContext = dealId || contactId || instructions.trim();
   const canSave = (dealId || contactId) && result;
-  const canPasteSave = (dealId || contactId) && pasteContent.trim();
+  const canPasteSave =
+    pasteContent.trim() &&
+    (isInternal || dealId || contactId || logContactId);
 
   const handleCompose = useCallback(async () => {
     if (!hasContext) return;
@@ -206,19 +212,25 @@ export function EmailComposer({
   }
 
   async function handlePasteSave() {
-    if (!pasteContent.trim() || pasteSaving || (!dealId && !contactId)) return;
+    if (!pasteContent.trim() || pasteSaving) return;
+
+    const effectiveContactId = logContactId || contactId;
+    if (!isInternal && !dealId && !effectiveContactId) return;
 
     setPasteSaving(true);
     setError(null);
 
     try {
       const channelLabel = LOG_CHANNELS.find((c) => c.value === logChannel)?.label ?? logChannel;
+      const sentToPrefix = isInternal && logSentTo.trim()
+        ? `Sent to: ${logSentTo.trim()}\n`
+        : '';
       const response = await saveConversation({
         dealId: dealId || undefined,
-        contactId: contactId || undefined,
+        contactId: effectiveContactId || undefined,
         channel: logChannel,
         subject: pasteSubject.trim() || undefined,
-        rawText: `[${channelLabel}]\n\n${pasteContent.trim()}`,
+        rawText: `[${channelLabel}]\n${sentToPrefix}\n${pasteContent.trim()}`,
       });
 
       if ('error' in response) {
@@ -229,6 +241,8 @@ export function EmailComposer({
           setPasteContent('');
           setPasteSubject('');
           setLogChannel('email');
+          setLogContactId('');
+          setLogSentTo('');
           setPasteSaved(false);
         }, 2000);
       }
@@ -404,6 +418,38 @@ export function EmailComposer({
                     ))}
                   </select>
                 </div>
+
+                {/* Sent To — contact dropdown or free text for internal */}
+                <div>
+                  <label className="mb-1 block text-xs font-medium text-text-secondary">
+                    Sent To
+                  </label>
+                  {isInternal ? (
+                    <input
+                      type="text"
+                      value={logSentTo}
+                      onChange={(e) => setLogSentTo(e.target.value)}
+                      maxLength={200}
+                      placeholder="Name of recipient (e.g., Jeff Rokuskie)"
+                      className="w-full rounded-md border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+                    />
+                  ) : (
+                    <select
+                      value={logContactId}
+                      onChange={(e) => setLogContactId(e.target.value)}
+                      className="w-full rounded-md border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+                    >
+                      <option value="">No contact selected</option>
+                      {contacts.map((contact) => (
+                        <option key={contact.contact_id} value={contact.contact_id}>
+                          {contact.name} — {contact.company}
+                          {contact.role ? ` (${contact.role})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                </div>
+
                 <div>
                   <label className="mb-1 block text-xs font-medium text-text-secondary">
                     Subject (optional)
@@ -440,9 +486,9 @@ export function EmailComposer({
                   />
                 </div>
 
-                {!dealId && !contactId && pasteContent.trim() && (
+                {!isInternal && !dealId && !contactId && !logContactId && pasteContent.trim() && (
                   <p className="text-xs text-status-yellow">
-                    Select a deal or contact above to save this conversation.
+                    Select a deal or contact to save this conversation.
                   </p>
                 )}
 
