@@ -243,6 +243,38 @@ export async function updateMeetingNote(
   return { success: true };
 }
 
+/**
+ * Lightweight content-only auto-save for the full-page note editor.
+ * No path revalidation — avoids unnecessary re-renders during live editing.
+ */
+export async function autoSaveMeetingNote(
+  noteId: string,
+  content: string
+): Promise<{ success: boolean; savedAt: string } | { error: string }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  if (!content || content.length > 100000) {
+    return { error: "Content is required and must be under 100,000 characters" };
+  }
+
+  const now = new Date().toISOString();
+
+  const { error } = await supabase
+    .from("meeting_notes")
+    .update({ content, updated_at: now })
+    .eq("note_id", noteId)
+    .eq("user_id", user.id);
+
+  if (error) return { error: error.message };
+
+  return { success: true, savedAt: now };
+}
+
 export async function deleteMeetingNote(
   noteId: string
 ): Promise<{ success: boolean } | { error: string }> {

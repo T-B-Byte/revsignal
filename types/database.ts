@@ -439,6 +439,163 @@ export const ACTIVE_STAGES: DealStage[] = [
   "negotiation",
 ];
 
+// --- SFDC Stage Mapping ---
+
+export const SFDC_STAGE_MAP: Record<DealStage, string> = {
+  lead: "Prospecting",
+  qualified: "Qualification",
+  discovery: "Needs Analysis",
+  poc_trial: "Value Proposition",
+  proposal: "Proposal/Price Quote",
+  negotiation: "Negotiation/Review",
+  closed_won: "Closed Won",
+  closed_lost: "Closed Lost",
+};
+
+// --- Daily Briefings ---
+
+export interface DailyBriefing {
+  briefing_id: string;
+  user_id: string;
+  briefing_date: string;
+  content: string;
+  edited_content: string | null;
+  sources_cited: string[];
+  tokens_used: number | null;
+  generated_at: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Tradeshows ---
+
+export type TradeshowStatus =
+  | "draft"
+  | "analyzing"
+  | "partial"
+  | "complete"
+  | "error";
+
+export type TradeshowPriority =
+  | "priority_1_walk_up"
+  | "priority_2_strong_conversation"
+  | "priority_3_competitive_intel";
+
+export type TargetResearchStatus =
+  | "pending"
+  | "researching"
+  | "complete"
+  | "error";
+
+export interface Tradeshow {
+  tradeshow_id: string;
+  user_id: string;
+  name: string;
+  dates: string | null;
+  location: string | null;
+  sponsor_page_url: string | null;
+  raw_html: string | null;
+  status: TradeshowStatus;
+  analysis_summary: string | null;
+  total_sponsors: number;
+  total_estimated_pipeline: number;
+  tokens_used: number;
+  analyzed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TradeshowTarget {
+  target_id: string;
+  tradeshow_id: string;
+  user_id: string;
+  company: string;
+  sponsorship_tier: string | null;
+  company_description: string | null;
+  icp_category: string | null;
+  icp_fit_strength: string | null;
+  estimated_acv: number | null;
+  priority: TradeshowPriority | null;
+  priority_rationale: string | null;
+  pitch_angle: string | null;
+  is_competitor: boolean;
+  competitor_notes: string | null;
+  bombora_angle: string | null;
+  research_status: TargetResearchStatus;
+  research_notes: string | null;
+  existing_deal_id: string | null;
+  existing_prospect_id: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface TradeshowContact {
+  contact_id: string;
+  target_id: string;
+  user_id: string;
+  name: string;
+  title: string | null;
+  why_this_person: string | null;
+  linkedin_url: string | null;
+  approach_strategy: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export const TRADESHOW_PRIORITIES: {
+  value: TradeshowPriority;
+  label: string;
+  shortLabel: string;
+  color: string;
+  description: string;
+}[] = [
+  {
+    value: "priority_1_walk_up",
+    label: "Priority 1: Walk Up",
+    shortLabel: "P1: Walk Up",
+    color: "#22c55e",
+    description: "High-value target. Walk up to their booth.",
+  },
+  {
+    value: "priority_2_strong_conversation",
+    label: "Priority 2: Strong Conversation",
+    shortLabel: "P2: Strong Convo",
+    color: "#3b82f6",
+    description: "Good fit. Have a meaningful conversation if the opportunity arises.",
+  },
+  {
+    value: "priority_3_competitive_intel",
+    label: "Priority 3: Competitive Intel",
+    shortLabel: "P3: Listen Only",
+    color: "#6b7280",
+    description: "Competitor or low-priority. Gather intel, don't pitch.",
+  },
+];
+
+export const KNOWN_COMPETITORS = [
+  "Intentsify",
+  "Demand Science",
+  "DemandScience",
+  "Anteriad",
+  "Bombora",
+  "TechTarget",
+  "ZoomInfo",
+];
+
+export const ICP_DEAL_SIZES: Record<string, { min: number; max: number; midpoint: number }> = {
+  "ABM Platforms": { min: 200000, max: 500000, midpoint: 350000 },
+  "Sales Intelligence": { min: 100000, max: 300000, midpoint: 200000 },
+  "CRM/MAP Platforms": { min: 500000, max: 2000000, midpoint: 1250000 },
+  "Ad Tech / DSPs": { min: 100000, max: 250000, midpoint: 175000 },
+  "Data Enrichment": { min: 200000, max: 500000, midpoint: 350000 },
+  "Content Syndication": { min: 100000, max: 200000, midpoint: 150000 },
+  "Conversation Intelligence": { min: 100000, max: 200000, midpoint: 150000 },
+  "Recruiting/HR Tech": { min: 100000, max: 300000, midpoint: 200000 },
+  "Financial Services": { min: 200000, max: 500000, midpoint: 350000 },
+};
+
 // --- Revenue Math Constants ---
 
 export const REVENUE_TARGET = 1_000_000;

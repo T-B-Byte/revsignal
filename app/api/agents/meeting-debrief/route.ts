@@ -85,6 +85,7 @@ export async function POST(request: NextRequest) {
       followUpActions: result.followUpActions,
       stakeholderUpdates: result.stakeholderUpdates,
       conflictsDetected: result.conflictsDetected,
+      crmCoaching: result.crmCoaching,
       generatedAt: result.generatedAt,
       tokensUsed: result.tokensUsed,
     });

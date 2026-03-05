@@ -2,12 +2,18 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod/v4";
 
+const ISO_DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
 const bulkUpdateSchema = z.object({
   item_ids: z.array(z.string().min(1)),
   status: z
     .enum(["pending", "completed", "overdue", "cancelled"] as const)
     .optional(),
   escalation_level: z.enum(["green", "yellow", "red"] as const).optional(),
+  due_date: z
+    .string()
+    .refine((v) => ISO_DATE_RE.test(v), "Invalid date format (YYYY-MM-DD)")
+    .optional(),
 });
 
 /**

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { MeetingCard } from "./meeting-card";
 import { MeetingNoteDialog } from "./meeting-note-dialog";
 import { MeetingDebriefDialog } from "./meeting-debrief-dialog";
@@ -52,12 +53,25 @@ export function MeetingsView({
     return true;
   });
 
+  // Split into upcoming and past
+  const now = new Date();
+  const todayStr = now.toISOString().slice(0, 10);
+
+  const upcomingNotes = filtered
+    .filter((n) => n.meeting_date >= todayStr)
+    .sort((a, b) => a.meeting_date.localeCompare(b.meeting_date));
+
+  const pastNotes = filtered
+    .filter((n) => n.meeting_date < todayStr)
+    .sort((a, b) => b.meeting_date.localeCompare(a.meeting_date));
+
   const hasFilters =
     searchQuery || selectedType || selectedTag || selectedAttendee;
 
+  const router = useRouter();
+
   function handleEdit(note: MeetingNote) {
-    setEditingNote(note);
-    setShowDialog(true);
+    router.push(`/meetings/${note.note_id}/edit`);
   }
 
   function handleClose() {
@@ -74,7 +88,7 @@ export function MeetingsView({
             Meeting Notes
           </h1>
           <p className="mt-1 text-xs text-text-muted">
-            {notes.length} note{notes.length !== 1 ? "s" : ""}
+            {upcomingNotes.length} upcoming, {pastNotes.length} past
             {hasFilters ? ` (${filtered.length} shown)` : ""}
           </p>
         </div>
@@ -197,19 +211,58 @@ export function MeetingsView({
           )}
         </div>
       ) : (
-        <div className="space-y-3">
-          {filtered.map((note) => (
-            <MeetingCard
-              key={note.note_id}
-              note={note}
-              onEdit={handleEdit}
-              onPrep={(n) => {
-                window.location.href = `/coach?prep=${encodeURIComponent(n.title)}&attendees=${encodeURIComponent(n.attendees.map((a) => a.name).join(","))}`;
-              }}
-              onDebrief={(n) => setDebriefNote(n)}
-              hasAiAccess={hasAiAccess}
-            />
-          ))}
+        <div className="space-y-6">
+          {/* Upcoming Meetings */}
+          {upcomingNotes.length > 0 && (
+            <div>
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-primary">
+                Upcoming
+                <span className="rounded-full bg-accent-primary/10 px-2 py-0.5 text-xs font-medium text-accent-primary">
+                  {upcomingNotes.length}
+                </span>
+              </h2>
+              <div className="space-y-3">
+                {upcomingNotes.map((note) => (
+                  <MeetingCard
+                    key={note.note_id}
+                    note={note}
+                    onEdit={handleEdit}
+                    onPrep={(n) => {
+                      window.location.href = `/coach?prep=${encodeURIComponent(n.title)}&attendees=${encodeURIComponent(n.attendees.map((a) => a.name).join(","))}`;
+                    }}
+                    onDebrief={(n) => setDebriefNote(n)}
+                    hasAiAccess={hasAiAccess}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Past Meetings */}
+          {pastNotes.length > 0 && (
+            <div>
+              <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-text-primary">
+                Past
+                <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs font-medium text-text-muted">
+                  {pastNotes.length}
+                </span>
+              </h2>
+              <div className="space-y-3">
+                {pastNotes.map((note) => (
+                  <MeetingCard
+                    key={note.note_id}
+                    note={note}
+                    onEdit={handleEdit}
+                    onPrep={(n) => {
+                      window.location.href = `/coach?prep=${encodeURIComponent(n.title)}&attendees=${encodeURIComponent(n.attendees.map((a) => a.name).join(","))}`;
+                    }}
+                    onDebrief={(n) => setDebriefNote(n)}
+                    hasAiAccess={hasAiAccess}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
 

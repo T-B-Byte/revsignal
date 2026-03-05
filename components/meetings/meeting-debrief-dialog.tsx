@@ -19,12 +19,20 @@ interface MeetingDebriefDialogProps {
   note: MeetingNote;
 }
 
+interface CrmCoaching {
+  stageRecommendation: string | null;
+  sfdcActions: string[];
+  winProbabilityAssessment: string | null;
+  forecastGuidance: string | null;
+}
+
 interface DebriefResult {
   debrief: string;
   extractedNotes: { title: string; content: string; category: string }[];
   followUpActions: string[];
   stakeholderUpdates: string[];
   conflictsDetected: string[];
+  crmCoaching: CrmCoaching | null;
 }
 
 export function MeetingDebriefDialog({
@@ -74,6 +82,7 @@ export function MeetingDebriefDialog({
         followUpActions: data.followUpActions ?? [],
         stakeholderUpdates: data.stakeholderUpdates ?? [],
         conflictsDetected: data.conflictsDetected ?? [],
+        crmCoaching: data.crmCoaching ?? null,
       });
     } catch {
       setError("Network error. Please try again.");
@@ -242,6 +251,71 @@ export function MeetingDebriefDialog({
                       </li>
                     ))}
                   </ul>
+                </div>
+              )}
+
+              {/* CRM Coaching — Salesforce Update Guide */}
+              {result.crmCoaching && (
+                <div className="rounded-lg border border-accent-primary/30 bg-accent-primary/5 p-4">
+                  <h3 className="text-sm font-semibold text-accent-primary mb-3">
+                    Salesforce Update Guide
+                  </h3>
+                  <div className="space-y-3">
+                    {result.crmCoaching.stageRecommendation && (
+                      <div>
+                        <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                          Stage
+                        </p>
+                        <p className="mt-0.5 text-sm text-text-primary">
+                          {result.crmCoaching.stageRecommendation}
+                        </p>
+                      </div>
+                    )}
+
+                    {result.crmCoaching.sfdcActions.length > 0 && (
+                      <div>
+                        <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                          SFDC Actions
+                        </p>
+                        <ul className="mt-1 space-y-1">
+                          {result.crmCoaching.sfdcActions.map((a, i) => (
+                            <li
+                              key={i}
+                              className="flex items-start gap-2 text-sm text-text-secondary"
+                            >
+                              <input
+                                type="checkbox"
+                                className="mt-1 h-3.5 w-3.5 rounded border-border-primary accent-accent-primary"
+                              />
+                              {a}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+
+                    {result.crmCoaching.winProbabilityAssessment && (
+                      <div>
+                        <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                          Win Probability
+                        </p>
+                        <p className="mt-0.5 text-sm text-text-secondary">
+                          {result.crmCoaching.winProbabilityAssessment}
+                        </p>
+                      </div>
+                    )}
+
+                    {result.crmCoaching.forecastGuidance && (
+                      <div>
+                        <p className="text-xs font-medium text-text-muted uppercase tracking-wider">
+                          Forecast
+                        </p>
+                        <p className="mt-0.5 text-sm text-text-secondary">
+                          {result.crmCoaching.forecastGuidance}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

@@ -11,7 +11,8 @@
     "seed:dry-run": "npx tsx scripts/seed-dry-run.ts",
     "seed:competitors": "npx tsx scripts/seed-competitors.ts",
     "seed:icps": "npx tsx scripts/seed-icps.ts",
-    "seed:playbook": "npx tsx scripts/seed-playbook.ts"
+    "seed:playbook": "npx tsx scripts/seed-playbook.ts",
+    "seed:tradeshow-b2bmx": "npx tsx scripts/seed-tradeshow-b2bmx.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

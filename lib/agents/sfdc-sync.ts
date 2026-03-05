@@ -19,20 +19,11 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { getAnthropic, MODEL } from "@/lib/anthropic/client";
 import { retrieveDealContext } from "@/lib/rag/retriever";
 import { logAgentCall, timed } from "./log";
-import type { DealStage } from "@/types/database";
+import { SFDC_STAGE_MAP } from "@/types/database";
 
 // ── SFDC Field Mapping ─────────────────────────────────────────────────
 
-const STAGE_MAP: Record<DealStage, string> = {
-  lead: "Prospecting",
-  qualified: "Qualification",
-  discovery: "Needs Analysis",
-  poc_trial: "Value Proposition",
-  proposal: "Proposal/Price Quote",
-  negotiation: "Negotiation/Review",
-  closed_won: "Closed Won",
-  closed_lost: "Closed Lost",
-};
+const STAGE_MAP = SFDC_STAGE_MAP;
 
 interface FieldMapping {
   revSignalField: string;

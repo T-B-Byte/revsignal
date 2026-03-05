@@ -34,6 +34,7 @@ import {
 import { logAgentCall, timed } from "./log";
 import {
   REVENUE_TARGET,
+  SFDC_STAGE_MAP,
   type Deal,
   type PlaybookItem,
   type NoteCategory,
@@ -80,6 +81,9 @@ Generate a morning briefing. Structure it exactly like this:
 
 ## Deal Momentum
 [For each active deal with recent activity: 1-2 sentence status. For stale deals: flag them.]
+
+## Today's Meetings
+[List any meetings happening today or this week. For each: who's in the room, what the topic is, and a quick prep note (what to bring up, what to watch for). If no upcoming meetings, skip this section.]
 
 ## Playbook Check
 [Any neglected GTM playbook items (30+ days untouched). Quick nudge — not a lecture.]
@@ -370,6 +374,20 @@ function buildBriefingContextDoc(ctx: BriefingContext): string {
           `- [${ci.captured_date}] ${ci.competitor}: ${ci.data_point}`
       );
     sections.push(`RECENT COMPETITIVE INTEL:\n${intelLines.join("\n")}`);
+  }
+
+  // Upcoming meetings (next 7 days)
+  if (ctx.upcomingMeetingNotes && ctx.upcomingMeetingNotes.length > 0) {
+    const upcomingLines = ctx.upcomingMeetingNotes.map((m) => {
+      const attendeeStr = m.attendees
+        .map((a) => (a.role ? `${a.name} (${a.role})` : a.name))
+        .join(", ");
+      const dealTag = m.deal_id ? " [DEAL-LINKED]" : "";
+      return `- [${m.meeting_date}] ${m.title} — with ${attendeeStr}${dealTag}`;
+    });
+    sections.push(
+      `UPCOMING MEETINGS (next 7 days):\n${upcomingLines.join("\n")}`
+    );
   }
 
   // Recent internal meetings
@@ -1174,13 +1192,28 @@ Output ONLY valid JSON in this format:
       "updates": "What to update on their profile (e.g., relationship changed, new sensitivity learned)"
     }
   ],
-  "conflicts_detected": ["any contradictions with existing data, or empty array if none"]
+  "conflicts_detected": ["any contradictions with existing data, or empty array if none"],
+  "crm_coaching": {
+    "stage_recommendation": "If a deal is linked: what SFDC stage this deal should be in now (use exact Salesforce stage names: Prospecting, Qualification, Needs Analysis, Value Proposition, Proposal/Price Quote, Negotiation/Review, Closed Won, Closed Lost). If no stage change needed, say 'No change'. If no deal linked, null.",
+    "sfdc_actions": ["List of specific actions to take in Salesforce: log a call activity, update close date, add a note, update contacts, etc."],
+    "win_probability_assessment": "Based on the meeting: is the current win probability still accurate? Suggest adjustment if needed with reasoning. Be direct. Do not sandbag (understate a strong deal) or over-forecast (overstate a weak one).",
+    "forecast_guidance": "Brief forecasting advice: should this deal be in commit, best case, or pipeline? Why?"
+  }
 }
 
 CRITICAL FORMAT RULES:
 - NEVER use em-dashes in any text field. Use commas, periods, colons, semicolons, or parentheses instead.
 - Only output valid JSON. No markdown, no commentary outside the JSON.
-- NEVER fabricate information not present in the debrief notes or existing context.`;
+- NEVER fabricate information not present in the debrief notes or existing context.
+- For crm_coaching: only include if the meeting is linked to a deal. Set to null if no deal context is provided.
+- Use exact Salesforce stage names from the SFDC_STAGE_MAP when recommending stage changes.`;
+
+export interface CrmCoaching {
+  stageRecommendation: string | null;
+  sfdcActions: string[];
+  winProbabilityAssessment: string | null;
+  forecastGuidance: string | null;
+}
 
 export interface DebriefResult {
   debrief: string;
@@ -1199,6 +1232,7 @@ export interface DebriefResult {
     updates: string;
   }[];
   conflictsDetected: string[];
+  crmCoaching: CrmCoaching | null;
   generatedAt: string;
   sourcesCited: string[];
   tokensUsed: number;
@@ -1239,15 +1273,24 @@ export async function processMeetingDebrief(
     );
   }
 
+  const dealId = (meetingNote.deal_id as string) || null;
+
   const [prepCtx, durationRetrieve] = await timed(() =>
-    retrieveMeetingPrepContext(supabase, userId, attendeeNames)
+    retrieveMeetingPrepContext(supabase, userId, attendeeNames, dealId ?? undefined)
   );
+
+  // Fetch deal context for CRM coaching if meeting is linked to a deal
+  let dealContext: DealContext | null = null;
+  if (dealId) {
+    dealContext = await retrieveDealContext(supabase, userId, dealId);
+  }
 
   // Step 3: Build context doc
   const contextDoc = buildMeetingDebriefContextDoc(
     meetingNote,
     prepCtx,
-    params.debriefNotes
+    params.debriefNotes,
+    dealContext
   );
 
   // Step 4: Generate debrief
@@ -1288,6 +1331,7 @@ export async function processMeetingDebrief(
   let followUpActions: DebriefResult["followUpActions"] = [];
   let stakeholderUpdates: DebriefResult["stakeholderUpdates"] = [];
   let conflictsDetected: string[] = [];
+  let crmCoaching: CrmCoaching | null = null;
 
   try {
     const parsed = JSON.parse(responseText);
@@ -1333,6 +1377,30 @@ export async function processMeetingDebrief(
           (c: unknown): c is string => typeof c === "string"
         )
       : [];
+
+    // Parse CRM coaching if present
+    if (parsed.crm_coaching && typeof parsed.crm_coaching === "object") {
+      const cc = parsed.crm_coaching as Record<string, unknown>;
+      crmCoaching = {
+        stageRecommendation:
+          typeof cc.stage_recommendation === "string"
+            ? cc.stage_recommendation
+            : null,
+        sfdcActions: Array.isArray(cc.sfdc_actions)
+          ? cc.sfdc_actions.filter(
+              (a: unknown): a is string => typeof a === "string"
+            )
+          : [],
+        winProbabilityAssessment:
+          typeof cc.win_probability_assessment === "string"
+            ? cc.win_probability_assessment
+            : null,
+        forecastGuidance:
+          typeof cc.forecast_guidance === "string"
+            ? cc.forecast_guidance
+            : null,
+      };
+    }
   } catch {
     console.error(
       "[strategist] Failed to parse debrief JSON response:",
@@ -1402,6 +1470,7 @@ export async function processMeetingDebrief(
     followUpActions,
     stakeholderUpdates,
     conflictsDetected,
+    crmCoaching,
     generatedAt: new Date().toISOString(),
     sourcesCited,
     tokensUsed,
@@ -1576,7 +1645,8 @@ function buildMeetingPrepContextDoc(
 function buildMeetingDebriefContextDoc(
   meetingNote: Record<string, unknown>,
   prepCtx: MeetingPrepContextResult,
-  debriefNotes: string
+  debriefNotes: string,
+  dealContext: DealContext | null
 ): string {
   const sections: string[] = [];
 
@@ -1601,6 +1671,34 @@ function buildMeetingDebriefContextDoc(
         ? content.slice(0, 3000) + "\n[... truncated ...]"
         : content;
     sections.push(`ORIGINAL MEETING NOTES:\n${truncated}`);
+  }
+
+  // Deal context for CRM coaching
+  if (dealContext) {
+    const { deal } = dealContext;
+    const sfdcStage = SFDC_STAGE_MAP[deal.stage] ?? deal.stage;
+    const dealLines = [
+      `LINKED DEAL: ${deal.company}`,
+      `Current stage: ${deal.stage} (SFDC: ${sfdcStage})`,
+      `ACV: ${deal.acv ? "$" + deal.acv.toLocaleString() : "Not set"}`,
+      `Win probability: ${deal.win_probability}%`,
+      deal.close_date ? `Expected close: ${deal.close_date}` : null,
+      deal.notes ? `Deal notes: ${deal.notes}` : null,
+      `Last activity: ${deal.last_activity_date}`,
+      `SFDC Opportunity ID: ${deal.sfdc_opportunity_id || "not linked"}`,
+    ];
+    sections.push(dealLines.filter(Boolean).join("\n"));
+
+    // Include deal brief if available
+    if (dealContext.brief) {
+      sections.push(`DEAL BRIEF:\n${dealContext.brief.brief_text}`);
+    }
+
+    // SFDC stage mapping reference
+    sections.push(
+      `SFDC STAGE MAP (for coaching recommendations):\n` +
+      Object.entries(SFDC_STAGE_MAP).map(([k, v]) => `- ${k} → ${v}`).join("\n")
+    );
   }
 
   // Stakeholder context for each attendee

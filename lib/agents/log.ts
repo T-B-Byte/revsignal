@@ -16,7 +16,8 @@ export type AgentName =
   | "competitive-watcher"
   | "email-composer"
   | "sfdc-sync"
-  | "summarizer";
+  | "summarizer"
+  | "tradeshow-scout";
 
 export interface LogAgentCallParams {
   supabase: SupabaseClient;

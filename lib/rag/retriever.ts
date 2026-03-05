@@ -90,6 +90,7 @@ export interface BriefingContext {
   competitiveIntel: CompetitiveIntel[];
   neglectedPlaybookItems: PlaybookItem[];
   recentMeetingNotes: MeetingNoteSummary[];
+  upcomingMeetingNotes: MeetingNoteSummary[];
   activeNudges?: Nudge[];
   recentStrategicNotes?: StrategicNote[];
 }
@@ -391,7 +392,10 @@ export async function retrieveBriefingContext(
 
   const sevenDaysAgo = new Date(Date.now() - 7 * 86400000).toISOString();
 
-  const [briefsResult, competitiveResult, meetingNotesResult, nudgesResult, strategicNotesResult] = await Promise.all([
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const sevenDaysFromNow = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
+
+  const [briefsResult, competitiveResult, meetingNotesResult, upcomingMeetingsResult, nudgesResult, strategicNotesResult] = await Promise.all([
     activeDealIds.length > 0
       ? supabase
           .from("deal_briefs")
@@ -411,7 +415,17 @@ export async function retrieveBriefingContext(
       .from("meeting_notes")
       .select("note_id, title, meeting_date, meeting_type, attendees, ai_summary, content, action_items, tags, deal_id")
       .eq("user_id", userId)
+      .lt("meeting_date", todayStr)
       .order("meeting_date", { ascending: false })
+      .limit(10),
+    // Upcoming meetings (today + next 7 days)
+    supabase
+      .from("meeting_notes")
+      .select("note_id, title, meeting_date, meeting_type, attendees, ai_summary, content, action_items, tags, deal_id")
+      .eq("user_id", userId)
+      .gte("meeting_date", todayStr)
+      .lte("meeting_date", sevenDaysFromNow)
+      .order("meeting_date", { ascending: true })
       .limit(10),
     supabase
       .from("nudges")
@@ -450,14 +464,9 @@ export async function retrieveBriefingContext(
       (!p.last_touched || p.last_touched < thirtyDaysAgo)
   );
 
-  // Map meeting notes to summaries (agents see ai_summary or truncated content, not full text)
-  let recentMeetingNotes: MeetingNoteSummary[] = [];
-  if (meetingNotesResult.error) {
-    console.error("[rag/retriever] Error fetching meeting notes for briefing:", meetingNotesResult.error.message);
-  } else {
-    recentMeetingNotes = (
-      (meetingNotesResult.data as Record<string, unknown>[]) || []
-    ).map((n) => ({
+  // Helper to map raw meeting note rows to summaries
+  function mapMeetingNotes(rows: Record<string, unknown>[]): MeetingNoteSummary[] {
+    return rows.map((n) => ({
       note_id: n.note_id as string,
       title: n.title as string,
       meeting_date: n.meeting_date as string,
@@ -478,12 +487,29 @@ export async function retrieveBriefingContext(
     }));
   }
 
+  // Map recent (past) meeting notes
+  let recentMeetingNotes: MeetingNoteSummary[] = [];
+  if (meetingNotesResult.error) {
+    console.error("[rag/retriever] Error fetching meeting notes for briefing:", meetingNotesResult.error.message);
+  } else {
+    recentMeetingNotes = mapMeetingNotes((meetingNotesResult.data as Record<string, unknown>[]) || []);
+  }
+
+  // Map upcoming meeting notes
+  let upcomingMeetingNotes: MeetingNoteSummary[] = [];
+  if (upcomingMeetingsResult.error) {
+    console.error("[rag/retriever] Error fetching upcoming meetings for briefing:", upcomingMeetingsResult.error.message);
+  } else {
+    upcomingMeetingNotes = mapMeetingNotes((upcomingMeetingsResult.data as Record<string, unknown>[]) || []);
+  }
+
   return {
     pipeline,
     dealBriefs,
     competitiveIntel: (competitiveResult.data as CompetitiveIntel[]) || [],
     neglectedPlaybookItems,
     recentMeetingNotes,
+    upcomingMeetingNotes,
     activeNudges: (nudgesResult.data as Nudge[]) || [],
     recentStrategicNotes: (strategicNotesResult.data as StrategicNote[]) || [],
   };
@@ -1083,4 +1109,63 @@ export async function searchMeetingNotes(
     tags: (n.tags as string[]) || [],
     deal_id: (n.deal_id as string) || null,
   }));
+}
+
+// ── Tradeshow Context Retrieval ──────────────────────────────────────
+
+/** Context for tradeshow sponsor analysis. */
+export interface TradeshowContextResult {
+  activeDeals: Deal[];
+  prospects: Prospect[];
+  competitiveIntel: CompetitiveIntel[];
+}
+
+/**
+ * Retrieve context needed for tradeshow sponsor analysis.
+ * Fetches active deals, prospects, and competitive intel
+ * so the agent can flag overlaps and known competitors.
+ */
+export async function retrieveTradeshowContext(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<TradeshowContextResult> {
+  const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
+
+  const [dealsResult, prospectsResult, intelResult] = await Promise.all([
+    supabase
+      .from("deals")
+      .select("*")
+      .eq("user_id", userId)
+      .in("stage", ["lead", "qualified", "discovery", "poc_trial", "proposal", "negotiation"])
+      .order("last_activity_date", { ascending: false }),
+    supabase
+      .from("prospects")
+      .select("*")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(100),
+    supabase
+      .from("competitive_intel")
+      .select("*")
+      .eq("user_id", userId)
+      .gte("captured_date", thirtyDaysAgo)
+      .order("captured_date", { ascending: false })
+      .limit(50),
+  ]);
+
+  if (dealsResult.error) {
+    console.error("[rag/retriever] Error fetching deals for tradeshow context:", dealsResult.error.message);
+  }
+  if (prospectsResult.error) {
+    console.error("[rag/retriever] Error fetching prospects for tradeshow context:", prospectsResult.error.message);
+  }
+  if (intelResult.error) {
+    console.error("[rag/retriever] Error fetching competitive intel for tradeshow context:", intelResult.error.message);
+  }
+
+  return {
+    activeDeals: (dealsResult.data as Deal[]) || [],
+    prospects: (prospectsResult.data as Prospect[]) || [],
+    competitiveIntel: (intelResult.data as CompetitiveIntel[]) || [],
+  };
 }
