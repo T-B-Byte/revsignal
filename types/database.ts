@@ -596,6 +596,84 @@ export const ICP_DEAL_SIZES: Record<string, { min: number; max: number; midpoint
   "Financial Services": { min: 200000, max: 500000, midpoint: 350000 },
 };
 
+// --- Flashcards ---
+
+export type CardType = "standard" | "fill_blank" | "image";
+
+export type MasteryLevel = "new" | "learning" | "reviewing" | "mastered";
+
+export interface FlashcardDeck {
+  deck_id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  icon: string;
+  color: string;
+  card_count: number;
+  mastery_pct: number;
+  last_studied_at: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface Flashcard {
+  card_id: string;
+  deck_id: string;
+  user_id: string;
+  card_type: CardType;
+  front_content: string;
+  back_content: string;
+  back_detail: string | null;
+  image_url: string | null;
+  source_attribution: string | null;
+  times_seen: number;
+  times_correct: number;
+  mastery: MasteryLevel;
+  last_seen_at: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface QuizSession {
+  session_id: string;
+  deck_id: string;
+  user_id: string;
+  total_cards: number;
+  first_pass_correct: number;
+  final_correct: number;
+  completed: boolean;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface QuizResponse {
+  response_id: string;
+  session_id: string;
+  card_id: string;
+  user_id: string;
+  attempt_number: number;
+  is_correct: boolean;
+  responded_at: string;
+}
+
+export const DECK_COLORS: { value: string; label: string; className: string }[] = [
+  { value: "blue", label: "Blue", className: "bg-accent-primary/20 border-accent-primary/40" },
+  { value: "green", label: "Green", className: "bg-status-green/20 border-status-green/40" },
+  { value: "yellow", label: "Yellow", className: "bg-status-yellow/20 border-status-yellow/40" },
+  { value: "red", label: "Red", className: "bg-status-red/20 border-status-red/40" },
+  { value: "purple", label: "Purple", className: "bg-purple-500/20 border-purple-500/40" },
+  { value: "gray", label: "Gray", className: "bg-surface-tertiary border-border-primary" },
+];
+
+export const MASTERY_THRESHOLDS = {
+  learning: 0.5,
+  reviewing: 0.7,
+  mastered: 0.9,
+  minSeen: 3,
+} as const;
+
 // --- Revenue Math Constants ---
 
 export const REVENUE_TARGET = 1_000_000;

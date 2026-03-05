@@ -9,6 +9,7 @@ const NAV_ITEMS = [
   { href: "/meetings", label: "Meetings", icon: UsersIcon },
   { href: "/prospects", label: "Prospects", icon: SearchIcon },
   { href: "/tradeshows", label: "Tradeshows", icon: MapPinIcon },
+  { href: "/flashcards", label: "Flashcards", icon: FlashcardsIcon },
   { href: "/playbook", label: "Playbook", icon: BookIcon },
   { href: "/compete", label: "Compete", icon: ShieldIcon },
   { href: "/compose", label: "Compose", icon: PenIcon },
@@ -138,6 +139,15 @@ function MapPinIcon({ className }: { className?: string }) {
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+    </svg>
+  );
+}
+
+function FlashcardsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <rect x="2" y="6" width="16" height="14" rx="2" strokeLinecap="round" strokeLinejoin="round" />
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h12a2 2 0 0 1 2 2v12" />
     </svg>
   );
 }
