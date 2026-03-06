@@ -84,6 +84,14 @@ export interface MeetingNoteSummary {
 }
 
 /** Context specifically for The Strategist's morning briefing. */
+export interface UserTask {
+  task_id: string;
+  description: string;
+  due_date: string | null;
+  status: string;
+  created_at: string;
+}
+
 export interface BriefingContext {
   pipeline: PipelineContext;
   dealBriefs: { deal: Deal; brief: DealBrief }[];
@@ -93,6 +101,7 @@ export interface BriefingContext {
   upcomingMeetingNotes: MeetingNoteSummary[];
   activeNudges?: Nudge[];
   recentStrategicNotes?: StrategicNote[];
+  userTasks?: UserTask[];
 }
 
 /** Strategic context for The Strategist's coaching mode. */
@@ -395,7 +404,7 @@ export async function retrieveBriefingContext(
   const todayStr = new Date().toISOString().slice(0, 10);
   const sevenDaysFromNow = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
-  const [briefsResult, competitiveResult, meetingNotesResult, upcomingMeetingsResult, nudgesResult, strategicNotesResult] = await Promise.all([
+  const [briefsResult, competitiveResult, meetingNotesResult, upcomingMeetingsResult, nudgesResult, strategicNotesResult, userTasksResult] = await Promise.all([
     activeDealIds.length > 0
       ? supabase
           .from("deal_briefs")
@@ -442,6 +451,13 @@ export async function retrieveBriefingContext(
       .gte("created_at", sevenDaysAgo)
       .order("created_at", { ascending: false })
       .limit(10),
+    supabase
+      .from("user_tasks")
+      .select("task_id, description, due_date, status, created_at")
+      .eq("user_id", userId)
+      .eq("status", "open")
+      .order("due_date", { ascending: true, nullsFirst: false })
+      .limit(20),
   ]);
 
   // Match briefs to deals (one brief per deal, most recent)
@@ -512,6 +528,7 @@ export async function retrieveBriefingContext(
     upcomingMeetingNotes,
     activeNudges: (nudgesResult.data as Nudge[]) || [],
     recentStrategicNotes: (strategicNotesResult.data as StrategicNote[]) || [],
+    userTasks: (userTasksResult.data as UserTask[]) || [],
   };
 }
 

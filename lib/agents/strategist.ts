@@ -440,6 +440,15 @@ function buildBriefingContextDoc(ctx: BriefingContext): string {
     sections.push(`RECENT STRATEGIC INSIGHTS:\n${noteLines.join("\n")}`);
   }
 
+  // User's personal tasks (manually created action items)
+  if (ctx.userTasks && ctx.userTasks.length > 0) {
+    const taskLines = ctx.userTasks.map((t) => {
+      const due = t.due_date ? ` (due: ${t.due_date})` : "";
+      return `- ${t.description}${due}`;
+    });
+    sections.push(`MY TASKS (user-created action items):\n${taskLines.join("\n")}`);
+  }
+
   return sections.join("\n\n");
 }
 
