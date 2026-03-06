@@ -11,6 +11,7 @@ import { RevenueMath } from '@/components/dashboard/revenue-math';
 import { PlaybookProgress, type WorkstreamProgress } from '@/components/dashboard/playbook-progress';
 import { QuickActions } from '@/components/dashboard/quick-actions';
 import { StrategistBriefing } from '@/components/dashboard/strategist-briefing';
+import { UserTasks } from '@/components/dashboard/user-tasks';
 import { NudgeBar } from '@/components/dashboard/nudge-bar';
 
 export default async function DashboardPage() {
@@ -229,8 +230,15 @@ export default async function DashboardPage() {
       {/* Nudge bar — proactive coaching alerts */}
       <NudgeBar hasAiAccess={hasAiAccess} />
 
-      {/* Row 0: The Strategist Briefing */}
-      <StrategistBriefing hasAiAccess={hasAiAccess} />
+      {/* Row 0: The Strategist Briefing + My Tasks */}
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+        <div className="lg:col-span-2">
+          <StrategistBriefing hasAiAccess={hasAiAccess} />
+        </div>
+        <div>
+          <UserTasks />
+        </div>
+      </div>
 
       {/* Row 1: Revenue Tracker (wide) + Quick Actions */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
