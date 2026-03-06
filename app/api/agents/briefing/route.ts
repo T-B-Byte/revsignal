@@ -46,6 +46,7 @@ export async function GET() {
     isEdited: !!briefing.edited_content,
     generatedAt: briefing.generated_at,
     briefingId: briefing.briefing_id,
+    sectionNotes: briefing.section_notes ?? {},
   });
 }
 
@@ -121,6 +122,7 @@ export async function POST(_request: NextRequest) {
       generatedAt: result.generatedAt,
       tokensUsed: result.tokensUsed,
       briefingId: saved?.briefing_id ?? null,
+      sectionNotes: {},
     });
   } catch (error) {
     console.error(
@@ -134,8 +136,15 @@ export async function POST(_request: NextRequest) {
   }
 }
 
+const annotationSchema = z.object({
+  status: z.enum(['done', 'pushed']).optional(),
+  note: z.string().max(5000).optional(),
+  pushed_to: z.string().max(20).optional(),
+});
+
 const editSchema = z.object({
-  edited_content: z.string().min(1).max(50000),
+  edited_content: z.string().min(1).max(50000).optional(),
+  section_notes: z.record(z.string(), annotationSchema).optional(),
 });
 
 /**
@@ -168,12 +177,19 @@ export async function PATCH(request: NextRequest) {
     );
   }
 
+  const updates: Record<string, unknown> = {
+    updated_at: new Date().toISOString(),
+  };
+  if (parsed.data.edited_content !== undefined) {
+    updates.edited_content = parsed.data.edited_content;
+  }
+  if (parsed.data.section_notes !== undefined) {
+    updates.section_notes = parsed.data.section_notes;
+  }
+
   const { error } = await supabase
     .from("daily_briefings")
-    .update({
-      edited_content: parsed.data.edited_content,
-      updated_at: new Date().toISOString(),
-    })
+    .update(updates)
     .eq("user_id", user.id)
     .eq("briefing_date", todayDate());
 
