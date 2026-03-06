@@ -2,8 +2,9 @@
 
 import { useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
+import { FlashcardFlip } from "./flashcard-flip";
 import { QuizResults } from "./quiz-results";
-import type { Flashcard, QuizSession } from "@/types/database";
+import type { Flashcard } from "@/types/database";
 
 interface QuizModeProps {
   deckId: string;
@@ -17,15 +18,6 @@ type Phase = "first_pass" | "review" | "final_review" | "results";
 interface CardResponse {
   correct: boolean;
   attempts: number;
-}
-
-function getInitials(name: string): string {
-  return name
-    .split(/[\s,]+/)
-    .filter((w) => w.length > 0 && w[0] === w[0].toUpperCase())
-    .slice(0, 2)
-    .map((w) => w[0])
-    .join("");
 }
 
 export function QuizMode({ deckId, cards, onExit, onLearnMode }: QuizModeProps) {
@@ -103,7 +95,6 @@ export function QuizMode({ deckId, cards, onExit, onLearnMode }: QuizModeProps) 
       if (currentIndex < phaseCards.length - 1) {
         setCurrentIndex((i) => i + 1);
       } else {
-        // End of phase
         endPhase(newResponses);
       }
     },
@@ -111,19 +102,16 @@ export function QuizMode({ deckId, cards, onExit, onLearnMode }: QuizModeProps) 
   );
 
   function endPhase(latestResponses: Map<string, CardResponse>) {
-    // Gather missed cards from this phase
     const missedCards = phaseCards.filter((c) => {
       const r = latestResponses.get(c.card_id);
       return r && !r.correct;
     });
 
     if (missedCards.length === 0 || phase === "final_review") {
-      // Quiz is done
       completeQuiz(latestResponses);
       return;
     }
 
-    // Show interim screen
     setShowInterim(true);
   }
 
@@ -141,13 +129,8 @@ export function QuizMode({ deckId, cards, onExit, onLearnMode }: QuizModeProps) 
     setShowInterim(false);
   }
 
-  async function completeQuiz(latestResponses: Map<string, CardResponse>) {
+  async function completeQuiz(_latestResponses: Map<string, CardResponse>) {
     if (!sessionId) return;
-
-    // Calculate final correct
-    const finalCorrect = Array.from(latestResponses.values()).filter(
-      (r) => r.correct
-    ).length;
 
     await fetch(`/api/flashcards/${deckId}/quiz`, {
       method: "POST",
@@ -158,7 +141,7 @@ export function QuizMode({ deckId, cards, onExit, onLearnMode }: QuizModeProps) 
     setPhase("results");
   }
 
-  // Not started yet
+  // Not started yet — show start screen
   if (!started) {
     return (
       <div className="space-y-4">
@@ -171,6 +154,14 @@ export function QuizMode({ deckId, cards, onExit, onLearnMode }: QuizModeProps) 
           </Button>
         </div>
         <div className="mx-auto max-w-md text-center py-12">
+          {/* Stacked card preview */}
+          <div className="relative mx-auto w-32 h-44 mb-6">
+            <div className="absolute inset-0 rounded-xl border-2 border-border-primary bg-surface-tertiary transform rotate-6 translate-x-2" />
+            <div className="absolute inset-0 rounded-xl border-2 border-border-primary bg-surface-tertiary transform -rotate-3 -translate-x-1" />
+            <div className="absolute inset-0 rounded-xl border-2 border-border-primary bg-surface-secondary flex items-center justify-center">
+              <span className="text-3xl font-bold text-text-muted">?</span>
+            </div>
+          </div>
           <h2 className="text-xl font-semibold text-text-primary mb-2">
             Quiz Mode
           </h2>
@@ -260,17 +251,14 @@ export function QuizMode({ deckId, cards, onExit, onLearnMode }: QuizModeProps) 
     );
   }
 
-  // Card not available (safety)
   if (!currentCard) return null;
-
-  const nameFromBack = currentCard.back_content.split(",")[0].trim();
-  const initials = getInitials(nameFromBack);
 
   const phaseLabel =
     phase === "first_pass" ? "" : phase === "review" ? "Review" : "Final Review";
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-5">
+      {/* Top bar */}
       <div className="flex items-center justify-between">
         <Button variant="ghost" size="sm" onClick={onExit}>
           <svg className="h-4 w-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
@@ -284,105 +272,48 @@ export function QuizMode({ deckId, cards, onExit, onLearnMode }: QuizModeProps) 
               {phaseLabel}
             </span>
           )}
-          <span className="text-sm text-text-muted">
+          <span className="text-sm text-text-muted tabular-nums">
             {currentIndex + 1} of {phaseCards.length}
           </span>
         </div>
       </div>
 
-      <div className="mx-auto max-w-2xl rounded-xl border border-border-primary bg-surface-secondary p-6 min-h-[300px] flex flex-col">
-        {/* Front */}
-        <div className="flex-1 flex flex-col items-center justify-center text-center space-y-4">
-          {currentCard.card_type === "image" && (
-            <div className="py-2">
-              {currentCard.image_url ? (
-                <img
-                  src={currentCard.image_url}
-                  alt=""
-                  className="h-32 w-32 rounded-full object-cover border-2 border-border-primary mx-auto"
-                />
-              ) : (
-                <div className="flex h-32 w-32 items-center justify-center rounded-full bg-accent-primary/10 border-2 border-accent-primary/30 mx-auto">
-                  <span className="text-3xl font-bold text-accent-primary">
-                    {initials}
-                  </span>
-                </div>
-              )}
-            </div>
-          )}
+      {/* The card — flips to reveal answer */}
+      <FlashcardFlip
+        card={currentCard}
+        flipped={revealed}
+        onFlip={() => {
+          if (!revealed) setRevealed(true);
+        }}
+        hideBack={false}
+      />
 
-          <p className="text-lg text-text-primary">
-            {currentCard.card_type === "fill_blank"
-              ? currentCard.front_content.replace(/_______/g, "\u00A0______\u00A0")
-              : currentCard.front_content}
-          </p>
+      {/* Answer buttons (only after reveal) */}
+      {revealed && (
+        <div className="flex justify-center gap-4">
+          <Button
+            onClick={() => recordResponse(true)}
+            className="bg-status-green hover:bg-status-green/80 text-white border-0"
+          >
+            Got It
+          </Button>
+          <Button
+            onClick={() => recordResponse(false)}
+            variant="danger"
+          >
+            Missed It
+          </Button>
         </div>
+      )}
 
-        {/* Reveal / Answer */}
-        {!revealed ? (
-          <div className="pt-4 text-center">
-            <Button
-              variant="secondary"
-              onClick={() => setRevealed(true)}
-            >
-              Reveal Answer
-            </Button>
-          </div>
-        ) : (
-          <>
-            <div className="my-4 border-t border-dashed border-border-primary" />
-
-            <div className="space-y-2">
-              {currentCard.card_type === "fill_blank" ? (
-                <>
-                  <p className="text-lg font-semibold text-status-green text-center">
-                    {currentCard.back_content}
-                  </p>
-                  {currentCard.back_detail && (
-                    <p className="text-sm text-text-secondary text-center">
-                      {currentCard.back_detail}
-                    </p>
-                  )}
-                  {currentCard.source_attribution && (
-                    <p className="text-xs text-text-muted italic text-center">
-                      — {currentCard.source_attribution}
-                    </p>
-                  )}
-                </>
-              ) : (
-                <>
-                  <p className="text-base font-medium text-text-primary text-center">
-                    {currentCard.back_content}
-                  </p>
-                  {currentCard.back_detail && (
-                    <p className="text-sm text-text-secondary text-center">
-                      {currentCard.back_detail}
-                    </p>
-                  )}
-                </>
-              )}
-            </div>
-
-            <div className="flex justify-center gap-4 pt-4">
-              <Button
-                onClick={() => recordResponse(true)}
-                className="bg-status-green hover:bg-status-green/80 text-white border-0"
-              >
-                Got It
-              </Button>
-              <Button
-                onClick={() => recordResponse(false)}
-                variant="danger"
-              >
-                Missed It
-              </Button>
-            </div>
-          </>
-        )}
-      </div>
+      {!revealed && (
+        <div className="text-center">
+          <p className="text-xs text-text-muted">Tap the card to reveal the answer</p>
+        </div>
+      )}
 
       {/* Progress bar */}
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-sm">
         <div className="h-1 w-full rounded-full bg-surface-primary overflow-hidden">
           <div
             className="h-full rounded-full bg-accent-primary transition-all"

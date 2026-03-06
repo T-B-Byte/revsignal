@@ -7,6 +7,7 @@ import { MasteryBadge } from "./mastery-badge";
 import { CardList } from "./card-list";
 import { LearnMode } from "./learn-mode";
 import { QuizMode } from "./quiz-mode";
+import { PomodoroTimer } from "./pomodoro-timer";
 import { deleteDeckAction } from "@/app/(dashboard)/flashcards/actions";
 import type { FlashcardDeck, Flashcard, QuizSession, MasteryLevel } from "@/types/database";
 
@@ -217,6 +218,9 @@ export function DeckDetailView({ deck, cards, quizHistory }: DeckDetailViewProps
           </Button>
         </div>
       )}
+
+      {/* Pomodoro timer */}
+      <PomodoroTimer compact />
 
       {/* Card list */}
       <CardList deckId={deck.deck_id} cards={cards} />
