@@ -1,8 +1,9 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { ImageUpload } from "./image-upload";
 import type { CardType } from "@/types/database";
 
 interface AddCardFormProps {
@@ -22,9 +23,9 @@ export function AddCardForm({ deckId, onClose }: AddCardFormProps) {
   const [frontContent, setFrontContent] = useState("");
   const [backContent, setBackContent] = useState("");
   const [backDetail, setBackDetail] = useState("");
-  const [imageUrl, setImageUrl] = useState("");
   const [sourceAttribution, setSourceAttribution] = useState("");
   const [saving, setSaving] = useState(false);
+  const pendingFileRef = useRef<File | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -40,7 +41,6 @@ export function AddCardForm({ deckId, onClose }: AddCardFormProps) {
           front_content: frontContent.trim(),
           back_content: backContent.trim(),
           back_detail: backDetail.trim() || undefined,
-          image_url: imageUrl.trim() || undefined,
           source_attribution: sourceAttribution.trim() || undefined,
         }),
       });
@@ -50,12 +50,22 @@ export function AddCardForm({ deckId, onClose }: AddCardFormProps) {
         return;
       }
 
+      const { card } = await res.json();
+
+      // Upload pending image if one was selected
+      if (pendingFileRef.current && card?.card_id) {
+        const formData = new FormData();
+        formData.append("file", pendingFileRef.current);
+        formData.append("cardId", card.card_id);
+        await fetch("/api/flashcards/upload", { method: "POST", body: formData });
+      }
+
       // Reset form
       setFrontContent("");
       setBackContent("");
       setBackDetail("");
-      setImageUrl("");
       setSourceAttribution("");
+      pendingFileRef.current = null;
       onClose();
       router.refresh();
     } finally {
@@ -199,14 +209,11 @@ export function AddCardForm({ deckId, onClose }: AddCardFormProps) {
           <>
             <div>
               <label className="block text-xs font-medium text-text-secondary mb-1">
-                Image URL (optional — placeholder used if empty)
+                Photo
               </label>
-              <input
-                type="text"
-                value={imageUrl}
-                onChange={(e) => setImageUrl(e.target.value)}
-                placeholder="https://example.com/photo.jpg"
-                className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+              <ImageUpload
+                size="md"
+                onFileSelected={(file) => { pendingFileRef.current = file; }}
               />
             </div>
             <div>

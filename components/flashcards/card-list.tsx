@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/button";
 import { MasteryBadge } from "./mastery-badge";
 import { CardTypeBadge } from "./card-type-badge";
 import { AddCardForm } from "./add-card-form";
+import { ImageUpload } from "./image-upload";
 import type { Flashcard } from "@/types/database";
 
 interface CardListProps {
@@ -107,6 +108,13 @@ export function CardList({ deckId, cards }: CardListProps) {
             >
               {editingCardId === card.card_id ? (
                 <div className="space-y-2">
+                  {card.card_type === "image" && (
+                    <ImageUpload
+                      cardId={card.card_id}
+                      currentUrl={card.image_url}
+                      size="sm"
+                    />
+                  )}
                   <textarea
                     value={editFront}
                     onChange={(e) => setEditFront(e.target.value)}
@@ -149,9 +157,18 @@ export function CardList({ deckId, cards }: CardListProps) {
                   onClick={() => startEdit(card)}
                 >
                   <div className="flex items-start justify-between gap-2">
-                    <p className="text-sm text-text-primary line-clamp-2 flex-1">
-                      {card.front_content}
-                    </p>
+                    <div className="flex items-start gap-2 flex-1 min-w-0">
+                      {card.card_type === "image" && card.image_url && (
+                        <img
+                          src={card.image_url}
+                          alt=""
+                          className="h-8 w-8 rounded-full object-cover shrink-0 border border-border-primary"
+                        />
+                      )}
+                      <p className="text-sm text-text-primary line-clamp-2 flex-1">
+                        {card.front_content}
+                      </p>
+                    </div>
                     <div className="flex items-center gap-1.5 shrink-0">
                       <CardTypeBadge type={card.card_type} />
                       <MasteryBadge mastery={card.mastery} />
