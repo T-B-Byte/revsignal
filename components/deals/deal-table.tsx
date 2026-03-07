@@ -32,11 +32,12 @@ const stageOrder: Record<DealStage, number> = {
   lead: 0,
   qualified: 1,
   discovery: 2,
-  poc_trial: 3,
-  proposal: 4,
-  negotiation: 5,
-  closed_won: 6,
-  closed_lost: 7,
+  demo_booked: 3,
+  poc_trial: 4,
+  proposal: 5,
+  negotiation: 6,
+  closed_won: 7,
+  closed_lost: 8,
 };
 
 function getStageBadgeVariant(stage: DealStage): BadgeVariant {
@@ -49,6 +50,7 @@ function getStageBadgeVariant(stage: DealStage): BadgeVariant {
     case "proposal":
       return "yellow";
     case "discovery":
+    case "demo_booked":
     case "poc_trial":
       return "blue";
     default:

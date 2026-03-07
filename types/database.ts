@@ -5,6 +5,7 @@ export type DealStage =
   | "lead"
   | "qualified"
   | "discovery"
+  | "demo_booked"
   | "poc_trial"
   | "proposal"
   | "negotiation"
@@ -424,6 +425,7 @@ export const DEAL_STAGES: { value: DealStage; label: string; color: string }[] =
   { value: "lead", label: "Lead", color: "#6b7280" },
   { value: "qualified", label: "Qualified", color: "#8b5cf6" },
   { value: "discovery", label: "Discovery", color: "#3b82f6" },
+  { value: "demo_booked", label: "Demo Booked", color: "#14b8a6" },
   { value: "poc_trial", label: "POC / Trial", color: "#06b6d4" },
   { value: "proposal", label: "Proposal", color: "#eab308" },
   { value: "negotiation", label: "Negotiation", color: "#f97316" },
@@ -435,6 +437,7 @@ export const ACTIVE_STAGES: DealStage[] = [
   "lead",
   "qualified",
   "discovery",
+  "demo_booked",
   "poc_trial",
   "proposal",
   "negotiation",
@@ -446,6 +449,7 @@ export const SFDC_STAGE_MAP: Record<DealStage, string> = {
   lead: "Prospecting",
   qualified: "Qualification",
   discovery: "Needs Analysis",
+  demo_booked: "Demo Scheduled",
   poc_trial: "Value Proposition",
   proposal: "Proposal/Price Quote",
   negotiation: "Negotiation/Review",

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Dialog,
@@ -21,7 +21,6 @@ import {
   MEETING_TYPES,
   PHAROSIQ_TEAM,
   type MeetingNote,
-  type MeetingAttendee,
 } from "@/types/database";
 
 interface MeetingNoteDialogProps {
@@ -30,12 +29,6 @@ interface MeetingNoteDialogProps {
   deals: { deal_id: string; company: string }[];
   existingAttendees: string[];
   note?: MeetingNote | null;
-}
-
-function formatAttendees(attendees: MeetingAttendee[]): string {
-  return attendees
-    .map((a) => (a.role ? `${a.name} (${a.role})` : a.name))
-    .join(", ");
 }
 
 function toDatetimeLocal(iso: string): string {
@@ -64,6 +57,52 @@ export function MeetingNoteDialog({
       ...existingAttendees,
     ])
   ).sort();
+
+  // Attendee tag state
+  const [attendeeTags, setAttendeeTags] = useState<string[]>(() => {
+    if (note) {
+      return note.attendees.map((a) =>
+        a.role ? `${a.name} (${a.role})` : a.name
+      );
+    }
+    return [];
+  });
+  const [attendeeInput, setAttendeeInput] = useState("");
+  const [showAttendeeSuggestions, setShowAttendeeSuggestions] = useState(false);
+  const attendeeRef = useRef<HTMLDivElement>(null);
+
+  // Close suggestions on outside click
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (
+        attendeeRef.current &&
+        !attendeeRef.current.contains(e.target as Node)
+      ) {
+        setShowAttendeeSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, []);
+
+  const filteredSuggestions = allSuggestions.filter(
+    (s) =>
+      !attendeeTags.includes(s) &&
+      s.toLowerCase().includes(attendeeInput.toLowerCase())
+  );
+
+  function addAttendee(value: string) {
+    const trimmed = value.trim();
+    if (trimmed && !attendeeTags.includes(trimmed)) {
+      setAttendeeTags((prev) => [...prev, trimmed]);
+    }
+    setAttendeeInput("");
+    setShowAttendeeSuggestions(false);
+  }
+
+  function removeAttendee(value: string) {
+    setAttendeeTags((prev) => prev.filter((t) => t !== value));
+  }
 
   function handleClose() {
     setError(null);
@@ -142,24 +181,84 @@ export function MeetingNoteDialog({
             />
           </div>
 
-          <div>
+          <div ref={attendeeRef}>
             <label className="mb-1 block text-sm font-medium text-text-secondary">
               Attendees
             </label>
             <input
+              type="hidden"
               name="attendees_json"
-              placeholder='e.g., Jeff Rokuskie (CEO), Ben Luck (Chief Data Scientist)'
-              defaultValue={note ? formatAttendees(note.attendees) : ""}
-              className="w-full rounded-md border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
-              list="attendee-suggestions"
+              value={attendeeTags.join(", ")}
             />
-            <datalist id="attendee-suggestions">
-              {allSuggestions.map((s) => (
-                <option key={s} value={s} />
-              ))}
-            </datalist>
+            {attendeeTags.length > 0 && (
+              <div className="mb-2 flex flex-wrap gap-1.5">
+                {attendeeTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center gap-1 rounded-full bg-accent-primary/15 px-2.5 py-0.5 text-xs font-medium text-accent-primary"
+                  >
+                    {tag}
+                    <button
+                      type="button"
+                      onClick={() => removeAttendee(tag)}
+                      className="ml-0.5 text-accent-primary/60 hover:text-accent-primary"
+                    >
+                      ×
+                    </button>
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="relative">
+              <input
+                type="text"
+                value={attendeeInput}
+                onChange={(e) => {
+                  setAttendeeInput(e.target.value);
+                  setShowAttendeeSuggestions(true);
+                }}
+                onFocus={() => setShowAttendeeSuggestions(true)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && attendeeInput.trim()) {
+                    e.preventDefault();
+                    addAttendee(attendeeInput);
+                  }
+                  if (
+                    e.key === "Backspace" &&
+                    !attendeeInput &&
+                    attendeeTags.length > 0
+                  ) {
+                    removeAttendee(attendeeTags[attendeeTags.length - 1]);
+                  }
+                }}
+                placeholder={
+                  attendeeTags.length > 0
+                    ? "Add another..."
+                    : "Type a name or select from list"
+                }
+                className="w-full rounded-md border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+              />
+              {showAttendeeSuggestions && filteredSuggestions.length > 0 && (
+                <ul className="absolute z-20 mt-1 max-h-48 w-full overflow-y-auto rounded-md border border-border-primary bg-surface-primary shadow-lg">
+                  {filteredSuggestions.map((s) => (
+                    <li key={s}>
+                      <button
+                        type="button"
+                        onMouseDown={(e) => {
+                          e.preventDefault();
+                          addAttendee(s);
+                        }}
+                        className="w-full px-3 py-2 text-left text-sm text-text-primary hover:bg-surface-secondary"
+                      >
+                        {s}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
             <p className="mt-1 text-xs text-text-muted">
-              Comma-separated. Add role in parentheses: Name (Role)
+              Select from list or type a new name and press Enter. Format: Name (Role)
             </p>
           </div>
 
