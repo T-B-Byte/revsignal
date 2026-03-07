@@ -23,6 +23,7 @@ const updateNoteSchema = z.object({
   related_deal_id: z.string().uuid().nullable().optional(),
   source: z.string().max(500).nullable().optional(),
   tags: z.array(z.string().max(100)).max(20).optional(),
+  pinned: z.boolean().optional(),
 });
 
 /**
@@ -84,16 +85,38 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 
-  if (Object.keys(parsed.data).length === 0) {
+  // Handle pin toggle: add/remove "foundational" tag
+  const { pinned, ...updateFields } = parsed.data;
+
+  if (Object.keys(updateFields).length === 0 && pinned === undefined) {
     return NextResponse.json(
       { error: "No update fields provided" },
       { status: 400 }
     );
   }
+  if (pinned !== undefined) {
+    // Fetch current tags to toggle "foundational"
+    const { data: current } = await supabase
+      .from("strategic_notes")
+      .select("tags")
+      .eq("note_id", id)
+      .eq("user_id", user.id)
+      .single();
+
+    if (current) {
+      const currentTags: string[] = current.tags ?? [];
+      const hasFoundational = currentTags.includes("foundational");
+      if (pinned && !hasFoundational) {
+        updateFields.tags = [...currentTags, "foundational"];
+      } else if (!pinned && hasFoundational) {
+        updateFields.tags = currentTags.filter((t: string) => t !== "foundational");
+      }
+    }
+  }
 
   const { data, error } = await supabase
     .from("strategic_notes")
-    .update(parsed.data)
+    .update(updateFields)
     .eq("note_id", id)
     .eq("user_id", user.id)
     .select()

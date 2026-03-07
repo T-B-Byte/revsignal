@@ -10,6 +10,7 @@ interface MeetingCardProps {
   onEdit: (note: MeetingNote) => void;
   onPrep?: (note: MeetingNote) => void;
   onDebrief?: (note: MeetingNote) => void;
+  onTogglePin?: (note: MeetingNote) => void;
   hasAiAccess?: boolean;
 }
 
@@ -23,11 +24,12 @@ const TYPE_CONFIG: Record<MeetingType, { label: string; variant: "blue" | "green
   other: { label: "Other", variant: "gray" },
 };
 
-export function MeetingCard({ note, onEdit, onPrep, onDebrief, hasAiAccess }: MeetingCardProps) {
+export function MeetingCard({ note, onEdit, onPrep, onDebrief, onTogglePin, hasAiAccess }: MeetingCardProps) {
   const typeConfig = TYPE_CONFIG[note.meeting_type] ?? TYPE_CONFIG.other;
   const attendeeNames = (note.attendees ?? []).map((a) => a.name).join(", ");
   const meetingDate = new Date(note.meeting_date);
   const isFuture = meetingDate > new Date();
+  const isPinned = (note.tags ?? []).includes("foundational");
 
   return (
     <Card className="cursor-pointer transition-colors hover:border-accent-primary/40">
@@ -50,6 +52,13 @@ export function MeetingCard({ note, onEdit, onPrep, onDebrief, hasAiAccess }: Me
                 {note.title}
               </h3>
               <Badge variant={typeConfig.variant}>{typeConfig.label}</Badge>
+              {isPinned && (
+                <span className="shrink-0 text-xs text-amber-500" title="Pinned: always remembered by the Strategist">
+                  <svg className="inline h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M9.828 1.282a1 1 0 0 1 1.414 0l3.476 3.476a1 1 0 0 1 0 1.414L13.5 7.39l.5.5a.5.5 0 0 1 0 .707l-1.5 1.5a.5.5 0 0 1-.707 0L11 9.304l-3.146 3.147a.5.5 0 0 1-.354.146H5.5l-2.354 2.354a.5.5 0 0 1-.707-.707L4.793 11.89v-2a.5.5 0 0 1 .147-.354L8.086 6.39l-.793-.793a.5.5 0 0 1 0-.707l1.5-1.5a.5.5 0 0 1 .707 0l.5.5 1.828-1.828z" />
+                  </svg>
+                </span>
+              )}
             </div>
 
             {attendeeNames && (
@@ -83,32 +92,46 @@ export function MeetingCard({ note, onEdit, onPrep, onDebrief, hasAiAccess }: Me
             <p className="text-xs text-text-muted">
               {format(meetingDate, "h:mm a")}
             </p>
-            {hasAiAccess && (
-              <div className="mt-2 flex justify-end gap-1">
-                {isFuture && onPrep && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onPrep(note);
-                    }}
-                    className="rounded px-2 py-1 text-xs font-medium text-accent-primary hover:bg-accent-primary/10"
-                  >
-                    Prep
-                  </button>
-                )}
-                {!isFuture && onDebrief && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onDebrief(note);
-                    }}
-                    className="rounded px-2 py-1 text-xs font-medium text-accent-primary hover:bg-accent-primary/10"
-                  >
-                    Debrief
-                  </button>
-                )}
-              </div>
-            )}
+            <div className="mt-2 flex justify-end gap-1">
+              {onTogglePin && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onTogglePin(note);
+                  }}
+                  className={`rounded px-2 py-1 text-xs font-medium ${
+                    isPinned
+                      ? "text-amber-500 hover:bg-amber-500/10"
+                      : "text-text-muted hover:bg-surface-tertiary"
+                  }`}
+                  title={isPinned ? "Unpin: remove from permanent memory" : "Pin: always remembered by the Strategist"}
+                >
+                  {isPinned ? "Unpin" : "Pin"}
+                </button>
+              )}
+              {hasAiAccess && isFuture && onPrep && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onPrep(note);
+                  }}
+                  className="rounded px-2 py-1 text-xs font-medium text-accent-primary hover:bg-accent-primary/10"
+                >
+                  Prep
+                </button>
+              )}
+              {hasAiAccess && !isFuture && onDebrief && (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDebrief(note);
+                  }}
+                  className="rounded px-2 py-1 text-xs font-medium text-accent-primary hover:bg-accent-primary/10"
+                >
+                  Debrief
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </CardContent>

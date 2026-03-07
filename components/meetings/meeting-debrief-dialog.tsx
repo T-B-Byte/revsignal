@@ -26,13 +26,81 @@ interface CrmCoaching {
   forecastGuidance: string | null;
 }
 
+interface ExtractedNote {
+  title: string;
+  content: string;
+  category: string;
+  note_id?: string;
+  pinned?: boolean;
+}
+
 interface DebriefResult {
   debrief: string;
-  extractedNotes: { title: string; content: string; category: string }[];
+  extractedNotes: ExtractedNote[];
   followUpActions: string[];
   stakeholderUpdates: string[];
   conflictsDetected: string[];
   crmCoaching: CrmCoaching | null;
+}
+
+function ExtractedNoteCard({ note }: { note: ExtractedNote }) {
+  const [pinned, setPinned] = useState(note.pinned ?? false);
+  const [toggling, setToggling] = useState(false);
+
+  async function handleTogglePin() {
+    if (!note.note_id || toggling) return;
+    const next = !pinned;
+    setPinned(next);
+    setToggling(true);
+
+    try {
+      const res = await fetch(`/api/strategic-notes/${note.note_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ pinned: next }),
+      });
+      if (!res.ok) setPinned(!next);
+    } catch {
+      setPinned(!next);
+    } finally {
+      setToggling(false);
+    }
+  }
+
+  return (
+    <div className="rounded-lg border border-border-primary bg-surface-tertiary p-3">
+      <div className="flex items-start justify-between gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="text-xs font-medium text-text-primary">
+            {note.title}
+          </p>
+          <p className="mt-1 text-xs text-text-secondary">
+            {note.content}
+          </p>
+          <span className="mt-1 inline-block rounded-full bg-accent-primary/10 px-2 py-0.5 text-xs text-accent-primary">
+            {note.category}
+          </span>
+        </div>
+        {note.note_id && (
+          <button
+            onClick={handleTogglePin}
+            disabled={toggling}
+            className={`shrink-0 rounded px-2 py-1 text-xs font-medium transition-colors ${
+              pinned
+                ? "text-amber-500 hover:bg-amber-500/10"
+                : "text-text-muted hover:bg-surface-secondary"
+            }`}
+            title={pinned ? "Unpin: remove from permanent memory" : "Pin: always remembered by the Strategist"}
+          >
+            <svg className="mr-0.5 inline h-3 w-3" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M9.828 1.282a1 1 0 0 1 1.414 0l3.476 3.476a1 1 0 0 1 0 1.414L13.5 7.39l.5.5a.5.5 0 0 1 0 .707l-1.5 1.5a.5.5 0 0 1-.707 0L11 9.304l-3.146 3.147a.5.5 0 0 1-.354.146H5.5l-2.354 2.354a.5.5 0 0 1-.707-.707L4.793 11.89v-2a.5.5 0 0 1 .147-.354L8.086 6.39l-.793-.793a.5.5 0 0 1 0-.707l1.5-1.5a.5.5 0 0 1 .707 0l.5.5 1.828-1.828z" />
+            </svg>
+            {pinned ? "Pinned" : "Pin"}
+          </button>
+        )}
+      </div>
+    </div>
+  );
 }
 
 export function MeetingDebriefDialog({
@@ -175,20 +243,7 @@ export function MeetingDebriefDialog({
                   </h3>
                   <div className="space-y-2">
                     {result.extractedNotes.map((n, i) => (
-                      <div
-                        key={i}
-                        className="rounded-lg border border-border-primary bg-surface-tertiary p-3"
-                      >
-                        <p className="text-xs font-medium text-text-primary">
-                          {n.title}
-                        </p>
-                        <p className="mt-1 text-xs text-text-secondary">
-                          {n.content}
-                        </p>
-                        <span className="mt-1 inline-block rounded-full bg-accent-primary/10 px-2 py-0.5 text-xs text-accent-primary">
-                          {n.category}
-                        </span>
-                      </div>
+                      <ExtractedNoteCard key={n.note_id ?? i} note={n} />
                     ))}
                   </div>
                 </div>

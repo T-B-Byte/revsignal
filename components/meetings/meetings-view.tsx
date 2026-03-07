@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { MeetingCard } from "./meeting-card";
 import { MeetingNoteDialog } from "./meeting-note-dialog";
 import { MeetingDebriefDialog } from "./meeting-debrief-dialog";
 import { Button } from "@/components/ui/button";
 import { MEETING_TYPES, type MeetingNote } from "@/types/database";
+import { toggleMeetingNotePin } from "@/app/(dashboard)/meetings/actions";
 
 interface MeetingsViewProps {
   notes: MeetingNote[];
@@ -30,6 +31,7 @@ export function MeetingsView({
   const [showDialog, setShowDialog] = useState(false);
   const [editingNote, setEditingNote] = useState<MeetingNote | null>(null);
   const [debriefNote, setDebriefNote] = useState<MeetingNote | null>(null);
+  const [, startTransition] = useTransition();
 
   const filtered = notes.filter((note) => {
     if (selectedType && note.meeting_type !== selectedType) return false;
@@ -72,6 +74,12 @@ export function MeetingsView({
 
   function handleEdit(note: MeetingNote) {
     router.push(`/meetings/${note.note_id}/edit`);
+  }
+
+  function handleTogglePin(note: MeetingNote) {
+    startTransition(async () => {
+      await toggleMeetingNotePin(note.note_id);
+    });
   }
 
   function handleClose() {
@@ -227,6 +235,7 @@ export function MeetingsView({
                     key={note.note_id}
                     note={note}
                     onEdit={handleEdit}
+                    onTogglePin={handleTogglePin}
                     onPrep={(n) => {
                       window.location.href = `/coach?prep=${encodeURIComponent(n.title)}&attendees=${encodeURIComponent(n.attendees.map((a) => a.name).join(","))}`;
                     }}
@@ -253,6 +262,7 @@ export function MeetingsView({
                     key={note.note_id}
                     note={note}
                     onEdit={handleEdit}
+                    onTogglePin={handleTogglePin}
                     onPrep={(n) => {
                       window.location.href = `/coach?prep=${encodeURIComponent(n.title)}&attendees=${encodeURIComponent(n.attendees.map((a) => a.name).join(","))}`;
                     }}

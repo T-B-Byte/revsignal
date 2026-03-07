@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { autoSaveMeetingNote } from "@/app/(dashboard)/meetings/actions";
+import { autoSaveMeetingNote, toggleMeetingNotePin } from "@/app/(dashboard)/meetings/actions";
 import { MEETING_TYPES, type MeetingNote } from "@/types/database";
 import { format } from "date-fns";
 
@@ -17,6 +17,8 @@ export function MeetingNoteEditor({ note, deals }: MeetingNoteEditorProps) {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pinned, setPinned] = useState((note.tags ?? []).includes("foundational"));
+  const [, startPinTransition] = useTransition();
 
   const contentRef = useRef(content);
   const lastSavedRef = useRef(note.content);
@@ -122,9 +124,32 @@ export function MeetingNoteEditor({ note, deals }: MeetingNoteEditorProps) {
 
       {/* Metadata header */}
       <div className="rounded-lg border border-border-primary bg-surface-secondary p-4">
-        <h1 className="text-lg font-semibold text-text-primary">
-          {note.title}
-        </h1>
+        <div className="flex items-start justify-between">
+          <h1 className="text-lg font-semibold text-text-primary">
+            {note.title}
+          </h1>
+          <button
+            onClick={() => {
+              const next = !pinned;
+              setPinned(next);
+              startPinTransition(async () => {
+                const result = await toggleMeetingNotePin(note.note_id);
+                if ("error" in result) setPinned(!next);
+              });
+            }}
+            className={`shrink-0 rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+              pinned
+                ? "bg-amber-500/10 text-amber-500 hover:bg-amber-500/20"
+                : "bg-surface-tertiary text-text-muted hover:bg-surface-tertiary/80 hover:text-text-secondary"
+            }`}
+            title={pinned ? "Unpin: remove from permanent memory" : "Pin: always remembered by the Strategist"}
+          >
+            <svg className="mr-1 inline h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+              <path d="M9.828 1.282a1 1 0 0 1 1.414 0l3.476 3.476a1 1 0 0 1 0 1.414L13.5 7.39l.5.5a.5.5 0 0 1 0 .707l-1.5 1.5a.5.5 0 0 1-.707 0L11 9.304l-3.146 3.147a.5.5 0 0 1-.354.146H5.5l-2.354 2.354a.5.5 0 0 1-.707-.707L4.793 11.89v-2a.5.5 0 0 1 .147-.354L8.086 6.39l-.793-.793a.5.5 0 0 1 0-.707l1.5-1.5a.5.5 0 0 1 .707 0l.5.5 1.828-1.828z" />
+            </svg>
+            {pinned ? "Pinned" : "Pin"}
+          </button>
+        </div>
         <div className="mt-2 flex flex-wrap items-center gap-3 text-xs text-text-muted">
           <span className="font-data">
             {format(new Date(note.meeting_date + "T00:00:00"), "EEEE, MMM d, yyyy")}

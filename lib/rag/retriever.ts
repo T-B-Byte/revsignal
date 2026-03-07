@@ -420,13 +420,15 @@ export async function retrieveBriefingContext(
       .gte("captured_date", thirtyDaysAgo)
       .order("captured_date", { ascending: false })
       .limit(20),
+    // Recent past meetings + pinned meetings (always included)
     supabase
       .from("meeting_notes")
       .select("note_id, title, meeting_date, meeting_type, attendees, ai_summary, content, action_items, tags, deal_id")
       .eq("user_id", userId)
       .lt("meeting_date", todayStr)
+      .or(`meeting_date.gte.${thirtyDaysAgo},tags.cs.{foundational}`)
       .order("meeting_date", { ascending: false })
-      .limit(10),
+      .limit(20),
     // Upcoming meetings (today + next 7 days)
     supabase
       .from("meeting_notes")
@@ -444,13 +446,14 @@ export async function retrieveBriefingContext(
       .order("priority", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(5),
+    // Recent notes (last 7 days) + foundational notes (always included)
     supabase
       .from("strategic_notes")
       .select("*")
       .eq("user_id", userId)
-      .gte("created_at", sevenDaysAgo)
+      .or(`created_at.gte.${sevenDaysAgo},tags.cs.{foundational}`)
       .order("created_at", { ascending: false })
-      .limit(10),
+      .limit(20),
     supabase
       .from("user_tasks")
       .select("task_id, description, due_date, status, created_at")
@@ -839,12 +842,12 @@ export async function retrieveStrategicContext(
   const noteLimit = options.limit ?? 20;
   const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000).toISOString();
 
-  // Build strategic notes query
+  // Build strategic notes query: recent (30 days) + foundational (always)
   let notesQuery = supabase
     .from("strategic_notes")
     .select("*")
     .eq("user_id", userId)
-    .gte("created_at", thirtyDaysAgo)
+    .or(`created_at.gte.${thirtyDaysAgo},tags.cs.{foundational}`)
     .order("created_at", { ascending: false })
     .limit(noteLimit);
 

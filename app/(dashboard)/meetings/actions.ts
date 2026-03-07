@@ -275,6 +275,48 @@ export async function autoSaveMeetingNote(
   return { success: true, savedAt: now };
 }
 
+/**
+ * Toggle "pinned" status on a meeting note.
+ * Pinned notes are always included in the Strategist's context regardless of age.
+ * Implementation: adds/removes the "foundational" tag from the tags array.
+ */
+export async function toggleMeetingNotePin(
+  noteId: string
+): Promise<{ pinned: boolean } | { error: string }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const { data: note, error: fetchError } = await supabase
+    .from("meeting_notes")
+    .select("tags")
+    .eq("note_id", noteId)
+    .eq("user_id", user.id)
+    .single();
+
+  if (fetchError || !note) return { error: "Note not found" };
+
+  const currentTags: string[] = note.tags ?? [];
+  const isPinned = currentTags.includes("foundational");
+  const newTags = isPinned
+    ? currentTags.filter((t) => t !== "foundational")
+    : [...currentTags, "foundational"];
+
+  const { error: updateError } = await supabase
+    .from("meeting_notes")
+    .update({ tags: newTags })
+    .eq("note_id", noteId)
+    .eq("user_id", user.id);
+
+  if (updateError) return { error: updateError.message };
+
+  revalidatePath("/meetings");
+  return { pinned: !isPinned };
+}
+
 export async function deleteMeetingNote(
   noteId: string
 ): Promise<{ success: boolean } | { error: string }> {

@@ -13,7 +13,8 @@
     "seed:icps": "npx tsx scripts/seed-icps.ts",
     "seed:playbook": "npx tsx scripts/seed-playbook.ts",
     "seed:tradeshow-b2bmx": "npx tsx scripts/seed-tradeshow-b2bmx.ts",
-    "seed:flashcards": "npx tsx scripts/seed-flashcards.ts"
+    "seed:flashcards": "npx tsx scripts/seed-flashcards.ts",
+    "seed:tina-memory": "npx tsx scripts/seed-tina-memory.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.78.0",

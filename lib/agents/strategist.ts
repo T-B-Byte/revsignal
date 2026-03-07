@@ -1230,6 +1230,8 @@ export interface DebriefResult {
     category: NoteCategory;
     title: string;
     content: string;
+    note_id?: string;
+    pinned?: boolean;
   }[];
   followUpActions: {
     description: string;
@@ -1419,24 +1421,40 @@ export async function processMeetingDebrief(
 
   // Step 6: Save validated extracted notes to strategic_notes table
   if (extractedNotes.length > 0) {
+    // Auto-pin categories that are permanently relevant
+    const AUTO_PIN_CATEGORIES = new Set([
+      "institutional_context",
+      "political_dynamic",
+      "relationship_note",
+    ]);
+
     const noteRecords = extractedNotes.map((note) => ({
       user_id: userId,
       category: note.category,
       title: note.title,
       content: note.content,
       source: `Meeting debrief: ${meetingNote.title} (${meetingNote.meeting_date})`,
-      tags: ["debrief", "auto-extracted"],
+      tags: AUTO_PIN_CATEGORIES.has(note.category)
+        ? ["debrief", "auto-extracted", "foundational"]
+        : ["debrief", "auto-extracted"],
     }));
 
-    const { error: insertError } = await supabase
+    const { data: insertedNotes, error: insertError } = await supabase
       .from("strategic_notes")
-      .insert(noteRecords);
+      .insert(noteRecords)
+      .select("note_id, title, category, tags");
 
     if (insertError) {
       console.error(
         "[strategist] Failed to save extracted notes:",
         insertError.message
       );
+    } else if (insertedNotes) {
+      // Attach note_ids back to extractedNotes for the UI
+      for (let i = 0; i < extractedNotes.length && i < insertedNotes.length; i++) {
+        extractedNotes[i].note_id = insertedNotes[i].note_id;
+        extractedNotes[i].pinned = (insertedNotes[i].tags ?? []).includes("foundational");
+      }
     }
   }
 
