@@ -71,6 +71,24 @@ export function MeetingNoteDialog({
   const [showAttendeeSuggestions, setShowAttendeeSuggestions] = useState(false);
   const attendeeRef = useRef<HTMLDivElement>(null);
 
+  // Key that changes each time the dialog opens, forcing form state to reset
+  const [formKey, setFormKey] = useState(0);
+  useEffect(() => {
+    if (open) {
+      setFormKey((k) => k + 1);
+      setError(null);
+      setAttendeeInput("");
+      setShowAttendeeSuggestions(false);
+      setAttendeeTags(
+        note
+          ? note.attendees.map((a) =>
+              a.role ? `${a.name} (${a.role})` : a.name
+            )
+          : []
+      );
+    }
+  }, [open, note]);
+
   // Close suggestions on outside click
   useEffect(() => {
     function handleClick(e: MouseEvent) {
@@ -143,7 +161,7 @@ export function MeetingNoteDialog({
           <DialogClose onClose={handleClose} />
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-4 p-6">
+        <form key={formKey} onSubmit={handleSubmit} className="space-y-4 p-6">
           {error && (
             <div className="rounded-md border border-status-red/20 bg-status-red/10 p-3 text-sm text-status-red">
               {error}
