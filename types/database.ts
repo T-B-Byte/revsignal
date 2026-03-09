@@ -371,12 +371,50 @@ export interface StrategicNote {
 export interface CoachingMessage {
   conversation_id: string;
   user_id: string;
+  thread_id: string | null;
   role: "user" | "assistant";
   content: string;
   context_used: Record<string, unknown> | null;
   sources_cited: string[];
   tokens_used: number | null;
   created_at: string;
+}
+
+// --- Coaching Threads ---
+
+export type ThreadFollowUpStatus = "open" | "completed" | "dismissed";
+
+export interface CoachingThread {
+  thread_id: string;
+  user_id: string;
+  deal_id: string | null;
+  title: string;
+  thread_brief: string | null;
+  brief_updated_at: string | null;
+  last_message_at: string;
+  message_count: number;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ThreadFollowUp {
+  follow_up_id: string;
+  thread_id: string;
+  user_id: string;
+  description: string;
+  due_date: string | null;
+  status: ThreadFollowUpStatus;
+  source_message_id: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+/** Thread with joined deal info for sidebar display */
+export interface CoachingThreadWithDeal extends CoachingThread {
+  deals?: Pick<Deal, "deal_id" | "company" | "stage"> | null;
+  open_follow_up_count?: number;
+  has_overdue?: boolean;
 }
 
 export interface Nudge {

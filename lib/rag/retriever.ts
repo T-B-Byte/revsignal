@@ -12,6 +12,7 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import { businessDaysBetween } from "@/lib/business-days";
 import type {
   Deal,
   Contact,
@@ -92,6 +93,15 @@ export interface UserTask {
   created_at: string;
 }
 
+export interface ThreadAlertSummary {
+  thread_id: string;
+  title: string;
+  deal_company: string | null;
+  days_stale: number;
+  overdue_follow_ups: { description: string; due_date: string | null }[];
+  open_follow_up_count: number;
+}
+
 export interface BriefingContext {
   pipeline: PipelineContext;
   dealBriefs: { deal: Deal; brief: DealBrief }[];
@@ -102,6 +112,7 @@ export interface BriefingContext {
   activeNudges?: Nudge[];
   recentStrategicNotes?: StrategicNote[];
   userTasks?: UserTask[];
+  threadAlerts?: ThreadAlertSummary[];
 }
 
 /** Strategic context for The Strategist's coaching mode. */
@@ -522,6 +533,110 @@ export async function retrieveBriefingContext(
     upcomingMeetingNotes = mapMeetingNotes((upcomingMeetingsResult.data as Record<string, unknown>[]) || []);
   }
 
+  // Thread alerts: stale deal threads + overdue follow-ups
+  let threadAlerts: ThreadAlertSummary[] = [];
+  try {
+    const sevenDaysAgoDate = new Date(Date.now() - 7 * 86400000).toISOString();
+    const { data: staleThreads } = await supabase
+      .from("coaching_threads")
+      .select(`
+        thread_id, title, deal_id, last_message_at,
+        deals:deal_id (company)
+      `)
+      .eq("user_id", userId)
+      .eq("is_archived", false)
+      .lt("last_message_at", sevenDaysAgoDate)
+      .not("deal_id", "is", null)
+      .order("last_message_at", { ascending: true })
+      .limit(10);
+
+    const { data: overdueFollowUps } = await supabase
+      .from("thread_follow_ups")
+      .select("thread_id, description, due_date")
+      .eq("user_id", userId)
+      .eq("status", "open")
+      .not("due_date", "is", null)
+      .lt("due_date", todayStr);
+
+    // Build a map of overdue follow-ups by thread
+    const overdueByThread = new Map<string, { description: string; due_date: string | null }[]>();
+    for (const fu of overdueFollowUps || []) {
+      if (!overdueByThread.has(fu.thread_id)) {
+        overdueByThread.set(fu.thread_id, []);
+      }
+      overdueByThread.get(fu.thread_id)!.push({
+        description: fu.description,
+        due_date: fu.due_date,
+      });
+    }
+
+    // Get all open follow-up counts for threads with overdue items
+    const threadsWithOverdue = Array.from(overdueByThread.keys());
+    let openCountByThread = new Map<string, number>();
+    if (threadsWithOverdue.length > 0) {
+      const { data: openFollowUps } = await supabase
+        .from("thread_follow_ups")
+        .select("thread_id")
+        .eq("user_id", userId)
+        .eq("status", "open")
+        .in("thread_id", threadsWithOverdue);
+
+      for (const fu of openFollowUps || []) {
+        openCountByThread.set(fu.thread_id, (openCountByThread.get(fu.thread_id) || 0) + 1);
+      }
+    }
+
+    // Merge stale threads and threads with overdue follow-ups
+    const alertThreadIds = new Set<string>();
+    const alerts: ThreadAlertSummary[] = [];
+
+    for (const t of staleThreads || []) {
+      alertThreadIds.add(t.thread_id);
+      const dealArr = t.deals as unknown as { company: string }[] | null;
+      const dealData = dealArr?.[0] ?? null;
+      const daysSince = Math.floor(
+        (Date.now() - new Date(t.last_message_at).getTime()) / 86400000
+      );
+      alerts.push({
+        thread_id: t.thread_id,
+        title: t.title,
+        deal_company: dealData?.company ?? null,
+        days_stale: daysSince,
+        overdue_follow_ups: overdueByThread.get(t.thread_id) || [],
+        open_follow_up_count: openCountByThread.get(t.thread_id) || 0,
+      });
+    }
+
+    // Add threads with overdue follow-ups that aren't already in the stale list
+    for (const [threadId, overdueFUs] of overdueByThread.entries()) {
+      if (alertThreadIds.has(threadId)) continue;
+      // Fetch thread title
+      const { data: threadData } = await supabase
+        .from("coaching_threads")
+        .select("title, deal_id, deals:deal_id (company)")
+        .eq("thread_id", threadId)
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (threadData) {
+        const dealArr = threadData.deals as unknown as { company: string }[] | null;
+        const dealData = dealArr?.[0] ?? null;
+        alerts.push({
+          thread_id: threadId,
+          title: threadData.title,
+          deal_company: dealData?.company ?? null,
+          days_stale: 0,
+          overdue_follow_ups: overdueFUs,
+          open_follow_up_count: openCountByThread.get(threadId) || overdueFUs.length,
+        });
+      }
+    }
+
+    threadAlerts = alerts;
+  } catch (err) {
+    console.error("[rag/retriever] Error fetching thread alerts:", err);
+  }
+
   return {
     pipeline,
     dealBriefs,
@@ -532,6 +647,7 @@ export async function retrieveBriefingContext(
     activeNudges: (nudgesResult.data as Nudge[]) || [],
     recentStrategicNotes: (strategicNotesResult.data as StrategicNote[]) || [],
     userTasks: (userTasksResult.data as UserTask[]) || [],
+    threadAlerts,
   };
 }
 
@@ -670,10 +786,7 @@ export async function retrieveOverdueActionItems(
 
   return items.map((item) => {
     const dueDate = new Date(item.due_date!);
-    const daysPastDue = Math.max(
-      0,
-      Math.floor((now.getTime() - dueDate.getTime()) / 86400000)
-    );
+    const daysPastDue = businessDaysBetween(dueDate, now);
 
     return {
       item,

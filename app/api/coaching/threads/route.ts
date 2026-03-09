@@ -1,0 +1,137 @@
+import { NextRequest, NextResponse } from "next/server";
+import { createClient } from "@/lib/supabase/server";
+import { z } from "zod/v4";
+
+const createThreadSchema = z.object({
+  title: z.string().min(1).max(200),
+  deal_id: z.string().uuid().optional(),
+});
+
+/**
+ * GET /api/coaching/threads
+ * List user's coaching threads, sorted by most recent activity.
+ * Includes deal info and open follow-up counts.
+ */
+export async function GET() {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  // Fetch threads with linked deal info
+  const { data: threads, error } = await supabase
+    .from("coaching_threads")
+    .select(`
+      *,
+      deals:deal_id (deal_id, company, stage)
+    `)
+    .eq("user_id", user.id)
+    .order("last_message_at", { ascending: false });
+
+  if (error) {
+    console.error("[api/coaching/threads] GET error:", error.message);
+    return NextResponse.json({ error: "Failed to fetch threads" }, { status: 500 });
+  }
+
+  // Fetch open follow-up counts per thread in one query
+  const threadIds = (threads || []).map((t) => t.thread_id);
+  let followUpCounts: Record<string, { count: number; has_overdue: boolean }> = {};
+
+  if (threadIds.length > 0) {
+    const { data: followUps } = await supabase
+      .from("thread_follow_ups")
+      .select("thread_id, due_date")
+      .eq("user_id", user.id)
+      .eq("status", "open")
+      .in("thread_id", threadIds);
+
+    if (followUps) {
+      const today = new Date().toISOString().split("T")[0];
+      for (const fu of followUps) {
+        if (!followUpCounts[fu.thread_id]) {
+          followUpCounts[fu.thread_id] = { count: 0, has_overdue: false };
+        }
+        followUpCounts[fu.thread_id].count++;
+        if (fu.due_date && fu.due_date < today) {
+          followUpCounts[fu.thread_id].has_overdue = true;
+        }
+      }
+    }
+  }
+
+  // Merge follow-up data into threads
+  const enriched = (threads || []).map((t) => ({
+    ...t,
+    open_follow_up_count: followUpCounts[t.thread_id]?.count ?? 0,
+    has_overdue: followUpCounts[t.thread_id]?.has_overdue ?? false,
+  }));
+
+  return NextResponse.json(enriched);
+}
+
+/**
+ * POST /api/coaching/threads
+ * Create a new coaching thread, optionally linked to a deal.
+ */
+export async function POST(request: NextRequest) {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const parsed = createThreadSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", issues: parsed.error.issues },
+      { status: 400 }
+    );
+  }
+
+  // If deal_id provided, verify it belongs to the user
+  if (parsed.data.deal_id) {
+    const { data: deal } = await supabase
+      .from("deals")
+      .select("deal_id")
+      .eq("deal_id", parsed.data.deal_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!deal) {
+      return NextResponse.json({ error: "Deal not found" }, { status: 404 });
+    }
+  }
+
+  const { data: thread, error } = await supabase
+    .from("coaching_threads")
+    .insert({
+      user_id: user.id,
+      title: parsed.data.title,
+      deal_id: parsed.data.deal_id ?? null,
+    })
+    .select()
+    .single();
+
+  if (error) {
+    console.error("[api/coaching/threads] POST error:", error.message);
+    return NextResponse.json({ error: "Failed to create thread" }, { status: 500 });
+  }
+
+  return NextResponse.json(thread, { status: 201 });
+}

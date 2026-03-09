@@ -49,6 +49,7 @@ export function CoachingChat({
     const userMsg: CoachingMessage = {
       conversation_id: crypto.randomUUID(),
       user_id: "",
+      thread_id: null,
       role: "user",
       content: trimmed,
       context_used: null,
@@ -91,6 +92,7 @@ export function CoachingChat({
       const assistantMsg: CoachingMessage = {
         conversation_id: crypto.randomUUID(),
         user_id: "",
+        thread_id: null,
         role: "assistant",
         content: data.response,
         context_used: null,

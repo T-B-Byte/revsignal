@@ -449,6 +449,27 @@ function buildBriefingContextDoc(ctx: BriefingContext): string {
     sections.push(`MY TASKS (user-created action items):\n${taskLines.join("\n")}`);
   }
 
+  // Thread alerts (stale deal threads + overdue follow-ups from coaching threads)
+  if (ctx.threadAlerts && ctx.threadAlerts.length > 0) {
+    const alertLines = ctx.threadAlerts.map((a) => {
+      const parts: string[] = [];
+      if (a.days_stale >= 7) {
+        parts.push(`STALE (${a.days_stale} days)`);
+      }
+      if (a.overdue_follow_ups.length > 0) {
+        const fuDescs = a.overdue_follow_ups
+          .map((fu) => `"${fu.description}"${fu.due_date ? ` (was due ${fu.due_date})` : ""}`)
+          .join("; ");
+        parts.push(`OVERDUE: ${fuDescs}`);
+      }
+      const dealTag = a.deal_company ? ` [${a.deal_company}]` : "";
+      return `- ${a.title}${dealTag}: ${parts.join(", ")}`;
+    });
+    sections.push(
+      `COACHING THREAD ALERTS (need attention):\n${alertLines.join("\n")}`
+    );
+  }
+
   return sections.join("\n\n");
 }
 
@@ -1762,4 +1783,497 @@ function collectCoachingSources(
     }
   }
   return Array.from(sources);
+}
+
+// ── Threaded Coaching ─────────────────────────────────────────────────
+
+const THREAD_COACHING_PROMPT = `${STRATEGIST_IDENTITY}
+
+You are in a persistent coaching thread. This thread has its own memory and context. You may be coaching on a specific deal or on general strategy.
+
+THREAD BEHAVIOR:
+- You have the thread's history (either via a thread brief summarizing older messages, plus the recent messages verbatim).
+- When a deal is linked, you also have the full deal context: conversations, meeting notes, contacts, action items, and the deal brief.
+- Build on prior thread context. Reference what was discussed before. Connect the dots.
+- Track commitments. When Tina says she'll do something or sets a follow-up date, note it.
+- When you identify a follow-up action, include it in a FOLLOW_UPS section at the end of your response (see format below).
+- On each response, end with the next move. What should Tina do next?
+
+FOLLOW-UP EXTRACTION:
+When you identify specific follow-up actions from the conversation, append them at the very end of your response in this exact format:
+
+<!-- FOLLOW_UPS
+[{"description": "Follow up with Sarah on pricing proposal", "due_date": "2026-03-15"}]
+-->
+
+Rules for follow-ups:
+- Only include genuinely actionable items, not vague suggestions.
+- due_date is optional (null if no date specified or implied). Use ISO date format (YYYY-MM-DD).
+- The FOLLOW_UPS block is hidden from the user display but parsed by the system.
+- If no follow-ups to extract, omit the block entirely.
+
+${coachingToneRules()}`;
+
+const THREAD_CATCHUP_PROMPT = `${STRATEGIST_IDENTITY}
+
+Generate a brief "here's where we left off" summary for a coaching thread the user is returning to.
+
+Cover these in 3-5 concise bullet points:
+1. Where the conversation left off (last topic discussed, decisions made)
+2. Open follow-ups with their status (overdue items flagged clearly)
+3. Any changes to the linked deal since the last thread activity (new conversations, stage changes, new contacts)
+4. Your recommendation for what to focus on next
+
+Keep it tight. This is a quick orientation, not a full briefing.
+
+${coachingToneRules()}`;
+
+const THREAD_BRIEF_PROMPT = `${STRATEGIST_IDENTITY}
+
+Summarize an entire coaching thread history into a structured brief. This brief will replace the full message history in future requests to prevent context window overflow.
+
+The brief MUST capture:
+1. **Key facts and decisions** (pricing discussed, commitments made, strategies agreed upon)
+2. **Open items** (follow-ups pending, unanswered questions, things waiting on someone)
+3. **Context references** (which deals, contacts, conversations, and meetings were discussed, with dates)
+4. **Relationship dynamics** (any stakeholder insights surfaced in the thread)
+
+Keep it under 1500 words. Be factual, not narrative. Use bullet points.
+Do NOT include pleasantries or meta-commentary about the thread itself. Just the substance.
+
+${coachingToneRules()}`;
+
+function coachingToneRules(): string {
+  return `CRITICAL FORMAT RULES:
+- NEVER use em-dashes (the long dash). Use commas, periods, colons, semicolons, or parentheses instead.
+- NEVER fabricate information. If you don't have a record, say so.
+- NEVER be passive or deferential.
+- Reference specific dates, contacts, and sources when stating facts.`;
+}
+
+/** Threshold: regenerate thread brief after this many messages */
+const THREAD_BRIEF_THRESHOLD = 20;
+
+export interface ThreadResponseResult {
+  response: string;
+  generatedAt: string;
+  sourcesCited: string[];
+  tokensUsed: number;
+  followUpsExtracted: { description: string; due_date: string | null }[];
+}
+
+/**
+ * Generate a coaching response within a persistent thread.
+ * Uses thread brief + recent messages + RAG deal context.
+ */
+export async function generateThreadResponse(
+  supabase: SupabaseClient,
+  userId: string,
+  threadId: string,
+  userMessage: string,
+  options?: {
+    dealId?: string;
+    threadBrief?: string;
+    messageCount?: number;
+  }
+): Promise<ThreadResponseResult> {
+  // Step 1: RAG retrieval (strategic context + optional deal context)
+  const [strategicCtx, durationRetrieve] = await timed(() =>
+    retrieveStrategicContext(supabase, userId, {
+      dealId: options?.dealId,
+    })
+  );
+
+  let dealContext: DealContext | null = null;
+  if (options?.dealId) {
+    dealContext = await retrieveDealContext(supabase, userId, options.dealId);
+  }
+
+  // Step 2: Fetch thread follow-ups (open items)
+  const { data: openFollowUps } = await supabase
+    .from("thread_follow_ups")
+    .select("description, due_date, status")
+    .eq("thread_id", threadId)
+    .eq("status", "open")
+    .order("due_date", { ascending: true, nullsFirst: false });
+
+  // Step 3: Build context document
+  const contextSections: string[] = [];
+
+  // Thread brief (progressive summary of older messages)
+  if (options?.threadBrief) {
+    contextSections.push(`THREAD HISTORY BRIEF:\n${options.threadBrief}`);
+  }
+
+  // Open follow-ups for this thread
+  if (openFollowUps && openFollowUps.length > 0) {
+    const today = new Date().toISOString().split("T")[0];
+    const fuLines = openFollowUps.map((fu) => {
+      const overdue = fu.due_date && fu.due_date < today ? " [OVERDUE]" : "";
+      const dueStr = fu.due_date ? ` (due: ${fu.due_date})` : "";
+      return `- ${fu.description}${dueStr}${overdue}`;
+    });
+    contextSections.push(`OPEN FOLLOW-UPS:\n${fuLines.join("\n")}`);
+  }
+
+  // Strategic context (stakeholders, notes, nudges)
+  const coachingCtx = buildCoachingContextDoc(strategicCtx, dealContext, null);
+  if (coachingCtx) {
+    contextSections.push(coachingCtx);
+  }
+
+  const contextDoc = contextSections.join("\n\n");
+
+  // Step 4: Build messages array with thread history
+  // Load last 10 messages for this thread
+  const { data: recentMessages } = await supabase
+    .from("coaching_conversations")
+    .select("role, content, created_at")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: false })
+    .limit(10);
+
+  const messages: { role: "user" | "assistant"; content: string }[] = [];
+
+  if (recentMessages && recentMessages.length > 0) {
+    // Reverse to chronological order, enforce alternation
+    const chronological = [...recentMessages].reverse();
+    let lastRole: string | null = null;
+    let charBudget = 12000;
+
+    for (const msg of chronological) {
+      const role = msg.role === "user" ? "user" as const : "assistant" as const;
+      if (role === lastRole) {
+        messages.pop();
+      }
+      // Strip follow-up extraction blocks from assistant messages (they're system-internal)
+      let content = msg.content;
+      content = content.replace(/<!-- FOLLOW_UPS\n[\s\S]*?-->/g, "").trim();
+      if (content.length > 2000) {
+        content = content.slice(0, 2000) + " [...]";
+      }
+      if (charBudget - content.length < 0) break;
+      charBudget -= content.length;
+      messages.push({ role, content });
+      lastRole = role;
+    }
+
+    // Ensure we don't end with a user message (we'll add the current one)
+    if (messages.length > 0 && messages[messages.length - 1].role === "user") {
+      messages.pop();
+    }
+  }
+
+  // Add the current user message with context
+  messages.push({
+    role: "user",
+    content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${userMessage}`,
+  });
+
+  // Step 5: Generate response
+  const anthropic = getAnthropic();
+
+  const [response, durationGenerate] = await timed(() =>
+    anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 2000,
+      system: THREAD_COACHING_PROMPT,
+      messages,
+    })
+  );
+
+  const fullResponseText =
+    response.content.length > 0 && response.content[0].type === "text"
+      ? response.content[0].text
+      : "I wasn't able to generate a response. Try rephrasing your question.";
+
+  const tokensUsed =
+    (response.usage?.input_tokens ?? 0) +
+    (response.usage?.output_tokens ?? 0);
+
+  // Step 6: Extract follow-ups from response
+  const followUpsExtracted = extractFollowUps(fullResponseText);
+
+  // Step 7: Save messages to coaching_conversations (with thread_id)
+  const sourcesCited = collectCoachingSources(strategicCtx, null);
+  const now = new Date().toISOString();
+
+  await supabase.from("coaching_conversations").insert([
+    {
+      user_id: userId,
+      thread_id: threadId,
+      role: "user",
+      content: userMessage,
+      created_at: now,
+    },
+    {
+      user_id: userId,
+      thread_id: threadId,
+      role: "assistant",
+      content: fullResponseText,
+      context_used: {
+        dealId: options?.dealId ?? null,
+        threadBrief: !!options?.threadBrief,
+        followUpsExtracted: followUpsExtracted.length,
+      },
+      sources_cited: sourcesCited,
+      tokens_used: tokensUsed,
+      created_at: new Date(Date.now() + 1).toISOString(),
+    },
+  ]);
+
+  // Step 8: Save extracted follow-ups
+  if (followUpsExtracted.length > 0) {
+    await supabase.from("thread_follow_ups").insert(
+      followUpsExtracted.map((fu) => ({
+        thread_id: threadId,
+        user_id: userId,
+        description: fu.description,
+        due_date: fu.due_date,
+      }))
+    );
+  }
+
+  // Step 9: Check if thread brief needs regeneration
+  const currentMessageCount = (options?.messageCount ?? 0) + 2; // +2 for user + assistant
+  if (
+    currentMessageCount >= THREAD_BRIEF_THRESHOLD &&
+    currentMessageCount % THREAD_BRIEF_THRESHOLD < 2
+  ) {
+    // Fire and forget (don't block the response)
+    generateThreadBrief(supabase, userId, threadId).catch((err) =>
+      console.error("[strategist] Thread brief generation failed:", err)
+    );
+  }
+
+  // Step 10: Log
+  await logAgentCall({
+    supabase,
+    userId,
+    agentName: "strategist",
+    action: "thread-coaching",
+    inputContext: {
+      threadId,
+      dealId: options?.dealId ?? null,
+      hasThreadBrief: !!options?.threadBrief,
+      messageCount: currentMessageCount,
+      followUpsExtracted: followUpsExtracted.length,
+      retrieveDurationMs: durationRetrieve,
+    },
+    output: fullResponseText.slice(0, 500),
+    sourcesCited,
+    tokensUsed,
+    durationMs: durationRetrieve + durationGenerate,
+  });
+
+  // Strip the follow-up block from the user-facing response
+  const cleanResponse = fullResponseText
+    .replace(/<!-- FOLLOW_UPS\n[\s\S]*?-->/g, "")
+    .trim();
+
+  return {
+    response: cleanResponse,
+    generatedAt: new Date().toISOString(),
+    sourcesCited,
+    tokensUsed,
+    followUpsExtracted,
+  };
+}
+
+/**
+ * Generate a "here's where we left off" catchup for thread re-entry.
+ */
+export async function generateThreadCatchup(
+  supabase: SupabaseClient,
+  userId: string,
+  threadId: string,
+  options: {
+    dealId?: string;
+    threadBrief?: string;
+    lastMessageAt: string;
+    threadTitle: string;
+  }
+): Promise<string> {
+  // Fetch recent messages (last 6)
+  const { data: recentMessages } = await supabase
+    .from("coaching_conversations")
+    .select("role, content, created_at")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: false })
+    .limit(6);
+
+  // Fetch open follow-ups
+  const { data: openFollowUps } = await supabase
+    .from("thread_follow_ups")
+    .select("description, due_date")
+    .eq("thread_id", threadId)
+    .eq("status", "open");
+
+  // Build context
+  const sections: string[] = [];
+  sections.push(`THREAD: "${options.threadTitle}"`);
+  sections.push(`LAST ACTIVITY: ${options.lastMessageAt}`);
+
+  if (options.threadBrief) {
+    sections.push(`THREAD BRIEF:\n${options.threadBrief}`);
+  }
+
+  if (recentMessages && recentMessages.length > 0) {
+    const chronological = [...recentMessages].reverse();
+    const msgLines = chronological.map((m) => {
+      const role = m.role === "user" ? "TINA" : "STRATEGIST";
+      const content = m.content.replace(/<!-- FOLLOW_UPS\n[\s\S]*?-->/g, "").trim();
+      const truncated = content.length > 500 ? content.slice(0, 500) + "..." : content;
+      return `[${role}] ${truncated}`;
+    });
+    sections.push(`RECENT MESSAGES:\n${msgLines.join("\n\n")}`);
+  }
+
+  if (openFollowUps && openFollowUps.length > 0) {
+    const today = new Date().toISOString().split("T")[0];
+    const fuLines = openFollowUps.map((fu) => {
+      const overdue = fu.due_date && fu.due_date < today ? " [OVERDUE]" : "";
+      return `- ${fu.description}${fu.due_date ? ` (due: ${fu.due_date})` : ""}${overdue}`;
+    });
+    sections.push(`OPEN FOLLOW-UPS:\n${fuLines.join("\n")}`);
+  }
+
+  // If deal-linked, get deal changes since last thread activity
+  if (options.dealId) {
+    const dealContext = await retrieveDealContext(supabase, userId, options.dealId);
+    if (dealContext) {
+      // Get conversations since last thread activity
+      const newConversations = dealContext.conversations.filter(
+        (c) => c.date > options.lastMessageAt
+      );
+      if (newConversations.length > 0) {
+        const convoLines = newConversations.map(
+          (c) => `- [${c.date}] ${c.channel.toUpperCase()}: ${c.ai_summary || "(no summary)"}`
+        );
+        sections.push(`NEW DEAL ACTIVITY SINCE LAST THREAD:\n${convoLines.join("\n")}`);
+      }
+
+      sections.push(
+        `DEAL STATUS: ${dealContext.deal.company} at ${dealContext.deal.stage}, ACV: ${dealContext.deal.acv ? "$" + dealContext.deal.acv.toLocaleString() : "not set"}`
+      );
+    }
+  }
+
+  const contextDoc = sections.join("\n\n");
+
+  const anthropic = getAnthropic();
+  const response = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 600,
+    system: THREAD_CATCHUP_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\n${contextDoc}`,
+      },
+    ],
+  });
+
+  return response.content.length > 0 && response.content[0].type === "text"
+    ? response.content[0].text
+    : "Welcome back. Let me know what you'd like to work on.";
+}
+
+/**
+ * Regenerate the thread brief (progressive summarization).
+ * Called when message_count crosses THREAD_BRIEF_THRESHOLD.
+ */
+export async function generateThreadBrief(
+  supabase: SupabaseClient,
+  userId: string,
+  threadId: string
+): Promise<void> {
+  // Fetch all messages in the thread
+  const { data: allMessages } = await supabase
+    .from("coaching_conversations")
+    .select("role, content, created_at")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: true });
+
+  if (!allMessages || allMessages.length < THREAD_BRIEF_THRESHOLD) return;
+
+  // Build the full thread text (truncate each message to prevent overflow)
+  const threadText = allMessages
+    .map((m) => {
+      const role = m.role === "user" ? "TINA" : "STRATEGIST";
+      let content = m.content.replace(/<!-- FOLLOW_UPS\n[\s\S]*?-->/g, "").trim();
+      if (content.length > 1000) {
+        content = content.slice(0, 1000) + " [...]";
+      }
+      return `[${m.created_at.split("T")[0]}] ${role}: ${content}`;
+    })
+    .join("\n\n");
+
+  // Cap total input to prevent context window issues
+  const cappedText =
+    threadText.length > 30000
+      ? threadText.slice(0, 30000) + "\n\n[... earlier messages truncated ...]"
+      : threadText;
+
+  const anthropic = getAnthropic();
+  const response = await anthropic.messages.create({
+    model: MODEL,
+    max_tokens: 2000,
+    system: THREAD_BRIEF_PROMPT,
+    messages: [
+      {
+        role: "user",
+        content: `Summarize this coaching thread into a structured brief:\n\n${cappedText}`,
+      },
+    ],
+  });
+
+  const briefText =
+    response.content.length > 0 && response.content[0].type === "text"
+      ? response.content[0].text
+      : null;
+
+  if (briefText) {
+    await supabase
+      .from("coaching_threads")
+      .update({
+        thread_brief: briefText,
+        brief_updated_at: new Date().toISOString(),
+      })
+      .eq("thread_id", threadId)
+      .eq("user_id", userId);
+  }
+}
+
+/**
+ * Parse follow-up actions from the Strategist's response.
+ * Looks for the hidden <!-- FOLLOW_UPS ... --> block.
+ */
+function extractFollowUps(
+  responseText: string
+): { description: string; due_date: string | null }[] {
+  const match = responseText.match(
+    /<!-- FOLLOW_UPS\n([\s\S]*?)-->/
+  );
+  if (!match) return [];
+
+  try {
+    const parsed = JSON.parse(match[1].trim());
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (item: unknown) =>
+          typeof item === "object" &&
+          item !== null &&
+          "description" in item &&
+          typeof (item as Record<string, unknown>).description === "string"
+      )
+      .map((item: { description: string; due_date?: string | null }) => ({
+        description: item.description,
+        due_date: item.due_date ?? null,
+      }));
+  } catch {
+    console.error("[strategist] Failed to parse FOLLOW_UPS block");
+    return [];
+  }
 }
