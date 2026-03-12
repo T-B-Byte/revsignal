@@ -120,7 +120,7 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
   const dealBrief = dealBriefResult.data;
   const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasAiAccess = PLANS[userTier].limits.aiBriefings;
-  const hasComposeAccess = PLANS[userTier].limits.integrations;
+
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -262,22 +262,6 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
             company={(deal as Deal).company}
           />
 
-          {/* Quick Compose Link — only for active deals that appear in compose dropdown */}
-          {hasComposeAccess && ACTIVE_STAGES.includes((deal as Deal).stage) && (
-            <Card>
-              <CardContent className="py-4">
-                <Link
-                  href={`/compose?dealId=${dealId}`}
-                  className="flex items-center gap-2 text-sm text-accent-primary hover:underline"
-                >
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M13.586 3.586a2 2 0 112.828 2.828l-.793.793-2.828-2.828.793-.793zM11.379 5.793L3 14.172V17h2.828l8.38-8.379-2.83-2.828z" />
-                  </svg>
-                  Draft email for this deal
-                </Link>
-              </CardContent>
-            </Card>
-          )}
         </div>
       </div>
     </div>

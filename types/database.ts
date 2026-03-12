@@ -368,19 +368,43 @@ export interface StrategicNote {
   updated_at: string;
 }
 
+// --- StrategyGPT Interaction Types ---
+
+export type InteractionType =
+  | "email"
+  | "conversation"
+  | "call_transcript"
+  | "web_meeting"
+  | "in_person_meeting"
+  | "coaching";
+
+export const INTERACTION_TYPES: {
+  value: InteractionType;
+  label: string;
+  placeholder: string;
+}[] = [
+  { value: "coaching", label: "Ask Strategist", placeholder: "Ask the Strategist for coaching, analysis, or advice..." },
+  { value: "email", label: "Email", placeholder: "Paste email correspondence..." },
+  { value: "conversation", label: "Conversation", placeholder: "Paste chat, Teams message, or informal conversation..." },
+  { value: "call_transcript", label: "Call Transcript", placeholder: "Paste call recording or PLAUD transcript..." },
+  { value: "web_meeting", label: "Web Meeting", placeholder: "Paste Zoom, Teams, or Google Meet notes..." },
+  { value: "in_person_meeting", label: "In-Person", placeholder: "Paste notes from face-to-face meeting..." },
+];
+
 export interface CoachingMessage {
   conversation_id: string;
   user_id: string;
   thread_id: string | null;
   role: "user" | "assistant";
   content: string;
+  interaction_type: InteractionType;
   context_used: Record<string, unknown> | null;
   sources_cited: string[];
   tokens_used: number | null;
   created_at: string;
 }
 
-// --- Coaching Threads ---
+// --- Coaching Threads (StrategyGPT) ---
 
 export type ThreadFollowUpStatus = "open" | "completed" | "dismissed";
 
@@ -389,6 +413,10 @@ export interface CoachingThread {
   user_id: string;
   deal_id: string | null;
   title: string;
+  contact_name: string | null;
+  contact_role: string | null;
+  company: string | null;
+  contact_id: string | null;
   thread_brief: string | null;
   brief_updated_at: string | null;
   last_message_at: string;

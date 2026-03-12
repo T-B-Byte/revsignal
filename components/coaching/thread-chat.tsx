@@ -4,13 +4,33 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { formatAgentHtml } from "@/lib/format-agent-html";
 import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
-import type { CoachingMessage, CoachingThread } from "@/types/database";
+import type { CoachingMessage, CoachingThread, InteractionType } from "@/types/database";
+import { INTERACTION_TYPES } from "@/types/database";
 
 interface ThreadChatProps {
   thread: CoachingThread;
   initialMessages: CoachingMessage[];
   dealCompany?: string | null;
 }
+
+/** Labels for interaction type badges on messages */
+const INTERACTION_LABELS: Record<InteractionType, string> = {
+  coaching: "Strategist",
+  email: "Email",
+  conversation: "Conversation",
+  call_transcript: "Call Transcript",
+  web_meeting: "Web Meeting",
+  in_person_meeting: "In-Person",
+};
+
+const INTERACTION_COLORS: Record<InteractionType, string> = {
+  coaching: "bg-accent-primary/15 text-accent-primary",
+  email: "bg-blue-500/15 text-blue-400",
+  conversation: "bg-emerald-500/15 text-emerald-400",
+  call_transcript: "bg-orange-500/15 text-orange-400",
+  web_meeting: "bg-violet-500/15 text-violet-400",
+  in_person_meeting: "bg-amber-500/15 text-amber-400",
+};
 
 export function ThreadChat({
   thread,
@@ -19,6 +39,7 @@ export function ThreadChat({
 }: ThreadChatProps) {
   const [messages, setMessages] = useState<CoachingMessage[]>(initialMessages);
   const [input, setInput] = useState("");
+  const [interactionType, setInteractionType] = useState<InteractionType>("coaching");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [followUpKey, setFollowUpKey] = useState(0);
@@ -44,6 +65,10 @@ export function ThreadChat({
     setInput("");
   }, [thread.thread_id, initialMessages]);
 
+  // Get current placeholder from interaction type
+  const currentType = INTERACTION_TYPES.find((t) => t.value === interactionType);
+  const placeholder = currentType?.placeholder ?? "Type a message...";
+
   async function handleSend() {
     const trimmed = input.trim();
     if (!trimmed || loading || sendingRef.current) return;
@@ -59,6 +84,7 @@ export function ThreadChat({
       thread_id: thread.thread_id,
       role: "user",
       content: trimmed,
+      interaction_type: interactionType,
       context_used: null,
       sources_cited: [],
       tokens_used: null,
@@ -73,13 +99,16 @@ export function ThreadChat({
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ message: trimmed }),
+          body: JSON.stringify({
+            message: trimmed,
+            interaction_type: interactionType,
+          }),
         }
       );
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to get response.");
+        setError(data.error || "Failed to save.");
         setMessages((prev) =>
           prev.filter((m) => m.conversation_id !== userMsg.conversation_id)
         );
@@ -89,22 +118,35 @@ export function ThreadChat({
 
       const data = await res.json();
 
-      const assistantMsg: CoachingMessage = {
-        conversation_id: crypto.randomUUID(),
-        user_id: "",
-        thread_id: thread.thread_id,
-        role: "assistant",
-        content: data.response,
-        context_used: null,
-        sources_cited: [],
-        tokens_used: data.tokensUsed,
-        created_at: data.generatedAt,
-      };
-      setMessages((prev) => [...prev, assistantMsg]);
+      if (interactionType === "coaching") {
+        // AI response — add assistant message
+        const assistantMsg: CoachingMessage = {
+          conversation_id: crypto.randomUUID(),
+          user_id: "",
+          thread_id: thread.thread_id,
+          role: "assistant",
+          content: data.response,
+          interaction_type: "coaching",
+          context_used: null,
+          sources_cited: [],
+          tokens_used: data.tokensUsed,
+          created_at: data.generatedAt,
+        };
+        setMessages((prev) => [...prev, assistantMsg]);
 
-      // If follow-ups were extracted, refresh the follow-ups panel
-      if (data.followUpsExtracted?.length > 0) {
-        setFollowUpKey((k) => k + 1);
+        // If follow-ups were extracted, refresh the follow-ups panel
+        if (data.followUpsExtracted?.length > 0) {
+          setFollowUpKey((k) => k + 1);
+        }
+      } else if (data.message) {
+        // Replace optimistic message with server record (real conversation_id)
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.conversation_id === userMsg.conversation_id
+              ? { ...userMsg, ...data.message }
+              : m
+          )
+        );
       }
     } catch {
       setError("Network error. Please try again.");
@@ -123,7 +165,6 @@ export function ThreadChat({
     setPinningId(msg.conversation_id);
 
     try {
-      // Truncate content for the title (first line or first 100 chars)
       const firstLine = msg.content.split("\n")[0].replace(/[#*_`]/g, "").trim();
       const title = firstLine.length > 100 ? firstLine.slice(0, 97) + "..." : firstLine;
 
@@ -132,11 +173,11 @@ export function ThreadChat({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           category: "strategic_observation",
-          title: title || "Pinned from coaching thread",
+          title: title || "Pinned from StrategyGPT thread",
           content: msg.content,
           related_deal_id: thread.deal_id || undefined,
-          source: `Coaching thread: ${thread.title}`,
-          tags: ["pinned", "coaching"],
+          source: `StrategyGPT: ${thread.contact_name || thread.title}`,
+          tags: ["pinned", "strategygpt"],
         }),
       });
 
@@ -161,10 +202,20 @@ export function ThreadChat({
     <div className="flex h-full flex-col">
       {/* Thread header */}
       <div className="shrink-0 border-b border-border-primary px-6 py-3">
-        <h2 className="text-base font-semibold text-text-primary">
-          {thread.title}
-        </h2>
-        {dealCompany && (
+        <div className="flex items-center gap-2">
+          <h2 className="text-base font-semibold text-text-primary">
+            {thread.contact_name || thread.title}
+          </h2>
+          {thread.company && (
+            <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs text-text-secondary">
+              {thread.company}
+            </span>
+          )}
+        </div>
+        {thread.contact_role && (
+          <p className="text-xs text-text-secondary">{thread.contact_role}</p>
+        )}
+        {dealCompany && !thread.company && (
           <p className="text-xs text-accent-primary">{dealCompany}</p>
         )}
       </div>
@@ -191,12 +242,12 @@ export function ThreadChat({
           <div className="flex items-center justify-center h-32">
             <div className="text-center">
               <p className="text-sm text-text-secondary">
-                {thread.deal_id
-                  ? "Paste call notes, emails, or ask for deal coaching."
+                {thread.contact_name
+                  ? `Add intel about ${thread.contact_name} or ask the Strategist for coaching.`
                   : "Start a conversation with the Strategist."}
               </p>
               <p className="mt-1 text-xs text-text-muted">
-                Everything in this thread is remembered across sessions.
+                Select the type of correspondence below before pasting.
               </p>
             </div>
           </div>
@@ -206,6 +257,7 @@ export function ThreadChat({
         {messages.map((msg) => {
           const isPinned = pinnedIds.has(msg.conversation_id);
           const isPinning = pinningId === msg.conversation_id;
+          const msgType = msg.interaction_type || "coaching";
 
           return (
             <div
@@ -219,6 +271,15 @@ export function ThreadChat({
                     : "bg-surface-tertiary text-text-primary"
                 }`}
               >
+                {/* Interaction type badge for user messages */}
+                {msg.role === "user" && msgType !== "coaching" && (
+                  <span
+                    className={`mb-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-medium ${INTERACTION_COLORS[msgType]}`}
+                  >
+                    {INTERACTION_LABELS[msgType]}
+                  </span>
+                )}
+
                 {msg.role === "assistant" ? (
                   <div
                     className="prose prose-sm max-w-none text-text-primary
@@ -271,7 +332,7 @@ export function ThreadChat({
         })}
 
         {/* Loading indicator */}
-        {loading && (
+        {loading && interactionType === "coaching" && (
           <div className="flex justify-start">
             <div className="rounded-lg bg-surface-tertiary px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-text-muted">
@@ -292,14 +353,31 @@ export function ThreadChat({
 
       {/* Input area */}
       <div className="shrink-0 border-t border-border-primary px-6 py-3">
+        {/* Interaction type selector */}
+        <div className="mb-2 flex flex-wrap gap-1">
+          {INTERACTION_TYPES.map((type) => (
+            <button
+              key={type.value}
+              onClick={() => setInteractionType(type.value)}
+              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                interactionType === type.value
+                  ? "bg-accent-primary text-white"
+                  : "bg-surface-tertiary text-text-secondary hover:text-text-primary"
+              }`}
+            >
+              {type.label}
+            </button>
+          ))}
+        </div>
+
         <div className="flex gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask the Strategist..."
-            rows={2}
-            maxLength={5000}
+            placeholder={placeholder}
+            rows={interactionType === "coaching" ? 2 : 4}
+            maxLength={interactionType === "coaching" ? 5000 : 50000}
             className="flex-1 resize-none rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
             disabled={loading}
           />
@@ -308,7 +386,7 @@ export function ThreadChat({
             disabled={loading || !input.trim()}
             className="self-end rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
           >
-            Send
+            {interactionType === "coaching" ? "Send" : "Save"}
           </button>
         </div>
       </div>

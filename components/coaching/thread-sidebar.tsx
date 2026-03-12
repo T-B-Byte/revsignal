@@ -21,11 +21,14 @@ export function ThreadSidebar({ threads, onNewThread }: ThreadSidebarProps) {
   // Extract threadId from pathname like /coach/[threadId]
   const currentThreadId = pathname.split("/coach/")[1] ?? null;
 
+  // Group active threads by company
+  const grouped = groupByCompany(activeThreads);
+
   return (
     <div className="flex h-full flex-col border-r border-border-primary bg-surface-primary">
       {/* Header */}
       <div className="flex items-center justify-between border-b border-border-primary px-4 py-3">
-        <h2 className="text-sm font-semibold text-text-primary">Threads</h2>
+        <h2 className="text-sm font-semibold text-text-primary">StrategyGPT</h2>
         <button
           onClick={onNewThread}
           className="rounded-md bg-accent-primary px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-accent-primary/90"
@@ -48,13 +51,23 @@ export function ThreadSidebar({ threads, onNewThread }: ThreadSidebarProps) {
           </div>
         )}
 
-        {activeThreads.map((thread) => (
-          <ThreadItem
-            key={thread.thread_id}
-            thread={thread}
-            isActive={currentThreadId === thread.thread_id}
-            onClick={() => router.push(`/coach/${thread.thread_id}`)}
-          />
+        {grouped.map(({ company, threads: companyThreads }) => (
+          <div key={company}>
+            {/* Company group header */}
+            <div className="sticky top-0 z-10 bg-surface-secondary/95 backdrop-blur-sm px-4 py-1.5 border-b border-border-primary">
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                {company}
+              </p>
+            </div>
+            {companyThreads.map((thread) => (
+              <ThreadItem
+                key={thread.thread_id}
+                thread={thread}
+                isActive={currentThreadId === thread.thread_id}
+                onClick={() => router.push(`/coach/${thread.thread_id}`)}
+              />
+            ))}
+          </div>
         ))}
 
         {/* Archived section */}
@@ -106,8 +119,13 @@ function ThreadItem({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-text-primary">
-            {thread.title}
+            {thread.contact_name || thread.title}
           </p>
+          {thread.contact_role && (
+            <p className="mt-0.5 truncate text-xs text-text-secondary">
+              {thread.contact_role}
+            </p>
+          )}
           {thread.deals && (
             <p className="mt-0.5 truncate text-xs text-accent-primary">
               {thread.deals.company}
@@ -145,6 +163,29 @@ function ThreadItem({
       </div>
     </button>
   );
+}
+
+/** Group threads by company, with ungrouped ("General") at the bottom */
+function groupByCompany(
+  threads: CoachingThreadWithDeal[]
+): { company: string; threads: CoachingThreadWithDeal[] }[] {
+  const map = new Map<string, CoachingThreadWithDeal[]>();
+  for (const t of threads) {
+    const key = t.company || "General";
+    if (!map.has(key)) map.set(key, []);
+    map.get(key)!.push(t);
+  }
+
+  // Sort: named companies first (alphabetically), "General" last
+  const groups = Array.from(map.entries())
+    .sort(([a], [b]) => {
+      if (a === "General") return 1;
+      if (b === "General") return -1;
+      return a.localeCompare(b);
+    })
+    .map(([company, threads]) => ({ company, threads }));
+
+  return groups;
 }
 
 function daysSince(dateStr: string): number {

@@ -14,7 +14,13 @@ import type { Deal } from "@/types/database";
 interface NewThreadDialogProps {
   open: boolean;
   onClose: () => void;
-  onCreated: (thread: { thread_id: string; title: string }) => void;
+  onCreated: (thread: {
+    thread_id: string;
+    title: string;
+    contact_name: string | null;
+    contact_role: string | null;
+    company: string | null;
+  }) => void;
   activeDeals: Pick<Deal, "deal_id" | "company" | "stage">[];
 }
 
@@ -24,14 +30,31 @@ export function NewThreadDialog({
   onCreated,
   activeDeals,
 }: NewThreadDialogProps) {
-  const [title, setTitle] = useState("");
+  const [contactName, setContactName] = useState("");
+  const [contactRole, setContactRole] = useState("");
+  const [company, setCompany] = useState("");
   const [dealId, setDealId] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Reset form when dialog opens/closes
+  function resetForm() {
+    setContactName("");
+    setContactRole("");
+    setCompany("");
+    setDealId("");
+    setError(null);
+  }
+
+  function handleClose() {
+    resetForm();
+    onClose();
+  }
+
   async function handleCreate() {
-    const trimmed = title.trim();
-    if (!trimmed) return;
+    const name = contactName.trim();
+    const comp = company.trim();
+    if (!name || !comp) return;
 
     setLoading(true);
     setError(null);
@@ -41,7 +64,10 @@ export function NewThreadDialog({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          title: trimmed,
+          title: name,
+          contact_name: name,
+          contact_role: contactRole.trim() || undefined,
+          company: comp,
           deal_id: dealId || undefined,
         }),
       });
@@ -53,7 +79,9 @@ export function NewThreadDialog({
       }
 
       const thread = await res.json();
-      setTitle("");
+      setContactName("");
+      setContactRole("");
+      setCompany("");
       setDealId("");
       onCreated(thread);
     } catch {
@@ -71,31 +99,71 @@ export function NewThreadDialog({
   }
 
   return (
-    <Dialog open={open} onClose={onClose}>
+    <Dialog open={open} onClose={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New Thread</DialogTitle>
-          <DialogClose onClose={onClose} />
+          <DialogTitle>New StrategyGPT Thread</DialogTitle>
+          <DialogClose onClose={handleClose} />
         </DialogHeader>
 
         <div className="space-y-4 px-6 py-4">
-          {/* Thread name */}
+          {/* Person name */}
           <div>
             <label
-              htmlFor="thread-title"
+              htmlFor="contact-name"
               className="mb-1 block text-xs font-medium text-text-secondary"
             >
-              Thread name
+              Person Name
             </label>
             <input
-              id="thread-title"
+              id="contact-name"
               type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
+              value={contactName}
+              onChange={(e) => setContactName(e.target.value)}
               onKeyDown={handleKeyDown}
-              placeholder="e.g. Apollo Data Partnership"
+              placeholder="e.g. Anna Eliot"
               maxLength={200}
               autoFocus
+              className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+            />
+          </div>
+
+          {/* Account / Company */}
+          <div>
+            <label
+              htmlFor="company"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              Account / Company
+            </label>
+            <input
+              id="company"
+              type="text"
+              value={company}
+              onChange={(e) => setCompany(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="e.g. pharosIQ"
+              maxLength={200}
+              className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+            />
+          </div>
+
+          {/* Role / Title */}
+          <div>
+            <label
+              htmlFor="contact-role"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              Role / Title (optional)
+            </label>
+            <input
+              id="contact-role"
+              type="text"
+              value={contactRole}
+              onChange={(e) => setContactRole(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="e.g. CMO"
+              maxLength={200}
               className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
             />
           </div>
@@ -114,7 +182,7 @@ export function NewThreadDialog({
               onChange={(e) => setDealId(e.target.value)}
               className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
             >
-              <option value="">No deal (general thread)</option>
+              <option value="">No deal</option>
               {activeDeals.map((d) => (
                 <option key={d.deal_id} value={d.deal_id}>
                   {d.company} ({d.stage.replace(/_/g, " ")})
@@ -128,14 +196,14 @@ export function NewThreadDialog({
           )}
 
           <div className="flex justify-end gap-2">
-            <Button variant="secondary" size="sm" onClick={onClose}>
+            <Button variant="secondary" size="sm" onClick={handleClose}>
               Cancel
             </Button>
             <Button
               size="sm"
               onClick={handleCreate}
               loading={loading}
-              disabled={!title.trim()}
+              disabled={!contactName.trim() || !company.trim()}
             >
               Create Thread
             </Button>

@@ -17,13 +17,23 @@ export function CoachShell({ threads: initialThreads, activeDeals, children }: C
   const [threads, setThreads] = useState(initialThreads);
   const [dialogOpen, setDialogOpen] = useState(false);
 
-  function handleThreadCreated(thread: { thread_id: string; title: string }) {
+  function handleThreadCreated(thread: {
+    thread_id: string;
+    title: string;
+    contact_name: string | null;
+    contact_role: string | null;
+    company: string | null;
+  }) {
     // Optimistically add the new thread to the list
     const newThread: CoachingThreadWithDeal = {
       thread_id: thread.thread_id,
       user_id: "",
       deal_id: null,
       title: thread.title,
+      contact_name: thread.contact_name,
+      contact_role: thread.contact_role,
+      company: thread.company,
+      contact_id: null,
       thread_brief: null,
       brief_updated_at: null,
       last_message_at: new Date().toISOString(),

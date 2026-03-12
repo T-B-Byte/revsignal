@@ -9,8 +9,18 @@ import type { SubscriptionTier } from "@/types/database";
 // 20 coaching requests per user per hour
 const limiter = rateLimit({ interval: 60 * 60 * 1000 });
 
+const VALID_INTERACTION_TYPES = [
+  "email",
+  "conversation",
+  "call_transcript",
+  "web_meeting",
+  "in_person_meeting",
+  "coaching",
+] as const;
+
 const sendMessageSchema = z.object({
-  message: z.string().min(1).max(5000),
+  message: z.string().min(1).max(50000),
+  interaction_type: z.enum(VALID_INTERACTION_TYPES).default("coaching"),
 });
 
 type RouteContext = { params: Promise<{ threadId: string }> };
@@ -133,6 +143,58 @@ export async function POST(request: NextRequest, context: RouteContext) {
     );
   }
 
+  const interactionType = parsed.data.interaction_type;
+
+  // For non-coaching interaction types, just save the note (no AI response)
+  if (interactionType !== "coaching") {
+    const { data: savedMsg, error: saveErr } = await supabase
+      .from("coaching_conversations")
+      .insert({
+        user_id: user.id,
+        thread_id: threadId,
+        role: "user",
+        content: parsed.data.message,
+        interaction_type: interactionType,
+        context_used: null,
+        sources_cited: [],
+        tokens_used: null,
+      })
+      .select()
+      .single();
+
+    if (saveErr) {
+      console.error("[api/coaching/threads/messages] Save error:", saveErr.message);
+      return NextResponse.json(
+        { error: "Failed to save note." },
+        { status: 500 }
+      );
+    }
+
+    // Update thread metadata (atomic increment to avoid race conditions)
+    await supabase.rpc("increment_thread_message_count", {
+      p_thread_id: threadId,
+      p_last_message_at: savedMsg.created_at,
+    }).then(({ error: rpcErr }) => {
+      // Fallback to non-atomic update if RPC doesn't exist yet
+      if (rpcErr) {
+        return supabase
+          .from("coaching_threads")
+          .update({
+            last_message_at: savedMsg.created_at,
+            message_count: thread.message_count + 1,
+          })
+          .eq("thread_id", threadId);
+      }
+    });
+
+    return NextResponse.json({
+      saved: true,
+      message: savedMsg,
+      interactionType,
+    });
+  }
+
+  // Coaching mode — call the Strategist for a response
   try {
     const result = await generateThreadResponse(
       supabase,

@@ -24,7 +24,7 @@ export async function generateMetadata({
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return { title: "Coach | RevSignal" };
+    return { title: "StrategyGPT | RevSignal" };
   }
 
   const { data: thread } = await supabase
@@ -35,7 +35,7 @@ export async function generateMetadata({
     .maybeSingle();
 
   return {
-    title: thread ? `${thread.title} | Coach | RevSignal` : "Coach | RevSignal",
+    title: thread ? `${thread.title} | StrategyGPT | RevSignal` : "StrategyGPT | RevSignal",
   };
 }
 

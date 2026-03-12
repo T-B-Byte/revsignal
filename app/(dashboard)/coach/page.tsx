@@ -6,8 +6,8 @@ import type { SubscriptionTier, CoachingThreadWithDeal, Deal } from "@/types/dat
 import { ACTIVE_STAGES } from "@/types/database";
 
 export const metadata = {
-  title: "Coach | RevSignal",
-  description: "Strategic coaching from The Strategist.",
+  title: "StrategyGPT | RevSignal",
+  description: "Your AI-powered intelligence hub for every prospect and account.",
 };
 
 export default async function CoachPage() {
@@ -105,14 +105,14 @@ export default async function CoachPage() {
       <div className="flex h-full items-center justify-center">
         <div className="text-center">
           <h2 className="text-lg font-semibold text-text-primary">
-            The Strategist
+            StrategyGPT
           </h2>
           <p className="mt-1 text-sm text-text-secondary">
-            Select a thread or start a new one.
+            Select a person or create a new thread.
           </p>
-          <p className="mt-3 text-xs text-text-muted">
-            Each thread remembers your conversation history, tracks follow-ups,
-            and gives you coaching tailored to the context.
+          <p className="mt-3 text-xs text-text-muted max-w-sm">
+            Each thread is your intelligence hub for one person. Paste emails,
+            call transcripts, meeting notes, or ask the Strategist for coaching.
           </p>
         </div>
       </div>

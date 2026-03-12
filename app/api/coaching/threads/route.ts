@@ -4,6 +4,10 @@ import { z } from "zod/v4";
 
 const createThreadSchema = z.object({
   title: z.string().min(1).max(200),
+  contact_name: z.string().min(1).max(200).optional(),
+  contact_role: z.string().max(200).optional(),
+  company: z.string().min(1).max(200).optional(),
+  contact_id: z.string().uuid().optional(),
   deal_id: z.string().uuid().optional(),
 });
 
@@ -123,6 +127,10 @@ export async function POST(request: NextRequest) {
     .insert({
       user_id: user.id,
       title: parsed.data.title,
+      contact_name: parsed.data.contact_name ?? null,
+      contact_role: parsed.data.contact_role ?? null,
+      company: parsed.data.company ?? null,
+      contact_id: parsed.data.contact_id ?? null,
       deal_id: parsed.data.deal_id ?? null,
     })
     .select()

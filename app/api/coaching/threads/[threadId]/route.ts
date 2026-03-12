@@ -4,6 +4,9 @@ import { z } from "zod/v4";
 
 const updateThreadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
+  contact_name: z.string().min(1).max(200).nullable().optional(),
+  contact_role: z.string().max(200).nullable().optional(),
+  company: z.string().min(1).max(200).nullable().optional(),
   deal_id: z.string().uuid().nullable().optional(),
   is_archived: z.boolean().optional(),
 });
