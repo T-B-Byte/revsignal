@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge, type BadgeVariant } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { formatAgentHtml } from '@/lib/format-agent-html';
 import { format } from 'date-fns';
 import type { EscalationLevel } from '@/types/database';
@@ -225,16 +226,14 @@ export function FollowUpAlerts({ groups, hasAiAccess }: FollowUpAlertsProps) {
                             {/* Reschedule picker */}
                             {reschedulingId === item.item_id && (
                               <div className="mt-2 flex items-center gap-2">
-                                <input
-                                  type="date"
-                                  min={new Date().toISOString().slice(0, 10)}
+                                <DatePicker
                                   defaultValue={displayDate || new Date().toISOString().slice(0, 10)}
-                                  onChange={(e) => {
-                                    if (e.target.value) {
-                                      handleReschedule(item.item_id, e.target.value);
-                                    }
+                                  onChange={(v) => {
+                                    if (v) handleReschedule(item.item_id, v);
                                   }}
-                                  className="rounded border border-border-primary bg-surface-secondary px-2 py-1 text-xs text-text-primary"
+                                  min={new Date().toISOString().slice(0, 10)}
+                                  size="sm"
+                                  placeholder="Pick date"
                                 />
                                 <button
                                   onClick={() => setReschedulingId(null)}

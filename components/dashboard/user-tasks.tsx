@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface Task {
   task_id: string;
@@ -218,12 +219,12 @@ export function UserTasks() {
                 <label className="text-[10px] font-medium text-text-muted uppercase tracking-wider">
                   Due
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   value={newDate}
-                  onChange={(e) => setNewDate(e.target.value)}
+                  onChange={(v) => setNewDate(v)}
                   min={today}
-                  className="rounded border border-border-primary bg-surface-primary px-2 py-1 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+                  size="sm"
+                  placeholder="Due date"
                 />
               </div>
               <div className="flex items-center gap-1.5">
@@ -380,11 +381,11 @@ function TaskRow({
           }}
         />
         <div className="flex items-center justify-between">
-          <input
-            type="date"
+          <DatePicker
             value={editDate}
-            onChange={(e) => onEditDateChange(e.target.value)}
-            className="rounded border border-border-primary bg-surface-primary px-2 py-1 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+            onChange={(v) => onEditDateChange(v)}
+            size="sm"
+            placeholder="Due date"
           />
           <div className="flex items-center gap-1.5">
             <button

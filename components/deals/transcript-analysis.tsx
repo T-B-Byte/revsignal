@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { formatAgentHtml } from '@/lib/format-agent-html';
 
 interface TranscriptAnalysisProps {
@@ -159,11 +160,10 @@ export function TranscriptAnalysis({ dealId, hasAiAccess, company }: TranscriptA
                 <label className="mb-1 block text-xs font-medium text-text-secondary">
                   Call Date <span className="text-status-red">*</span>
                 </label>
-                <input
-                  type="date"
+                <DatePicker
                   value={date}
-                  onChange={(e) => setDate(e.target.value)}
-                  className="w-full rounded-md border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+                  onChange={(v) => setDate(v)}
+                  placeholder="Select date"
                 />
               </div>
               <div>

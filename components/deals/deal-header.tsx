@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { Card, CardContent } from "@/components/ui/card";
 import { updateDeal } from "@/app/(dashboard)/deals/actions";
@@ -155,15 +156,15 @@ export function DealHeader({ deal }: DealHeaderProps) {
             </div>
 
             <div className="grid grid-cols-2 gap-4">
-              <Input
+              <DatePicker
                 name="close_date"
                 label="Close Date"
-                type="date"
                 defaultValue={
                   deal.close_date
                     ? format(new Date(deal.close_date), "yyyy-MM-dd")
                     : ""
                 }
+                placeholder="Pick date"
               />
               <Select
                 name="deployment_method"

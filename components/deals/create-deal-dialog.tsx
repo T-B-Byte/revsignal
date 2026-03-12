@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { createDeal } from "@/app/(dashboard)/deals/actions";
@@ -134,7 +135,7 @@ export function CreateDealDialog({ open, onClose }: CreateDealDialogProps) {
               max={100}
             />
 
-            <Input name="close_date" label="Expected Close Date" type="date" />
+            <DatePicker name="close_date" label="Expected Close Date" placeholder="Pick date" />
           </div>
 
           <Textarea

@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import {
@@ -135,7 +136,7 @@ export function DealActionItems({
                 ]}
                 defaultValue="me"
               />
-              <Input name="due_date" label="Due Date" type="date" />
+              <DatePicker name="due_date" label="Due Date" placeholder="Pick date" />
             </div>
             <div className="flex items-center justify-end gap-2">
               <Button

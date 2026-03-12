@@ -6,6 +6,7 @@ import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
 import type { CoachingMessage, CoachingThread, InteractionType, Deal } from "@/types/database";
 import { INTERACTION_TYPES } from "@/types/database";
+import { DatePicker } from "@/components/ui/date-picker";
 
 interface ThreadChatProps {
   thread: CoachingThread;
@@ -659,12 +660,12 @@ export function ThreadChat({
                     />
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-text-secondary">Due:</label>
-                      <input
-                        type="date"
+                      <DatePicker
                         value={taskDueDate}
-                        onChange={(e) => setTaskDueDate(e.target.value)}
+                        onChange={(v) => setTaskDueDate(v)}
                         min={new Date().toISOString().split("T")[0]}
-                        className="rounded border border-border-primary bg-surface-primary px-2 py-0.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+                        size="sm"
+                        placeholder="Pick date"
                       />
                       <div className="ml-auto flex gap-1.5">
                         <button

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { DatePicker } from '@/components/ui/date-picker';
 
 interface StrategistBriefingProps {
   hasAiAccess: boolean;
@@ -679,12 +680,12 @@ function AnnotationPanel({
         <label className="block text-[10px] font-medium text-text-muted uppercase tracking-wider mb-1">
           Push to date
         </label>
-        <input
-          type="date"
+        <DatePicker
           value={pushDate}
-          onChange={(e) => onDateChange(e.target.value)}
+          onChange={(v) => onDateChange(v)}
           min={new Date().toISOString().slice(0, 10)}
-          className="rounded border border-border-primary bg-surface-primary px-2.5 py-1.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+          size="sm"
+          placeholder="Pick date"
         />
         {pushDate && (
           <button

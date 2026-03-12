@@ -3,6 +3,7 @@
 import { useState, useTransition, useRef } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -128,7 +129,7 @@ export function LogConversationForContact({
             required
           />
 
-          <Input name="follow_up_date" label="Follow-up Date" type="date" />
+          <DatePicker name="follow_up_date" label="Follow-up Date" placeholder="Pick date" />
 
           {/* Next step prompt */}
           <div className="border border-border-primary rounded-md p-4 bg-surface-secondary/50 space-y-3">
@@ -150,10 +151,10 @@ export function LogConversationForContact({
                 options={ownerOptions}
                 defaultValue="me"
               />
-              <Input
+              <DatePicker
                 name="next_step_due"
                 label="Due Date"
-                type="date"
+                placeholder="Pick date"
                 helperText="Uses follow-up date if not set"
               />
             </div>
