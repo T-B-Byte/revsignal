@@ -10,7 +10,11 @@
  * Dry run: DRY_RUN=1 npx tsx scripts/migrate-meetings-to-strategygpt.ts
  */
 
+import { config } from "dotenv";
 import { createClient } from "@supabase/supabase-js";
+
+// Load .env.local (Next.js doesn't auto-load for standalone scripts)
+config({ path: ".env.local" });
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!;
 const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;

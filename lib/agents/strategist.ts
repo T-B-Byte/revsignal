@@ -1925,23 +1925,61 @@ export async function generateThreadResponse(
   const contextDoc = contextSections.join("\n\n");
 
   // Step 4: Build messages array with thread history
-  // Load last 10 messages for this thread
+  // Load recent messages — fetch more than we need so we can prioritize intel
   const { data: recentMessages } = await supabase
     .from("coaching_conversations")
-    .select("role, content, created_at")
+    .select("role, content, created_at, interaction_type")
     .eq("thread_id", threadId)
     .order("created_at", { ascending: false })
-    .limit(10);
+    .limit(30);
 
   const messages: { role: "user" | "assistant"; content: string }[] = [];
 
+  // Also build a separate intel digest for non-coaching notes that fall outside
+  // the recent message window, so the Strategist always has full awareness
+  const intelDigestLines: string[] = [];
+
   if (recentMessages && recentMessages.length > 0) {
-    // Reverse to chronological order, enforce alternation
-    const chronological = [...recentMessages].reverse();
+    // Separate intel notes from coaching messages
+    const intelTypes = new Set(["email", "conversation", "call_transcript", "web_meeting", "in_person_meeting"]);
+    const allChronological = [...recentMessages].reverse();
+
+    // Pick the last 10 messages for the conversation window, but ensure
+    // recent intel notes aren't displaced by coaching back-and-forth.
+    // Strategy: include all intel notes from the last 30, plus enough
+    // coaching messages to fill the remaining slots (up to 10 total).
+    const intelMsgs = allChronological.filter(
+      (m) => m.role === "user" && intelTypes.has(m.interaction_type ?? "coaching")
+    );
+    const coachingMsgs = allChronological.filter(
+      (m) => !intelTypes.has(m.interaction_type ?? "coaching")
+    );
+
+    // Take the most recent 5 intel notes + most recent 10 coaching messages,
+    // then merge by date and take the final 10
+    const selectedIntel = intelMsgs.slice(-5);
+    const selectedCoaching = coachingMsgs.slice(-10);
+    const merged = [...selectedIntel, ...selectedCoaching]
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .slice(-10);
+
+    // Any intel notes NOT in the merged set get summarized in the intel digest
+    const mergedIds = new Set(merged.map((m) => m.created_at));
+    for (const note of intelMsgs) {
+      if (!mergedIds.has(note.created_at)) {
+        const typeLabel = (note.interaction_type ?? "note").replace(/_/g, " ");
+        const date = note.created_at.split("T")[0];
+        const preview = note.content.length > 300
+          ? note.content.slice(0, 300) + " [...]"
+          : note.content;
+        intelDigestLines.push(`[${date}] (${typeLabel}) ${preview}`);
+      }
+    }
+
     let lastRole: string | null = null;
     let charBudget = 12000;
 
-    for (const msg of chronological) {
+    for (const msg of merged) {
       const role = msg.role === "user" ? "user" as const : "assistant" as const;
       if (role === lastRole) {
         messages.pop();
@@ -1949,6 +1987,14 @@ export async function generateThreadResponse(
       // Strip follow-up extraction blocks from assistant messages (they're system-internal)
       let content = msg.content;
       content = content.replace(/<!-- FOLLOW_UPS\n[\s\S]*?-->/g, "").trim();
+
+      // Label intel notes so the Strategist knows the source type
+      const iType = msg.interaction_type ?? "coaching";
+      if (role === "user" && intelTypes.has(iType)) {
+        const typeLabel = iType.replace(/_/g, " ").toUpperCase();
+        content = `[PASTED ${typeLabel}]\n${content}`;
+      }
+
       if (content.length > 2000) {
         content = content.slice(0, 2000) + " [...]";
       }
@@ -1962,6 +2008,13 @@ export async function generateThreadResponse(
     if (messages.length > 0 && messages[messages.length - 1].role === "user") {
       messages.pop();
     }
+  }
+
+  // Inject intel digest into context if there are older notes outside the window
+  if (intelDigestLines.length > 0) {
+    contextSections.push(
+      `OLDER INTEL NOTES (not in recent messages):\n${intelDigestLines.join("\n")}`
+    );
   }
 
   // Add the current user message with context
@@ -2188,19 +2241,35 @@ export async function generateThreadBrief(
   userId: string,
   threadId: string
 ): Promise<void> {
-  // Fetch all messages in the thread
+  // Fetch all messages in the thread (with interaction_type for labeling)
   const { data: allMessages } = await supabase
     .from("coaching_conversations")
-    .select("role, content, created_at")
+    .select("role, content, created_at, interaction_type")
     .eq("thread_id", threadId)
     .order("created_at", { ascending: true });
 
   if (!allMessages || allMessages.length < THREAD_BRIEF_THRESHOLD) return;
 
-  // Build the full thread text (truncate each message to prevent overflow)
+  // Build the full thread text with interaction type labels
+  // Intel notes (emails, transcripts, etc.) are labeled differently from coaching
+  const INTEL_LABELS: Record<string, string> = {
+    email: "EMAIL",
+    conversation: "CONVERSATION",
+    call_transcript: "CALL TRANSCRIPT",
+    web_meeting: "WEB MEETING",
+    in_person_meeting: "IN-PERSON MEETING",
+  };
+
   const threadText = allMessages
     .map((m) => {
-      const role = m.role === "user" ? "TINA" : "STRATEGIST";
+      const iType = m.interaction_type ?? "coaching";
+      const intelLabel = INTEL_LABELS[iType];
+      // Label intel notes by type so the summarizer can distinguish sources
+      const role = m.role === "assistant"
+        ? "STRATEGIST"
+        : intelLabel
+          ? `TINA (pasted ${intelLabel})`
+          : "TINA";
       let content = m.content.replace(/<!-- FOLLOW_UPS\n[\s\S]*?-->/g, "").trim();
       if (content.length > 1000) {
         content = content.slice(0, 1000) + " [...]";
