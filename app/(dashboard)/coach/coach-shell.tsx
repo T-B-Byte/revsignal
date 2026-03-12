@@ -1,7 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import { ThreadSidebar } from "@/components/coaching/thread-sidebar";
 import { NewThreadDialog } from "@/components/coaching/new-thread-dialog";
 import type { CoachingThreadWithDeal, Deal } from "@/types/database";
@@ -14,6 +14,7 @@ interface CoachShellProps {
 
 export function CoachShell({ threads: initialThreads, activeDeals: initialDeals, children }: CoachShellProps) {
   const router = useRouter();
+  const pathname = usePathname();
   const [threads, setThreads] = useState(initialThreads);
   const [deals, setDeals] = useState(initialDeals);
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -50,6 +51,55 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
     router.push(`/coach/${thread.thread_id}`);
   }
 
+  const handleArchive = useCallback(async (threadId: string, archive: boolean) => {
+    // Optimistic update
+    setThreads((prev) =>
+      prev.map((t) => t.thread_id === threadId ? { ...t, is_archived: archive } : t)
+    );
+
+    const res = await fetch(`/api/coaching/threads/${threadId}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ is_archived: archive }),
+    });
+
+    if (!res.ok) {
+      // Revert on failure
+      setThreads((prev) =>
+        prev.map((t) => t.thread_id === threadId ? { ...t, is_archived: !archive } : t)
+      );
+      return;
+    }
+
+    // If we archived the currently-viewed thread, navigate to /coach
+    const currentThreadId = pathname.split("/coach/")[1];
+    if (archive && currentThreadId === threadId) {
+      router.push("/coach");
+    }
+  }, [pathname, router]);
+
+  const handleDelete = useCallback(async (threadId: string) => {
+    // Optimistic removal
+    const removed = threads.find((t) => t.thread_id === threadId);
+    setThreads((prev) => prev.filter((t) => t.thread_id !== threadId));
+
+    const res = await fetch(`/api/coaching/threads/${threadId}`, {
+      method: "DELETE",
+    });
+
+    if (!res.ok && removed) {
+      // Revert on failure
+      setThreads((prev) => [...prev, removed]);
+      return;
+    }
+
+    // If we deleted the currently-viewed thread, navigate to /coach
+    const currentThreadId = pathname.split("/coach/")[1];
+    if (currentThreadId === threadId) {
+      router.push("/coach");
+    }
+  }, [threads, pathname, router]);
+
   return (
     <>
       {/* Thread sidebar */}
@@ -57,6 +107,8 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
         <ThreadSidebar
           threads={threads}
           onNewThread={() => setDialogOpen(true)}
+          onArchive={handleArchive}
+          onDelete={handleDelete}
         />
       </div>
 

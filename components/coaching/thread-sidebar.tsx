@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import type { CoachingThreadWithDeal } from "@/types/database";
@@ -8,12 +8,20 @@ import type { CoachingThreadWithDeal } from "@/types/database";
 interface ThreadSidebarProps {
   threads: CoachingThreadWithDeal[];
   onNewThread: () => void;
+  onArchive?: (threadId: string, archive: boolean) => void;
+  onDelete?: (threadId: string) => void;
 }
 
-export function ThreadSidebar({ threads, onNewThread }: ThreadSidebarProps) {
+export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: ThreadSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [showArchived, setShowArchived] = useState(false);
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    thread: CoachingThreadWithDeal;
+  } | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const activeThreads = threads.filter((t) => !t.is_archived);
   const archivedThreads = threads.filter((t) => t.is_archived);
@@ -23,6 +31,44 @@ export function ThreadSidebar({ threads, onNewThread }: ThreadSidebarProps) {
 
   // Group active threads by company
   const grouped = groupByCompany(activeThreads);
+
+  // Close context menu on click anywhere
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [contextMenu]);
+
+  // Close confirm delete after 3 seconds if no action
+  useEffect(() => {
+    if (!confirmDelete) return;
+    const timer = setTimeout(() => setConfirmDelete(null), 3000);
+    return () => clearTimeout(timer);
+  }, [confirmDelete]);
+
+  function handleContextMenu(e: React.MouseEvent, thread: CoachingThreadWithDeal) {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, thread });
+  }
+
+  function handleArchiveClick() {
+    if (!contextMenu || !onArchive) return;
+    onArchive(contextMenu.thread.thread_id, !contextMenu.thread.is_archived);
+    setContextMenu(null);
+  }
+
+  function handleDeleteClick() {
+    if (!contextMenu) return;
+    // Require confirmation
+    setConfirmDelete(contextMenu.thread.thread_id);
+    setContextMenu(null);
+  }
+
+  function handleConfirmDelete(threadId: string) {
+    onDelete?.(threadId);
+    setConfirmDelete(null);
+  }
 
   return (
     <div className="flex h-full flex-col border-r border-border-primary bg-surface-primary">
@@ -64,7 +110,11 @@ export function ThreadSidebar({ threads, onNewThread }: ThreadSidebarProps) {
                 key={thread.thread_id}
                 thread={thread}
                 isActive={currentThreadId === thread.thread_id}
+                isConfirmingDelete={confirmDelete === thread.thread_id}
                 onClick={() => router.push(`/coach/${thread.thread_id}`)}
+                onContextMenu={(e) => handleContextMenu(e, thread)}
+                onConfirmDelete={() => handleConfirmDelete(thread.thread_id)}
+                onCancelDelete={() => setConfirmDelete(null)}
               />
             ))}
           </div>
@@ -85,12 +135,41 @@ export function ThreadSidebar({ threads, onNewThread }: ThreadSidebarProps) {
                   key={thread.thread_id}
                   thread={thread}
                   isActive={currentThreadId === thread.thread_id}
+                  isConfirmingDelete={confirmDelete === thread.thread_id}
                   onClick={() => router.push(`/coach/${thread.thread_id}`)}
+                  onContextMenu={(e) => handleContextMenu(e, thread)}
+                  onConfirmDelete={() => handleConfirmDelete(thread.thread_id)}
+                  onCancelDelete={() => setConfirmDelete(null)}
                 />
               ))}
           </div>
         )}
       </div>
+
+      {/* Context menu */}
+      {contextMenu && (
+        <div
+          className="fixed z-50 min-w-[140px] rounded-md border border-border-primary bg-surface-primary shadow-lg py-1"
+          style={{ left: contextMenu.x, top: contextMenu.y }}
+        >
+          {onArchive && (
+            <button
+              onClick={handleArchiveClick}
+              className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-surface-tertiary transition-colors"
+            >
+              {contextMenu.thread.is_archived ? "Unarchive" : "Archive"}
+            </button>
+          )}
+          {onDelete && (
+            <button
+              onClick={handleDeleteClick}
+              className="w-full px-3 py-1.5 text-left text-xs text-red-400 hover:bg-surface-tertiary transition-colors"
+            >
+              Delete
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -98,20 +177,56 @@ export function ThreadSidebar({ threads, onNewThread }: ThreadSidebarProps) {
 function ThreadItem({
   thread,
   isActive,
+  isConfirmingDelete,
   onClick,
+  onContextMenu,
+  onConfirmDelete,
+  onCancelDelete,
 }: {
   thread: CoachingThreadWithDeal;
   isActive: boolean;
+  isConfirmingDelete: boolean;
   onClick: () => void;
+  onContextMenu: (e: React.MouseEvent) => void;
+  onConfirmDelete: () => void;
+  onCancelDelete: () => void;
 }) {
   const isStale =
     thread.deal_id &&
     !thread.is_archived &&
     daysSince(thread.last_message_at) >= 7;
 
+  if (isConfirmingDelete) {
+    return (
+      <div className="px-4 py-3 bg-red-500/5 border-y border-red-500/20">
+        <p className="text-xs text-text-primary mb-2">
+          Delete <span className="font-medium">{thread.contact_name || thread.title}</span>?
+        </p>
+        <p className="text-[10px] text-text-muted mb-2">
+          This permanently removes the thread and all messages.
+        </p>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={onConfirmDelete}
+            className="rounded px-2 py-0.5 text-[10px] font-medium bg-red-500 text-white hover:bg-red-600 transition-colors"
+          >
+            Delete
+          </button>
+          <button
+            onClick={onCancelDelete}
+            className="rounded px-2 py-0.5 text-[10px] font-medium text-text-secondary hover:bg-surface-tertiary transition-colors"
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <button
       onClick={onClick}
+      onContextMenu={onContextMenu}
       className={`w-full px-4 py-3 text-left transition-colors hover:bg-surface-tertiary ${
         isActive ? "bg-surface-tertiary" : ""
       } ${thread.is_archived ? "opacity-60" : ""}`}
