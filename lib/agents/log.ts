@@ -15,6 +15,7 @@ export type AgentName =
   | "call-analyst"
   | "competitive-watcher"
   | "email-composer"
+  | "message-composer"
   | "sfdc-sync"
   | "summarizer"
   | "tradeshow-scout";

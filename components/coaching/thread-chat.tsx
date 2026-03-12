@@ -4,7 +4,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { formatAgentHtml } from "@/lib/format-agent-html";
 import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
-import type { CoachingMessage, CoachingThread, InteractionType, Deal } from "@/types/database";
+import type { CoachingMessage, CoachingThread, InteractionType, Deal, Contact } from "@/types/database";
+import type { MessageChannel } from "@/lib/agents/email-composer";
 import { INTERACTION_TYPES } from "@/types/database";
 import { DatePicker } from "@/components/ui/date-picker";
 
@@ -53,9 +54,17 @@ export function ThreadChat({
   const [editSaving, setEditSaving] = useState(false);
   const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
   const [showCompose, setShowCompose] = useState(false);
+  const [composeChannel, setComposeChannel] = useState<MessageChannel>("email");
   const [composeType, setComposeType] = useState<string>("cold_outreach");
   const [composeInstructions, setComposeInstructions] = useState("");
+  const [composeSourceContent, setComposeSourceContent] = useState("");
   const [composing, setComposing] = useState(false);
+  const [linkedContactId, setLinkedContactId] = useState<string | null>(null);
+  const [threadContacts, setThreadContacts] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role">[]>([]);
+  const [contactSearch, setContactSearch] = useState("");
+  const [contactResults, setContactResults] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role">[]>([]);
+  const [showContactSearch, setShowContactSearch] = useState(false);
+  const [searchingContacts, setSearchingContacts] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [showDealPicker, setShowDealPicker] = useState(false);
   const [linkedDealId, setLinkedDealId] = useState<string | null>(thread.deal_id);
@@ -95,7 +104,42 @@ export function ThreadChat({
     setInput("");
     setLinkedDealId(thread.deal_id);
     setShowDealPicker(false);
+    setTaskTexts({});
+    setTaskCreatedIds(new Set());
   }, [thread.thread_id, thread.deal_id, initialMessages]);
+
+  // Load persisted task highlights for messages in this thread
+  useEffect(() => {
+    const controller = new AbortController();
+    const messageIds = initialMessages.map((m) => m.conversation_id);
+    if (messageIds.length === 0) return;
+
+    fetch(`/api/tasks?source_message_ids=${messageIds.join(",")}`, {
+      signal: controller.signal,
+    })
+      .then((res) => res.json())
+      .then((data) => {
+        if (!data.tasks) return;
+        const restored: Record<string, { text: string; dueDate: string }[]> = {};
+        for (const task of data.tasks as { source_message_id: string; source_text: string; due_date: string | null }[]) {
+          if (!task.source_message_id || !task.source_text) continue;
+          if (!restored[task.source_message_id]) restored[task.source_message_id] = [];
+          restored[task.source_message_id].push({
+            text: task.source_text,
+            dueDate: task.due_date ?? "",
+          });
+        }
+        setTaskTexts((prev) => ({ ...prev, ...restored }));
+        setTaskCreatedIds((prev) => {
+          const next = new Set(prev);
+          for (const id of Object.keys(restored)) next.add(id);
+          return next;
+        });
+      })
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, [thread.thread_id, initialMessages]);
 
   // Close context menu on click anywhere
   useEffect(() => {
@@ -468,14 +512,17 @@ export function ThreadChat({
       // Create one task per line (each bullet becomes its own task)
       const descriptions = taskDesc.split("\n").map((l) => l.trim()).filter(Boolean);
       for (const desc of descriptions) {
-        await fetch("/api/tasks", {
+        const res = await fetch("/api/tasks", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             description: desc,
             due_date: taskDueDate || undefined,
+            source_message_id: taskFromId || undefined,
+            source_text: desc,
           }),
         });
+        if (!res.ok) throw new Error("Failed to save task");
       }
       if (taskFromId) {
         setTaskCreatedIds((prev) => new Set(prev).add(taskFromId));
@@ -515,6 +562,54 @@ export function ThreadChat({
     { value: "meeting_request", label: "Meeting Request" },
   ];
 
+  const LINKEDIN_TYPES = [
+    { value: "comment", label: "Comment on Post" },
+    { value: "dm", label: "Direct Message" },
+    { value: "connection_request", label: "Connection Request" },
+    { value: "post_reply", label: "Reply to Comment" },
+    { value: "congratulate", label: "Congratulate" },
+  ];
+
+  const COMPOSE_TYPES = composeChannel === "email" ? EMAIL_TYPES : LINKEDIN_TYPES;
+
+  // Reset type when switching channels
+  function handleChannelChange(channel: MessageChannel) {
+    setComposeChannel(channel);
+    setComposeType(channel === "email" ? "cold_outreach" : "comment");
+    setComposeSourceContent("");
+  }
+
+  // Contact search for linking
+  async function searchContacts(query: string) {
+    setContactSearch(query);
+    if (query.length < 2) {
+      setContactResults([]);
+      return;
+    }
+    setSearchingContacts(true);
+    try {
+      const res = await fetch(`/api/contacts?search=${encodeURIComponent(query)}&limit=5`);
+      if (res.ok) {
+        const data = await res.json();
+        setContactResults(data.contacts ?? []);
+      }
+    } catch {
+      // ignore search errors
+    } finally {
+      setSearchingContacts(false);
+    }
+  }
+
+  function selectContact(contact: Pick<Contact, "contact_id" | "name" | "company" | "role">) {
+    setLinkedContactId(contact.contact_id);
+    setThreadContacts((prev) =>
+      prev.some((c) => c.contact_id === contact.contact_id) ? prev : [...prev, contact]
+    );
+    setShowContactSearch(false);
+    setContactSearch("");
+    setContactResults([]);
+  }
+
   async function handleCompose() {
     if (composing) return;
     setComposing(true);
@@ -525,22 +620,33 @@ export function ThreadChat({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          emailType: composeType,
+          channel: composeChannel,
+          messageType: composeType,
           dealId: linkedDealId || undefined,
+          contactId: linkedContactId || undefined,
           instructions: composeInstructions || undefined,
+          sourceContent: composeSourceContent || undefined,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to draft email.");
+        setError(data.error || "Failed to draft message.");
         return;
       }
 
       const data = await res.json();
 
-      // Format the draft as a message and add to thread
-      const draftContent = `**Draft: ${EMAIL_TYPES.find((t) => t.value === data.emailType)?.label ?? data.emailType}**\n\n**Subject:** ${data.subject}\n\n${data.body}`;
+      // Format the draft as a message — LinkedIn has no subject line
+      const typeLabel = COMPOSE_TYPES.find((t) => t.value === data.messageType)?.label ?? data.messageType;
+      const channelLabel = composeChannel === "linkedin" ? "LinkedIn" : "Email";
+      let draftContent: string;
+
+      if (composeChannel === "linkedin") {
+        draftContent = `**Draft: ${channelLabel} · ${typeLabel}**\n\n${data.body}`;
+      } else {
+        draftContent = `**Draft: ${typeLabel}**\n\n**Subject:** ${data.subject}\n\n${data.body}`;
+      }
 
       const draftMsg: CoachingMessage = {
         conversation_id: crypto.randomUUID(),
@@ -556,20 +662,22 @@ export function ThreadChat({
       };
       setMessages((prev) => [...prev, draftMsg]);
 
-      // Also save the draft to the thread as a coaching message
+      // Save the draft request to the thread
+      const channelPrefix = composeChannel === "linkedin" ? "LinkedIn" : "Email";
       await fetch(`/api/coaching/threads/${thread.thread_id}/messages`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: `Draft email for me: ${composeType}${composeInstructions ? ` — ${composeInstructions}` : ""}`,
+          message: `Draft ${channelPrefix} for me: ${composeType}${composeInstructions ? ` — ${composeInstructions}` : ""}`,
           interaction_type: "coaching",
         }),
       });
 
       setShowCompose(false);
       setComposeInstructions("");
+      setComposeSourceContent("");
     } catch {
-      setError("Network error drafting email.");
+      setError("Network error drafting message.");
     } finally {
       setComposing(false);
     }
@@ -656,10 +764,10 @@ export function ThreadChat({
             }`}
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
-              <polyline points="22,6 12,13 2,6" />
+              <path d="M12 20h9" />
+              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
             </svg>
-            Draft Email
+            Draft Message
           </button>
         </div>
         <div className="flex items-center gap-2 mt-0.5">
@@ -713,10 +821,33 @@ export function ThreadChat({
         </div>
       </div>
 
-      {/* Email compose panel */}
+      {/* Message compose panel */}
       {showCompose && (
         <div className="shrink-0 border-b border-border-primary bg-surface-secondary/50 px-6 py-3 space-y-3">
+          {/* Channel toggle + Type selector */}
           <div className="flex items-center gap-3">
+            <div className="flex rounded-md border border-border-primary overflow-hidden">
+              <button
+                onClick={() => handleChannelChange("email")}
+                className={`px-2.5 py-1 text-xs font-medium transition-colors ${
+                  composeChannel === "email"
+                    ? "bg-accent-primary text-white"
+                    : "bg-surface-primary text-text-secondary hover:text-text-primary"
+                }`}
+              >
+                Email
+              </button>
+              <button
+                onClick={() => handleChannelChange("linkedin")}
+                className={`px-2.5 py-1 text-xs font-medium transition-colors border-l border-border-primary ${
+                  composeChannel === "linkedin"
+                    ? "bg-blue-600 text-white"
+                    : "bg-surface-primary text-text-secondary hover:text-text-primary"
+                }`}
+              >
+                LinkedIn
+              </button>
+            </div>
             <div className="flex items-center gap-2">
               <label className="text-[10px] font-medium text-text-muted uppercase tracking-wider">Type</label>
               <select
@@ -724,27 +855,109 @@ export function ThreadChat({
                 onChange={(e) => setComposeType(e.target.value)}
                 className="rounded border border-border-primary bg-surface-primary px-2 py-1 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
               >
-                {EMAIL_TYPES.map((t) => (
+                {COMPOSE_TYPES.map((t) => (
                   <option key={t.value} value={t.value}>{t.label}</option>
                 ))}
               </select>
             </div>
-            {!linkedDealId && (
+          </div>
+
+          {/* Context row: deal + contact links */}
+          <div className="flex items-center gap-3 flex-wrap">
+            {!linkedDealId && !linkedContactId && (
               <p className="text-[10px] text-text-muted">
-                Link a deal above for better context
+                Link a deal or contact for better context
               </p>
             )}
+            {/* Contact link */}
+            {linkedContactId ? (
+              <div className="flex items-center gap-1">
+                <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-400">
+                  {threadContacts.find((c) => c.contact_id === linkedContactId)?.name ?? "Contact"}
+                  {threadContacts.find((c) => c.contact_id === linkedContactId)?.role
+                    ? ` · ${threadContacts.find((c) => c.contact_id === linkedContactId)!.role}`
+                    : ""}
+                </span>
+                <button
+                  onClick={() => setLinkedContactId(null)}
+                  className="text-[10px] text-text-muted hover:text-red-400 transition-colors"
+                  title="Remove contact"
+                >
+                  x
+                </button>
+              </div>
+            ) : (
+              <div className="relative">
+                <button
+                  onClick={() => setShowContactSearch(!showContactSearch)}
+                  className="text-[10px] text-text-muted hover:text-emerald-400 transition-colors"
+                >
+                  + Link contact
+                </button>
+                {showContactSearch && (
+                  <div className="absolute top-6 left-0 z-20 w-64 rounded-md border border-border-primary bg-surface-primary shadow-lg">
+                    <input
+                      type="text"
+                      value={contactSearch}
+                      onChange={(e) => searchContacts(e.target.value)}
+                      placeholder="Search contacts..."
+                      className="w-full rounded-t-md border-b border-border-primary bg-surface-primary px-3 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:outline-none"
+                      autoFocus
+                    />
+                    <div className="max-h-40 overflow-y-auto">
+                      {searchingContacts && (
+                        <p className="px-3 py-2 text-[10px] text-text-muted">Searching...</p>
+                      )}
+                      {contactResults.map((c) => (
+                        <button
+                          key={c.contact_id}
+                          onClick={() => selectContact(c)}
+                          className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-surface-tertiary transition-colors"
+                        >
+                          <span className="font-medium">{c.name}</span>
+                          {c.role && <span className="text-text-muted"> · {c.role}</span>}
+                          <span className="text-text-muted"> · {c.company}</span>
+                        </button>
+                      ))}
+                      {!searchingContacts && contactSearch.length >= 2 && contactResults.length === 0 && (
+                        <p className="px-3 py-2 text-[10px] text-text-muted">No contacts found</p>
+                      )}
+                      {contactSearch.length < 2 && (
+                        <p className="px-3 py-2 text-[10px] text-text-muted">Type 2+ characters to search</p>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
+
+          {/* Source content — for responding to posts/emails */}
+          {composeChannel === "linkedin" && (
+            <textarea
+              value={composeSourceContent}
+              onChange={(e) => setComposeSourceContent(e.target.value)}
+              placeholder="Paste the LinkedIn post or comment you're responding to..."
+              rows={3}
+              className="w-full resize-none rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+            />
+          )}
+
+          {/* Instructions */}
           <textarea
             value={composeInstructions}
             onChange={(e) => setComposeInstructions(e.target.value)}
-            placeholder="Instructions — e.g., 'Introduce DaaS offering, mention their intent data use case' or 'Follow up on last week's call about pricing'"
+            placeholder={
+              composeChannel === "linkedin"
+                ? "Instructions — e.g., 'Highlight our intent data angle' or 'Keep it warm, we met at the conference'"
+                : "Instructions — e.g., 'Introduce DaaS offering, mention their intent data use case' or 'Follow up on last week's call about pricing'"
+            }
             rows={2}
             className="w-full resize-none rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
           />
           <div className="flex items-center justify-end gap-2">
             <button
-              onClick={() => { setShowCompose(false); setComposeInstructions(""); }}
+              onClick={() => { setShowCompose(false); setComposeInstructions(""); setComposeSourceContent(""); }}
               className="rounded px-2.5 py-1 text-xs font-medium text-text-secondary hover:bg-surface-tertiary transition-colors"
             >
               Cancel
@@ -752,9 +965,17 @@ export function ThreadChat({
             <button
               onClick={handleCompose}
               disabled={composing}
-              className="rounded-md bg-accent-primary px-3 py-1 text-xs font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
+              className={`rounded-md px-3 py-1 text-xs font-medium text-white disabled:opacity-50 transition-colors ${
+                composeChannel === "linkedin"
+                  ? "bg-blue-600 hover:bg-blue-700"
+                  : "bg-accent-primary hover:bg-accent-primary/90"
+              }`}
             >
-              {composing ? "Drafting..." : "Draft Email"}
+              {composing
+                ? "Drafting..."
+                : composeChannel === "linkedin"
+                  ? "Draft LinkedIn Message"
+                  : "Draft Email"}
             </button>
           </div>
         </div>

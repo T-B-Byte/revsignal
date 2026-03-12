@@ -407,6 +407,7 @@ The Strategist should proactively suggest when to use a skill based on pipeline 
 6. **Prefer simplicity.** Smallest possible changes, fewest files, minimal complexity.
 7. **Write a review section.** Summarize what was done and any implications.
 8. **Use background agents for parallel work.** Spawn agents for independent components (e.g., building the SFDC integration while designing the dashboard).
+9. **Always commit and push.** After completing work, commit the changes and push to remote. Do not wait to be asked.
 
 ---
 
