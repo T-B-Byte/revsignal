@@ -62,7 +62,9 @@ export function ThreadChat({
   const [taskSaving, setTaskSaving] = useState(false);
   const [taskCreatedIds, setTaskCreatedIds] = useState<Set<string>>(new Set());
   // Track exact text snippets turned into tasks, keyed by message ID
-  const [taskTexts, setTaskTexts] = useState<Record<string, string[]>>({});
+  const [taskTexts, setTaskTexts] = useState<
+    Record<string, { text: string; dueDate: string }[]>
+  >({});
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -123,23 +125,34 @@ export function ThreadChat({
 
   /** Wrap substrings that were turned into tasks with a highlight mark */
   function highlightTaskText(text: string, messageId: string): React.ReactNode {
-    const snippets = taskTexts[messageId];
-    if (!snippets || snippets.length === 0) return text;
+    const entries = taskTexts[messageId];
+    if (!entries || entries.length === 0) return text;
 
+    const snippetTexts = entries.map((e) => e.text);
     // Build a regex that matches any of the task snippets
-    const escaped = snippets.map((s) =>
+    const escaped = snippetTexts.map((s) =>
       s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
     );
     const pattern = new RegExp(`(${escaped.join("|")})`, "g");
     const parts = text.split(pattern);
 
-    return parts.map((part, i) =>
-      snippets.includes(part) ? (
+    return parts.map((part, i) => {
+      const entry = entries.find((e) => e.text === part);
+      if (!entry) return <span key={i}>{part}</span>;
+
+      const dueDateLabel = entry.dueDate
+        ? new Date(entry.dueDate + "T00:00:00").toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : null;
+
+      return (
         <mark
           key={i}
           style={{ backgroundColor: "rgba(16, 185, 129, 0.25)" }}
           className="inline-flex items-baseline gap-0.5 rounded px-0.5 text-emerald-300 no-underline"
-          title="Task created"
+          title={`Task created${dueDateLabel ? ` · Due ${dueDateLabel}` : ""}`}
         >
           <svg
             width="10"
@@ -155,28 +168,51 @@ export function ThreadChat({
             <path d="M9 12l2 2 4-4" />
           </svg>
           {part}
+          {dueDateLabel && (
+            <span
+              style={{ backgroundColor: "rgba(16, 185, 129, 0.3)" }}
+              className="ml-1 inline-flex items-center gap-0.5 rounded px-1 py-px text-[9px] font-medium text-emerald-300 whitespace-nowrap"
+            >
+              <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="shrink-0">
+                <rect x="3" y="4" width="18" height="18" rx="2" ry="2" />
+                <line x1="16" y1="2" x2="16" y2="6" />
+                <line x1="8" y1="2" x2="8" y2="6" />
+                <line x1="3" y1="10" x2="21" y2="10" />
+              </svg>
+              {dueDateLabel}
+            </span>
+          )}
         </mark>
-      ) : (
-        <span key={i}>{part}</span>
-      )
-    );
+      );
+    });
   }
 
   /** For assistant HTML content, inject highlights via DOM string replacement */
   function highlightTaskHtml(html: string, messageId: string): string {
-    const snippets = taskTexts[messageId];
-    if (!snippets || snippets.length === 0) return html;
+    const entries = taskTexts[messageId];
+    if (!entries || entries.length === 0) return html;
 
     let result = html;
-    for (const snippet of snippets) {
-      const escaped = snippet.replace(/[&<>"']/g, (c) =>
+    for (const entry of entries) {
+      const escaped = entry.text.replace(/[&<>"']/g, (c) =>
         ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c)
       );
-      // Only replace text content, not inside HTML tags
       const safeEscaped = escaped.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+      const dueDateLabel = entry.dueDate
+        ? new Date(entry.dueDate + "T00:00:00").toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+          })
+        : "";
+      const dueBadge = dueDateLabel
+        ? `<span style="background-color:rgba(16,185,129,0.3);color:#6ee7b7;border-radius:3px;padding:0 4px;margin-left:3px;font-size:9px;font-weight:500;white-space:nowrap;display:inline-flex;align-items:center;gap:2px"><svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="display:inline;flex-shrink:0"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>${dueDateLabel}</span>`
+        : "";
+      const titleAttr = `Task created${dueDateLabel ? ` · Due ${dueDateLabel}` : ""}`;
+
       result = result.replace(
         new RegExp(`(?<=>)([^<]*?)(${safeEscaped})`, "g"),
-        `$1<mark style="background-color:rgba(16,185,129,0.25);color:#6ee7b7;border-radius:3px;padding:0 2px" title="Task created"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline;position:relative;top:1px;flex-shrink:0"><path d="M9 12l2 2 4-4"/></svg>$2</mark>`
+        `$1<mark style="background-color:rgba(16,185,129,0.25);color:#6ee7b7;border-radius:3px;padding:0 2px" title="${titleAttr}"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline;position:relative;top:1px;flex-shrink:0"><path d="M9 12l2 2 4-4"/></svg>$2${dueBadge}</mark>`
       );
     }
     return result;
@@ -435,12 +471,13 @@ export function ThreadChat({
       }
       if (taskFromId) {
         setTaskCreatedIds((prev) => new Set(prev).add(taskFromId));
-        // Store the text lines that became tasks for highlighting
+        // Store the text lines + due date that became tasks for highlighting
+        const savedDueDate = taskDueDate;
         setTaskTexts((prev) => ({
           ...prev,
           [taskFromId]: [
             ...(prev[taskFromId] ?? []),
-            ...descriptions,
+            ...descriptions.map((d) => ({ text: d, dueDate: savedDueDate })),
           ],
         }));
       }
