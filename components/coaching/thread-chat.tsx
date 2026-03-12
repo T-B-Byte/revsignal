@@ -61,6 +61,8 @@ export function ThreadChat({
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskSaving, setTaskSaving] = useState(false);
   const [taskCreatedIds, setTaskCreatedIds] = useState<Set<string>>(new Set());
+  // Track exact text snippets turned into tasks, keyed by message ID
+  const [taskTexts, setTaskTexts] = useState<Record<string, string[]>>({});
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -117,6 +119,66 @@ export function ThreadChat({
     setTaskDesc(contextMenu.text);
     setTaskDueDate("");
     setContextMenu(null);
+  }
+
+  /** Wrap substrings that were turned into tasks with a highlight mark */
+  function highlightTaskText(text: string, messageId: string): React.ReactNode {
+    const snippets = taskTexts[messageId];
+    if (!snippets || snippets.length === 0) return text;
+
+    // Build a regex that matches any of the task snippets
+    const escaped = snippets.map((s) =>
+      s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    );
+    const pattern = new RegExp(`(${escaped.join("|")})`, "g");
+    const parts = text.split(pattern);
+
+    return parts.map((part, i) =>
+      snippets.includes(part) ? (
+        <mark
+          key={i}
+          className="inline-flex items-baseline gap-0.5 rounded bg-emerald-500/15 px-0.5 text-emerald-400 no-underline"
+          title="Task created"
+        >
+          <svg
+            width="10"
+            height="10"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="3"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="relative top-[1px] shrink-0"
+          >
+            <path d="M9 12l2 2 4-4" />
+          </svg>
+          {part}
+        </mark>
+      ) : (
+        <span key={i}>{part}</span>
+      )
+    );
+  }
+
+  /** For assistant HTML content, inject highlights via DOM string replacement */
+  function highlightTaskHtml(html: string, messageId: string): string {
+    const snippets = taskTexts[messageId];
+    if (!snippets || snippets.length === 0) return html;
+
+    let result = html;
+    for (const snippet of snippets) {
+      const escaped = snippet.replace(/[&<>"']/g, (c) =>
+        ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c] ?? c)
+      );
+      // Only replace text content, not inside HTML tags
+      const safeEscaped = escaped.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      result = result.replace(
+        new RegExp(`(?<=>)([^<]*?)(${safeEscaped})`, "g"),
+        `$1<mark class="inline-flex items-baseline gap-0.5 rounded bg-emerald-500/15 px-0.5 text-emerald-400" title="Task created"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline;position:relative;top:1px;flex-shrink:0"><path d="M9 12l2 2 4-4"/></svg>$2</mark>`
+      );
+    }
+    return result;
   }
 
   // Get current placeholder from interaction type
@@ -372,6 +434,14 @@ export function ThreadChat({
       }
       if (taskFromId) {
         setTaskCreatedIds((prev) => new Set(prev).add(taskFromId));
+        // Store the text lines that became tasks for highlighting
+        setTaskTexts((prev) => ({
+          ...prev,
+          [taskFromId]: [
+            ...(prev[taskFromId] ?? []),
+            ...descriptions,
+          ],
+        }));
       }
       setTaskFromId(null);
       setTaskDesc("");
@@ -618,14 +688,17 @@ export function ThreadChat({
                       prose-strong:text-text-primary prose-strong:font-medium
                       prose-ul:my-1 prose-ol:my-1"
                     dangerouslySetInnerHTML={{
-                      __html: formatAgentHtml(msg.content),
+                      __html: highlightTaskHtml(formatAgentHtml(msg.content), msg.conversation_id),
                     }}
                   />
                 ) : (
                   <div>
                     {msg.content && !msg.content.match(/^!\[attachment\]/) && (
                       <p className="text-sm whitespace-pre-wrap">
-                        {msg.content.replace(/\n\n!\[attachment\]\([^)]+\)/g, "")}
+                        {highlightTaskText(
+                          msg.content.replace(/\n\n!\[attachment\]\([^)]+\)/g, ""),
+                          msg.conversation_id
+                        )}
                       </p>
                     )}
                     {msg.attachments && msg.attachments.length > 0 && (
