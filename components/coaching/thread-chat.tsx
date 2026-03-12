@@ -137,7 +137,8 @@ export function ThreadChat({
       snippets.includes(part) ? (
         <mark
           key={i}
-          className="inline-flex items-baseline gap-0.5 rounded bg-emerald-500/15 px-0.5 text-emerald-400 no-underline"
+          style={{ backgroundColor: "rgba(16, 185, 129, 0.25)" }}
+          className="inline-flex items-baseline gap-0.5 rounded px-0.5 text-emerald-300 no-underline"
           title="Task created"
         >
           <svg
@@ -175,7 +176,7 @@ export function ThreadChat({
       const safeEscaped = escaped.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
       result = result.replace(
         new RegExp(`(?<=>)([^<]*?)(${safeEscaped})`, "g"),
-        `$1<mark class="inline-flex items-baseline gap-0.5 rounded bg-emerald-500/15 px-0.5 text-emerald-400" title="Task created"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline;position:relative;top:1px;flex-shrink:0"><path d="M9 12l2 2 4-4"/></svg>$2</mark>`
+        `$1<mark style="background-color:rgba(16,185,129,0.25);color:#6ee7b7;border-radius:3px;padding:0 2px" title="Task created"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" style="display:inline;position:relative;top:1px;flex-shrink:0"><path d="M9 12l2 2 4-4"/></svg>$2</mark>`
       );
     }
     return result;
