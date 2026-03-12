@@ -513,16 +513,20 @@ export function ThreadChat({
           const isPinning = pinningId === msg.conversation_id;
           const msgType = msg.interaction_type || "coaching";
 
+          const isEditing = editingId === msg.conversation_id;
+
           return (
             <div
               key={msg.conversation_id}
-              className={`group flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`group flex ${isEditing ? "justify-stretch" : msg.role === "user" ? "justify-end" : "justify-start"}`}
             >
               <div
-                className={`relative max-w-[80%] rounded-lg px-4 py-3 ${
-                  msg.role === "user"
-                    ? "bg-accent-primary/10 text-text-primary"
-                    : "bg-surface-tertiary text-text-primary"
+                className={`relative rounded-lg px-4 py-3 ${
+                  isEditing
+                    ? "w-full bg-surface-tertiary text-text-primary"
+                    : msg.role === "user"
+                    ? "max-w-[80%] bg-accent-primary/10 text-text-primary"
+                    : "max-w-[80%] bg-surface-tertiary text-text-primary"
                 }`}
               >
                 {/* Interaction type badge for user messages */}
@@ -534,8 +538,8 @@ export function ThreadChat({
                   </span>
                 )}
 
-                {editingId === msg.conversation_id ? (
-                  /* Inline edit mode */
+                {isEditing ? (
+                  /* Inline edit mode — full width, resizable */
                   <div className="space-y-2">
                     <textarea
                       value={editContent}
@@ -547,9 +551,9 @@ export function ThreadChat({
                           saveEdit();
                         }
                       }}
-                      rows={Math.min(editContent.split("\n").length + 1, 12)}
+                      rows={Math.max(Math.min(editContent.split("\n").length + 2, 20), 6)}
                       autoFocus
-                      className="w-full resize-none rounded border border-border-primary bg-surface-secondary px-2 py-1.5 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+                      className="w-full resize-y rounded border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none min-h-[120px]"
                     />
                     <div className="flex gap-1.5">
                       <button
