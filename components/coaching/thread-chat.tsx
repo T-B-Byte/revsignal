@@ -382,6 +382,7 @@ export function ThreadChat({
   async function saveEdit() {
     if (!editingId || !editContent.trim()) return;
     setEditSaving(true);
+    setError(null);
 
     try {
       const res = await fetch(
@@ -405,9 +406,12 @@ export function ThreadChat({
         );
         setEditingId(null);
         setEditContent("");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to save edit. Please try again.");
       }
     } catch {
-      // Keep edit mode open on failure
+      setError("Network error saving edit. Please try again.");
     } finally {
       setEditSaving(false);
     }
