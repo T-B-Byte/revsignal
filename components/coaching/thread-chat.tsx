@@ -60,6 +60,12 @@ export function ThreadChat({
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskSaving, setTaskSaving] = useState(false);
   const [taskCreatedIds, setTaskCreatedIds] = useState<Set<string>>(new Set());
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    text: string;
+    messageId: string;
+  } | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sendingRef = useRef(false);
 
@@ -81,6 +87,36 @@ export function ThreadChat({
     setLinkedDealId(thread.deal_id);
     setShowDealPicker(false);
   }, [thread.thread_id, thread.deal_id, initialMessages]);
+
+  // Close context menu on click anywhere
+  useEffect(() => {
+    if (!contextMenu) return;
+    const close = () => setContextMenu(null);
+    window.addEventListener("click", close);
+    return () => window.removeEventListener("click", close);
+  }, [contextMenu]);
+
+  function handleContextMenu(e: React.MouseEvent, messageId: string) {
+    const selection = window.getSelection();
+    const selectedText = selection?.toString().trim();
+    if (!selectedText) return; // no text selected — use default browser menu
+
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      text: selectedText,
+      messageId,
+    });
+  }
+
+  function createTaskFromSelection() {
+    if (!contextMenu) return;
+    setTaskFromId(contextMenu.messageId);
+    setTaskDesc(contextMenu.text);
+    setTaskDueDate("");
+    setContextMenu(null);
+  }
 
   // Get current placeholder from interaction type
   const currentType = INTERACTION_TYPES.find((t) => t.value === interactionType);
@@ -519,6 +555,7 @@ export function ThreadChat({
             <div
               key={msg.conversation_id}
               className={`group flex ${isEditing ? "justify-stretch" : msg.role === "user" ? "justify-end" : "justify-start"}`}
+              onContextMenu={(e) => handleContextMenu(e, msg.conversation_id)}
             >
               <div
                 className={`relative rounded-lg px-4 py-3 ${
@@ -715,6 +752,25 @@ export function ThreadChat({
             </div>
           );
         })}
+
+        {/* Right-click context menu for creating tasks from selected text */}
+        {contextMenu && (
+          <div
+            className="fixed z-50 rounded-lg border border-border-primary bg-surface-secondary shadow-lg py-1 min-w-[180px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <button
+              onClick={createTaskFromSelection}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-tertiary transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+              Create Task
+            </button>
+          </div>
+        )}
 
         {/* Loading indicator */}
         {loading && interactionType === "coaching" && (
