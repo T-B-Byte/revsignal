@@ -4,13 +4,14 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { formatAgentHtml } from "@/lib/format-agent-html";
 import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
-import type { CoachingMessage, CoachingThread, InteractionType } from "@/types/database";
+import type { CoachingMessage, CoachingThread, InteractionType, Deal } from "@/types/database";
 import { INTERACTION_TYPES } from "@/types/database";
 
 interface ThreadChatProps {
   thread: CoachingThread;
   initialMessages: CoachingMessage[];
   dealCompany?: string | null;
+  activeDeals?: Pick<Deal, "deal_id" | "company" | "stage">[];
 }
 
 /** Labels for interaction type badges on messages */
@@ -36,6 +37,7 @@ export function ThreadChat({
   thread,
   initialMessages,
   dealCompany,
+  activeDeals = [],
 }: ThreadChatProps) {
   const [messages, setMessages] = useState<CoachingMessage[]>(initialMessages);
   const [input, setInput] = useState("");
@@ -45,6 +47,19 @@ export function ThreadChat({
   const [followUpKey, setFollowUpKey] = useState(0);
   const [pinnedIds, setPinnedIds] = useState<Set<string>>(new Set());
   const [pinningId, setPinningId] = useState<string | null>(null);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
+  const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
+  const [uploadingImages, setUploadingImages] = useState(false);
+  const [showDealPicker, setShowDealPicker] = useState(false);
+  const [linkedDealId, setLinkedDealId] = useState<string | null>(thread.deal_id);
+  const [linkingDeal, setLinkingDeal] = useState(false);
+  const [taskFromId, setTaskFromId] = useState<string | null>(null);
+  const [taskDesc, setTaskDesc] = useState("");
+  const [taskDueDate, setTaskDueDate] = useState("");
+  const [taskSaving, setTaskSaving] = useState(false);
+  const [taskCreatedIds, setTaskCreatedIds] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
   const sendingRef = useRef(false);
 
@@ -63,7 +78,9 @@ export function ThreadChat({
     setMessages(initialMessages);
     setError(null);
     setInput("");
-  }, [thread.thread_id, initialMessages]);
+    setLinkedDealId(thread.deal_id);
+    setShowDealPicker(false);
+  }, [thread.thread_id, thread.deal_id, initialMessages]);
 
   // Get current placeholder from interaction type
   const currentType = INTERACTION_TYPES.find((t) => t.value === interactionType);
@@ -71,11 +88,15 @@ export function ThreadChat({
 
   async function handleSend() {
     const trimmed = input.trim();
-    if (!trimmed || loading || sendingRef.current) return;
+    const hasImages = pendingImages.length > 0;
+    if ((!trimmed && !hasImages) || loading || sendingRef.current) return;
     sendingRef.current = true;
 
     setError(null);
     setInput("");
+
+    // Capture pending image previews for optimistic display
+    const optimisticPreviews = pendingImages.map((img) => img.preview);
 
     // Optimistic user message
     const userMsg: CoachingMessage = {
@@ -89,19 +110,45 @@ export function ThreadChat({
       sources_cited: [],
       tokens_used: null,
       created_at: new Date().toISOString(),
+      attachments: optimisticPreviews,
     };
     setMessages((prev) => [...prev, userMsg]);
     setLoading(true);
 
     try {
+      // Upload images first if any
+      let imageUrls: string[] = [];
+      if (hasImages) {
+        setUploadingImages(true);
+        imageUrls = await uploadImages();
+        setUploadingImages(false);
+      }
+
+      // Build message content — append image markdown if text + images
+      const messageContent = imageUrls.length > 0 && trimmed
+        ? trimmed + "\n\n" + imageUrls.map((url) => `![attachment](${url})`).join("\n")
+        : imageUrls.length > 0
+        ? imageUrls.map((url) => `![attachment](${url})`).join("\n")
+        : trimmed;
+
+      // If all uploads failed and no text, abort
+      if (!messageContent) {
+        setError("Image upload failed.");
+        setMessages((prev) =>
+          prev.filter((m) => m.conversation_id !== userMsg.conversation_id)
+        );
+        return;
+      }
+
       const res = await fetch(
         `/api/coaching/threads/${thread.thread_id}/messages`,
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            message: trimmed,
+            message: messageContent,
             interaction_type: interactionType,
+            attachments: imageUrls.length > 0 ? imageUrls : undefined,
           }),
         }
       );
@@ -191,10 +238,174 @@ export function ThreadChat({
     }
   }
 
+  function startEdit(msg: CoachingMessage) {
+    setEditingId(msg.conversation_id);
+    setEditContent(msg.content);
+  }
+
+  async function saveEdit() {
+    if (!editingId || !editContent.trim()) return;
+    setEditSaving(true);
+
+    try {
+      const res = await fetch(
+        `/api/coaching/threads/${thread.thread_id}/messages`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversation_id: editingId,
+            content: editContent,
+          }),
+        }
+      );
+
+      if (res.ok) {
+        const updated = await res.json();
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.conversation_id === editingId ? { ...m, content: updated.content } : m
+          )
+        );
+        setEditingId(null);
+        setEditContent("");
+      }
+    } catch {
+      // Keep edit mode open on failure
+    } finally {
+      setEditSaving(false);
+    }
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setEditContent("");
+  }
+
+  async function handleLinkDeal(dealId: string | null) {
+    setLinkingDeal(true);
+    try {
+      const res = await fetch(`/api/coaching/threads/${thread.thread_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deal_id: dealId }),
+      });
+      if (res.ok) {
+        setLinkedDealId(dealId);
+        setShowDealPicker(false);
+      }
+    } catch {
+      // Silent fail
+    } finally {
+      setLinkingDeal(false);
+    }
+  }
+
+  function startTaskFrom(msg: CoachingMessage) {
+    // Extract bullet points / action items from message content
+    const lines = msg.content.split("\n");
+    const actionLines = lines.filter((l) =>
+      /^[-•*]\s/.test(l.trim()) || /^\d+[.)]\s/.test(l.trim())
+    );
+    const prefill = actionLines.length > 0
+      ? actionLines.map((l) => l.trim().replace(/^[-•*]\s+/, "").replace(/^\d+[.)]\s+/, "")).join("\n")
+      : msg.content.slice(0, 500);
+
+    setTaskFromId(msg.conversation_id);
+    setTaskDesc(prefill);
+    setTaskDueDate("");
+  }
+
+  async function saveTask() {
+    if (!taskDesc.trim()) return;
+    setTaskSaving(true);
+
+    try {
+      // Create one task per line (each bullet becomes its own task)
+      const descriptions = taskDesc.split("\n").map((l) => l.trim()).filter(Boolean);
+      for (const desc of descriptions) {
+        await fetch("/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            description: desc,
+            due_date: taskDueDate || undefined,
+          }),
+        });
+      }
+      if (taskFromId) {
+        setTaskCreatedIds((prev) => new Set(prev).add(taskFromId));
+      }
+      setTaskFromId(null);
+      setTaskDesc("");
+      setTaskDueDate("");
+    } catch {
+      // Keep form open on failure
+    } finally {
+      setTaskSaving(false);
+    }
+  }
+
+  function cancelTask() {
+    setTaskFromId(null);
+    setTaskDesc("");
+    setTaskDueDate("");
+  }
+
+  function handlePaste(e: React.ClipboardEvent) {
+    const items = e.clipboardData?.items;
+    if (!items) return;
+
+    for (const item of Array.from(items)) {
+      if (item.type.startsWith("image/")) {
+        e.preventDefault();
+        const file = item.getAsFile();
+        if (!file) continue;
+        const preview = URL.createObjectURL(file);
+        setPendingImages((prev) => [...prev, { file, preview }]);
+      }
+    }
+  }
+
+  function removePendingImage(index: number) {
+    setPendingImages((prev) => {
+      URL.revokeObjectURL(prev[index].preview);
+      return prev.filter((_, i) => i !== index);
+    });
+  }
+
+  async function uploadImages(): Promise<string[]> {
+    const urls: string[] = [];
+    for (const img of pendingImages) {
+      const form = new FormData();
+      form.append("file", img.file);
+      const res = await fetch(
+        `/api/coaching/threads/${thread.thread_id}/attachments`,
+        { method: "POST", body: form }
+      );
+      if (res.ok) {
+        const { url } = await res.json();
+        urls.push(url);
+      }
+      URL.revokeObjectURL(img.preview);
+    }
+    setPendingImages([]);
+    return urls;
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
+    if (interactionType === "coaching") {
+      // Chat mode: Enter sends, Shift+Enter newline
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        handleSend();
+      }
+    } else {
+      // Intel paste mode: Cmd/Ctrl+Enter saves, plain Enter is newline
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+        e.preventDefault();
+        handleSend();
+      }
     }
   }
 
@@ -212,12 +423,55 @@ export function ThreadChat({
             </span>
           )}
         </div>
-        {thread.contact_role && (
-          <p className="text-xs text-text-secondary">{thread.contact_role}</p>
-        )}
-        {dealCompany && !thread.company && (
-          <p className="text-xs text-accent-primary">{dealCompany}</p>
-        )}
+        <div className="flex items-center gap-2 mt-0.5">
+          {thread.contact_role && (
+            <p className="text-xs text-text-secondary">{thread.contact_role}</p>
+          )}
+          {dealCompany && !thread.company && (
+            <p className="text-xs text-accent-primary">{dealCompany}</p>
+          )}
+          {/* Deal link */}
+          {showDealPicker ? (
+            <div className="flex items-center gap-1.5">
+              <select
+                value={linkedDealId ?? ""}
+                onChange={(e) => handleLinkDeal(e.target.value || null)}
+                disabled={linkingDeal}
+                className="rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+                autoFocus
+              >
+                <option value="">No deal</option>
+                {activeDeals.map((d) => (
+                  <option key={d.deal_id} value={d.deal_id}>
+                    {d.company} ({d.stage.replace(/_/g, " ")})
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={() => setShowDealPicker(false)}
+                className="text-xs text-text-muted hover:text-text-primary"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : linkedDealId ? (
+            <button
+              onClick={() => setShowDealPicker(true)}
+              className="rounded-full bg-accent-primary/10 px-2 py-0.5 text-[10px] font-medium text-accent-primary hover:bg-accent-primary/20 transition-colors"
+              title="Change linked deal"
+            >
+              {activeDeals.find((d) => d.deal_id === linkedDealId)?.company ?? "Linked deal"} ·{" "}
+              {activeDeals.find((d) => d.deal_id === linkedDealId)?.stage.replace(/_/g, " ") ?? ""}
+            </button>
+          ) : (
+            <button
+              onClick={() => setShowDealPicker(true)}
+              className="text-[10px] text-text-muted hover:text-accent-primary transition-colors"
+            >
+              + Link to deal
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Messages area */}
@@ -280,7 +534,40 @@ export function ThreadChat({
                   </span>
                 )}
 
-                {msg.role === "assistant" ? (
+                {editingId === msg.conversation_id ? (
+                  /* Inline edit mode */
+                  <div className="space-y-2">
+                    <textarea
+                      value={editContent}
+                      onChange={(e) => setEditContent(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") cancelEdit();
+                        if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                          e.preventDefault();
+                          saveEdit();
+                        }
+                      }}
+                      rows={Math.min(editContent.split("\n").length + 1, 12)}
+                      autoFocus
+                      className="w-full resize-none rounded border border-border-primary bg-surface-secondary px-2 py-1.5 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+                    />
+                    <div className="flex gap-1.5">
+                      <button
+                        onClick={saveEdit}
+                        disabled={editSaving || !editContent.trim()}
+                        className="rounded bg-accent-primary px-2 py-0.5 text-xs font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50"
+                      >
+                        {editSaving ? "Saving..." : "Save ⌘↵"}
+                      </button>
+                      <button
+                        onClick={cancelEdit}
+                        className="rounded bg-surface-tertiary px-2 py-0.5 text-xs text-text-secondary hover:text-text-primary"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : msg.role === "assistant" ? (
                   <div
                     className="prose prose-sm max-w-none text-text-primary
                       prose-headings:text-text-primary prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1
@@ -293,8 +580,70 @@ export function ThreadChat({
                     }}
                   />
                 ) : (
-                  <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+                  <div>
+                    {msg.content && !msg.content.match(/^!\[attachment\]/) && (
+                      <p className="text-sm whitespace-pre-wrap">
+                        {msg.content.replace(/\n\n!\[attachment\]\([^)]+\)/g, "")}
+                      </p>
+                    )}
+                    {msg.attachments && msg.attachments.length > 0 && (
+                      <div className="mt-2 flex flex-wrap gap-2">
+                        {msg.attachments.map((url, i) => (
+                          <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                            <img
+                              src={url}
+                              alt="attachment"
+                              className="max-h-48 max-w-xs rounded-md border border-border-primary object-contain"
+                            />
+                          </a>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 )}
+                {/* Inline task creation form */}
+                {taskFromId === msg.conversation_id && (
+                  <div className="mt-2 rounded-md border border-accent-primary/30 bg-surface-secondary p-3 space-y-2">
+                    <p className="text-[10px] font-medium text-accent-primary uppercase tracking-wide">Create Tasks</p>
+                    <textarea
+                      value={taskDesc}
+                      onChange={(e) => setTaskDesc(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Escape") cancelTask();
+                      }}
+                      rows={Math.min(taskDesc.split("\n").length + 1, 8)}
+                      autoFocus
+                      placeholder="One task per line..."
+                      className="w-full resize-none rounded border border-border-primary bg-surface-primary px-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+                    />
+                    <div className="flex items-center gap-2">
+                      <label className="text-[10px] text-text-secondary">Due:</label>
+                      <input
+                        type="date"
+                        value={taskDueDate}
+                        onChange={(e) => setTaskDueDate(e.target.value)}
+                        min={new Date().toISOString().split("T")[0]}
+                        className="rounded border border-border-primary bg-surface-primary px-2 py-0.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+                      />
+                      <div className="ml-auto flex gap-1.5">
+                        <button
+                          onClick={cancelTask}
+                          className="rounded bg-surface-tertiary px-2 py-0.5 text-xs text-text-secondary hover:text-text-primary"
+                        >
+                          Cancel
+                        </button>
+                        <button
+                          onClick={saveTask}
+                          disabled={taskSaving || !taskDesc.trim()}
+                          className="rounded bg-accent-primary px-2 py-0.5 text-xs font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50"
+                        >
+                          {taskSaving ? "Saving..." : `Create ${taskDesc.split("\n").filter((l) => l.trim()).length} task${taskDesc.split("\n").filter((l) => l.trim()).length !== 1 ? "s" : ""}`}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <p className="text-[10px] text-text-muted">
                     {new Date(msg.created_at).toLocaleTimeString("en-US", {
@@ -302,29 +651,61 @@ export function ThreadChat({
                       minute: "2-digit",
                     })}
                   </p>
-                  {/* Pin to master memory */}
-                  <button
-                    onClick={() => handlePin(msg)}
-                    disabled={isPinned || isPinning}
-                    title={isPinned ? "Saved to master memory" : "Save to master memory"}
-                    className={`transition-opacity ${
-                      isPinned
-                        ? "opacity-100 text-accent-primary"
-                        : "opacity-0 group-hover:opacity-100 text-text-muted hover:text-accent-primary"
-                    } disabled:cursor-default`}
-                  >
-                    {isPinning ? (
-                      <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                      </svg>
-                    ) : (
-                      <svg width="14" height="14" viewBox="0 0 14 14" fill={isPinned ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M8.5 1.5L12.5 5.5L8 10L4.5 10.5L5 7L8.5 1.5Z" />
-                        <path d="M2 12.5L5 9.5" />
-                      </svg>
+                  <div className="flex items-center gap-1.5">
+                    {/* Create task from message */}
+                    {editingId !== msg.conversation_id && taskFromId !== msg.conversation_id && (
+                      <button
+                        onClick={() => startTaskFrom(msg)}
+                        title={taskCreatedIds.has(msg.conversation_id) ? "Task created" : "Create task"}
+                        className={`transition-opacity ${
+                          taskCreatedIds.has(msg.conversation_id)
+                            ? "opacity-100 text-emerald-400"
+                            : "opacity-0 group-hover:opacity-100 text-text-muted hover:text-accent-primary"
+                        }`}
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <rect x="3" y="3" width="18" height="18" rx="2" />
+                          <path d="M9 12l2 2 4-4" />
+                        </svg>
+                      </button>
                     )}
-                  </button>
+                    {/* Edit button (user messages only) */}
+                    {msg.role === "user" && editingId !== msg.conversation_id && (
+                      <button
+                        onClick={() => startEdit(msg)}
+                        title="Edit"
+                        className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-accent-primary transition-opacity"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                          <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    )}
+                    {/* Pin to master memory */}
+                    <button
+                      onClick={() => handlePin(msg)}
+                      disabled={isPinned || isPinning}
+                      title={isPinned ? "Saved to master memory" : "Save to master memory"}
+                      className={`transition-opacity ${
+                        isPinned
+                          ? "opacity-100 text-accent-primary"
+                          : "opacity-0 group-hover:opacity-100 text-text-muted hover:text-accent-primary"
+                      } disabled:cursor-default`}
+                    >
+                      {isPinning ? (
+                        <svg className="h-3.5 w-3.5 animate-spin" viewBox="0 0 24 24" fill="none">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+                        </svg>
+                      ) : (
+                        <svg width="14" height="14" viewBox="0 0 14 14" fill={isPinned ? "currentColor" : "none"} stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M8.5 1.5L12.5 5.5L8 10L4.5 10.5L5 7L8.5 1.5Z" />
+                          <path d="M2 12.5L5 9.5" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
@@ -370,12 +751,34 @@ export function ThreadChat({
           ))}
         </div>
 
+        {/* Pending image previews */}
+        {pendingImages.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {pendingImages.map((img, i) => (
+              <div key={i} className="relative group/img">
+                <img
+                  src={img.preview}
+                  alt="pending"
+                  className="h-16 w-16 rounded-md border border-border-primary object-cover"
+                />
+                <button
+                  onClick={() => removePendingImage(i)}
+                  className="absolute -right-1 -top-1 flex h-4 w-4 items-center justify-center rounded-full bg-status-red text-[10px] text-white opacity-0 group-hover/img:opacity-100 transition-opacity"
+                >
+                  ×
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
         <div className="flex gap-2">
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={placeholder}
+            onPaste={handlePaste}
+            placeholder={pendingImages.length > 0 ? "Add a caption (optional)..." : placeholder}
             rows={interactionType === "coaching" ? 2 : 4}
             maxLength={interactionType === "coaching" ? 5000 : 50000}
             className="flex-1 resize-none rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
@@ -383,10 +786,11 @@ export function ThreadChat({
           />
           <button
             onClick={handleSend}
-            disabled={loading || !input.trim()}
+            disabled={loading || (!input.trim() && pendingImages.length === 0)}
+            title={interactionType === "coaching" ? "Enter to send" : "⌘+Enter to save"}
             className="self-end rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
           >
-            {interactionType === "coaching" ? "Send" : "Save"}
+            {uploadingImages ? "Uploading..." : interactionType === "coaching" ? "Send" : "Save ⌘↵"}
           </button>
         </div>
       </div>

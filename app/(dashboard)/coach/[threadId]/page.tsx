@@ -154,6 +154,7 @@ export default async function ThreadPage({
         thread={currentThread}
         initialMessages={messages}
         dealCompany={dealCompany}
+        activeDeals={activeDeals}
       />
     </CoachShell>
   );

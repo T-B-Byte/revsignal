@@ -22,6 +22,7 @@ interface NewThreadDialogProps {
     company: string | null;
   }) => void;
   activeDeals: Pick<Deal, "deal_id" | "company" | "stage">[];
+  onDealCreated?: (deal: Pick<Deal, "deal_id" | "company" | "stage">) => void;
 }
 
 export function NewThreadDialog({
@@ -29,12 +30,14 @@ export function NewThreadDialog({
   onClose,
   onCreated,
   activeDeals,
+  onDealCreated,
 }: NewThreadDialogProps) {
   const [contactName, setContactName] = useState("");
   const [contactRole, setContactRole] = useState("");
   const [company, setCompany] = useState("");
   const [dealId, setDealId] = useState("");
   const [loading, setLoading] = useState(false);
+  const [creatingDeal, setCreatingDeal] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Reset form when dialog opens/closes
@@ -44,6 +47,39 @@ export function NewThreadDialog({
     setCompany("");
     setDealId("");
     setError(null);
+  }
+
+  async function handleCreateDeal() {
+    const comp = company.trim();
+    if (!comp) {
+      setError("Enter a company name first.");
+      return;
+    }
+
+    setCreatingDeal(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/deals", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ company: comp, stage: "lead" }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to create deal.");
+        return;
+      }
+
+      const { deal } = await res.json();
+      setDealId(deal.deal_id);
+      onDealCreated?.({ deal_id: deal.deal_id, company: deal.company, stage: deal.stage });
+    } catch {
+      setError("Network error creating deal.");
+    } finally {
+      setCreatingDeal(false);
+    }
   }
 
   function handleClose() {
@@ -176,19 +212,31 @@ export function NewThreadDialog({
             >
               Link to deal (optional)
             </label>
-            <select
-              id="thread-deal"
-              value={dealId}
-              onChange={(e) => setDealId(e.target.value)}
-              className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
-            >
-              <option value="">No deal</option>
-              {activeDeals.map((d) => (
-                <option key={d.deal_id} value={d.deal_id}>
-                  {d.company} ({d.stage.replace(/_/g, " ")})
-                </option>
-              ))}
-            </select>
+            <div className="flex gap-2">
+              <select
+                id="thread-deal"
+                value={dealId}
+                onChange={(e) => setDealId(e.target.value)}
+                className="flex-1 rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+              >
+                <option value="">No deal</option>
+                {activeDeals.map((d) => (
+                  <option key={d.deal_id} value={d.deal_id}>
+                    {d.company} ({d.stage.replace(/_/g, " ")})
+                  </option>
+                ))}
+              </select>
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleCreateDeal}
+                loading={creatingDeal}
+                disabled={!company.trim()}
+                title={company.trim() ? `Create "${company.trim()}" as a new lead` : "Enter a company name first"}
+              >
+                + New Deal
+              </Button>
+            </div>
           </div>
 
           {error && (

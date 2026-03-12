@@ -401,6 +401,7 @@ export interface CoachingMessage {
   context_used: Record<string, unknown> | null;
   sources_cited: string[];
   tokens_used: number | null;
+  attachments?: string[];
   created_at: string;
 }
 

@@ -21,6 +21,12 @@ const VALID_INTERACTION_TYPES = [
 const sendMessageSchema = z.object({
   message: z.string().min(1).max(50000),
   interaction_type: z.enum(VALID_INTERACTION_TYPES).default("coaching"),
+  attachments: z.array(z.string().url()).max(10).optional(),
+});
+
+const editMessageSchema = z.object({
+  conversation_id: z.string().uuid(),
+  content: z.string().min(1).max(50000),
 });
 
 type RouteContext = { params: Promise<{ threadId: string }> };
@@ -158,6 +164,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
         context_used: null,
         sources_cited: [],
         tokens_used: null,
+        attachments: parsed.data.attachments ?? [],
       })
       .select()
       .single();
@@ -224,4 +231,54 @@ export async function POST(request: NextRequest, context: RouteContext) {
       { status: 500 }
     );
   }
+}
+
+/**
+ * PATCH /api/coaching/threads/[threadId]/messages
+ * Edit a user message's content.
+ */
+export async function PATCH(request: NextRequest, context: RouteContext) {
+  const supabase = await createClient();
+  const { threadId } = await context.params;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const parsed = editMessageSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", issues: parsed.error.issues },
+      { status: 400 }
+    );
+  }
+
+  // Update message — scoped to user_id, thread_id, and role=user (can't edit AI responses)
+  const { data: updated, error } = await supabase
+    .from("coaching_conversations")
+    .update({ content: parsed.data.content })
+    .eq("conversation_id", parsed.data.conversation_id)
+    .eq("thread_id", threadId)
+    .eq("user_id", user.id)
+    .eq("role", "user")
+    .select()
+    .single();
+
+  if (error || !updated) {
+    console.error("[api/coaching/threads/messages] PATCH error:", error?.message);
+    return NextResponse.json({ error: "Failed to update message" }, { status: 500 });
+  }
+
+  return NextResponse.json(updated);
 }

@@ -12,9 +12,10 @@ interface CoachShellProps {
   children: React.ReactNode;
 }
 
-export function CoachShell({ threads: initialThreads, activeDeals, children }: CoachShellProps) {
+export function CoachShell({ threads: initialThreads, activeDeals: initialDeals, children }: CoachShellProps) {
   const router = useRouter();
   const [threads, setThreads] = useState(initialThreads);
+  const [deals, setDeals] = useState(initialDeals);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   function handleThreadCreated(thread: {
@@ -69,7 +70,8 @@ export function CoachShell({ threads: initialThreads, activeDeals, children }: C
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         onCreated={handleThreadCreated}
-        activeDeals={activeDeals}
+        activeDeals={deals}
+        onDealCreated={(deal) => setDeals((prev) => [deal, ...prev])}
       />
     </>
   );
