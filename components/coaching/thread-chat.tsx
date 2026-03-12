@@ -52,6 +52,10 @@ export function ThreadChat({
   const [editContent, setEditContent] = useState("");
   const [editSaving, setEditSaving] = useState(false);
   const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
+  const [showCompose, setShowCompose] = useState(false);
+  const [composeType, setComposeType] = useState<string>("cold_outreach");
+  const [composeInstructions, setComposeInstructions] = useState("");
+  const [composing, setComposing] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [showDealPicker, setShowDealPicker] = useState(false);
   const [linkedDealId, setLinkedDealId] = useState<string | null>(thread.deal_id);
@@ -501,6 +505,76 @@ export function ThreadChat({
     setTaskDueDate("");
   }
 
+  const EMAIL_TYPES = [
+    { value: "cold_outreach", label: "Cold Outreach" },
+    { value: "follow_up", label: "Follow-Up" },
+    { value: "proposal", label: "Proposal" },
+    { value: "check_in", label: "Check-In" },
+    { value: "intro_request", label: "Intro Request" },
+    { value: "thank_you", label: "Thank You" },
+    { value: "meeting_request", label: "Meeting Request" },
+  ];
+
+  async function handleCompose() {
+    if (composing) return;
+    setComposing(true);
+    setError(null);
+
+    try {
+      const res = await fetch("/api/agents/compose-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          emailType: composeType,
+          dealId: linkedDealId || undefined,
+          instructions: composeInstructions || undefined,
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to draft email.");
+        return;
+      }
+
+      const data = await res.json();
+
+      // Format the draft as a message and add to thread
+      const draftContent = `**Draft: ${EMAIL_TYPES.find((t) => t.value === data.emailType)?.label ?? data.emailType}**\n\n**Subject:** ${data.subject}\n\n${data.body}`;
+
+      const draftMsg: CoachingMessage = {
+        conversation_id: crypto.randomUUID(),
+        user_id: "",
+        thread_id: thread.thread_id,
+        role: "assistant",
+        content: draftContent,
+        interaction_type: "coaching",
+        context_used: null,
+        sources_cited: [],
+        tokens_used: data.tokensUsed,
+        created_at: data.generatedAt || new Date().toISOString(),
+      };
+      setMessages((prev) => [...prev, draftMsg]);
+
+      // Also save the draft to the thread as a coaching message
+      await fetch(`/api/coaching/threads/${thread.thread_id}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: `Draft email for me: ${composeType}${composeInstructions ? ` — ${composeInstructions}` : ""}`,
+          interaction_type: "coaching",
+        }),
+      });
+
+      setShowCompose(false);
+      setComposeInstructions("");
+    } catch {
+      setError("Network error drafting email.");
+    } finally {
+      setComposing(false);
+    }
+  }
+
   function handlePaste(e: React.ClipboardEvent) {
     const items = e.clipboardData?.items;
     if (!items) return;
@@ -562,15 +636,31 @@ export function ThreadChat({
     <div className="flex h-full flex-col">
       {/* Thread header */}
       <div className="shrink-0 border-b border-border-primary px-6 py-3">
-        <div className="flex items-center gap-2">
-          <h2 className="text-base font-semibold text-text-primary">
-            {thread.contact_name || thread.title}
-          </h2>
-          {thread.company && (
-            <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs text-text-secondary">
-              {thread.company}
-            </span>
-          )}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-base font-semibold text-text-primary">
+              {thread.contact_name || thread.title}
+            </h2>
+            {thread.company && (
+              <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs text-text-secondary">
+                {thread.company}
+              </span>
+            )}
+          </div>
+          <button
+            onClick={() => setShowCompose(!showCompose)}
+            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+              showCompose
+                ? "bg-accent-primary text-white"
+                : "bg-surface-tertiary text-text-secondary hover:text-text-primary hover:bg-surface-tertiary/80"
+            }`}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+              <polyline points="22,6 12,13 2,6" />
+            </svg>
+            Draft Email
+          </button>
         </div>
         <div className="flex items-center gap-2 mt-0.5">
           {thread.contact_role && (
@@ -622,6 +712,53 @@ export function ThreadChat({
           )}
         </div>
       </div>
+
+      {/* Email compose panel */}
+      {showCompose && (
+        <div className="shrink-0 border-b border-border-primary bg-surface-secondary/50 px-6 py-3 space-y-3">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-[10px] font-medium text-text-muted uppercase tracking-wider">Type</label>
+              <select
+                value={composeType}
+                onChange={(e) => setComposeType(e.target.value)}
+                className="rounded border border-border-primary bg-surface-primary px-2 py-1 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+              >
+                {EMAIL_TYPES.map((t) => (
+                  <option key={t.value} value={t.value}>{t.label}</option>
+                ))}
+              </select>
+            </div>
+            {!linkedDealId && (
+              <p className="text-[10px] text-text-muted">
+                Link a deal above for better context
+              </p>
+            )}
+          </div>
+          <textarea
+            value={composeInstructions}
+            onChange={(e) => setComposeInstructions(e.target.value)}
+            placeholder="Instructions — e.g., 'Introduce DaaS offering, mention their intent data use case' or 'Follow up on last week's call about pricing'"
+            rows={2}
+            className="w-full resize-none rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+          />
+          <div className="flex items-center justify-end gap-2">
+            <button
+              onClick={() => { setShowCompose(false); setComposeInstructions(""); }}
+              className="rounded px-2.5 py-1 text-xs font-medium text-text-secondary hover:bg-surface-tertiary transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              onClick={handleCompose}
+              disabled={composing}
+              className="rounded-md bg-accent-primary px-3 py-1 text-xs font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
+            >
+              {composing ? "Drafting..." : "Draft Email"}
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Messages area */}
       <div
