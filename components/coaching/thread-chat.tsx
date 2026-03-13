@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { formatAgentHtml } from "@/lib/format-agent-html";
+import { formatAgentHtml, stripFollowUps, extractMeetingDetected } from "@/lib/format-agent-html";
 import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
 import type { CoachingMessage, CoachingThread, InteractionType, Deal, Contact, MessageReaction } from "@/types/database";
@@ -85,7 +85,15 @@ export function ThreadChat({
     text: string;
     messageId: string;
   } | null>(null);
+  const [meetingPrompt, setMeetingPrompt] = useState<{
+    title: string;
+    attendees: { name: string; role?: string }[];
+    meeting_type?: string;
+    suggested_agenda?: string[];
+  } | null>(null);
+  const [creatingMeeting, setCreatingMeeting] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
@@ -285,6 +293,10 @@ export function ThreadChat({
 
     setError(null);
     setInput("");
+    // Reset textarea height after clearing
+    if (textareaRef.current) {
+      textareaRef.current.style.height = "auto";
+    }
 
     // Capture pending image previews for optimistic display
     const optimisticPreviews = pendingImages.map((img) => img.preview);
@@ -376,6 +388,11 @@ export function ThreadChat({
         if (data.followUpsExtracted?.length > 0) {
           setFollowUpKey((k) => k + 1);
         }
+
+        // If a meeting was detected, show the create-meeting prompt
+        if (data.meetingDetected) {
+          setMeetingPrompt(data.meetingDetected);
+        }
       } else if (data.message) {
         // Replace optimistic message with server record (real conversation_id)
         setMessages((prev) =>
@@ -416,6 +433,12 @@ export function ThreadChat({
     }
   }
 
+  /** Auto-resize textarea to fit content */
+  function autoResizeTextarea(el: HTMLTextAreaElement) {
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, window.innerHeight * 0.5) + "px";
+  }
+
   /** Extract @mentions from message text. Returns array of names. */
   function extractMentions(text: string): string[] {
     // Match @Name or @FirstName LastName patterns
@@ -433,7 +456,8 @@ export function ThreadChat({
     setPinningId(msg.conversation_id);
 
     try {
-      const firstLine = msg.content.split("\n")[0].replace(/[#*_`]/g, "").trim();
+      const cleanContent = stripFollowUps(msg.content);
+      const firstLine = cleanContent.split("\n")[0].replace(/[#*_`]/g, "").trim();
       const title = firstLine.length > 100 ? firstLine.slice(0, 97) + "..." : firstLine;
 
       const res = await fetch("/api/strategic-notes", {
@@ -442,7 +466,7 @@ export function ThreadChat({
         body: JSON.stringify({
           category: "strategic_observation",
           title: title || "Pinned from StrategyGPT thread",
-          content: msg.content,
+          content: cleanContent,
           related_deal_id: thread.deal_id || undefined,
           source: `StrategyGPT: ${thread.contact_name || thread.title}`,
           tags: ["pinned", "strategygpt"],
@@ -564,13 +588,13 @@ export function ThreadChat({
 
   function startTaskFrom(msg: CoachingMessage) {
     // Extract bullet points / action items from message content
-    const lines = msg.content.split("\n");
+    const lines = stripFollowUps(msg.content).split("\n");
     const actionLines = lines.filter((l) =>
       /^[-•*]\s/.test(l.trim()) || /^\d+[.)]\s/.test(l.trim())
     );
     const prefill = actionLines.length > 0
       ? actionLines.map((l) => l.trim().replace(/^[-•*]\s+/, "").replace(/^\d+[.)]\s+/, "")).join("\n")
-      : msg.content.slice(0, 500);
+      : stripFollowUps(msg.content).slice(0, 500);
 
     setTaskFromId(msg.conversation_id);
     setTaskDesc(prefill);
@@ -632,6 +656,39 @@ export function ThreadChat({
     setTaskDesc("");
     setTaskSourceText("");
     setTaskDueDate("");
+  }
+
+  async function handleCreateMeeting() {
+    if (!meetingPrompt || creatingMeeting) return;
+    setCreatingMeeting(true);
+    try {
+      const res = await fetch("/api/meetings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: meetingPrompt.title,
+          meeting_date: new Date().toISOString(), // placeholder — user can edit in meetings view
+          meeting_type: meetingPrompt.meeting_type || "other",
+          attendees: meetingPrompt.attendees,
+          agenda: (meetingPrompt.suggested_agenda ?? []).map((text) => ({ text, covered: false })),
+          deal_id: linkedDealId || undefined,
+          status: "upcoming",
+          content: "",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setMeetingPrompt(null);
+        // Open the new meeting in a new tab so user stays in context
+        window.open(`/meetings/${data.meeting.note_id}`, "_blank");
+      } else {
+        setError("Failed to create meeting. Try again.");
+      }
+    } catch {
+      setError("Failed to create meeting. Try again.");
+    } finally {
+      setCreatingMeeting(false);
+    }
   }
 
   const EMAIL_TYPES = [
@@ -1411,6 +1468,56 @@ export function ThreadChat({
           </div>
         )}
 
+        {/* Meeting detected prompt */}
+        {meetingPrompt && (
+          <div className="mx-auto max-w-[80%] rounded-lg border border-accent-primary/30 bg-accent-primary/5 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <div className="mt-0.5 rounded-md bg-accent-primary/15 p-1.5">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-accent-primary">
+                  <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
+                </svg>
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-text-primary">Meeting Detected</p>
+                <p className="mt-0.5 text-xs text-text-secondary">{meetingPrompt.title}</p>
+                {meetingPrompt.attendees.length > 0 && (
+                  <p className="mt-1 text-[10px] text-text-muted">
+                    With: {meetingPrompt.attendees.map((a) => a.name).join(", ")}
+                  </p>
+                )}
+                {meetingPrompt.suggested_agenda && meetingPrompt.suggested_agenda.length > 0 && (
+                  <div className="mt-1.5">
+                    <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider">Suggested Agenda</p>
+                    <ul className="mt-0.5 space-y-0.5">
+                      {meetingPrompt.suggested_agenda.map((item, i) => (
+                        <li key={i} className="text-[11px] text-text-secondary flex items-start gap-1">
+                          <span className="text-text-muted mt-px">-</span>
+                          {item}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+              <div className="flex items-center gap-1.5 shrink-0">
+                <button
+                  onClick={() => setMeetingPrompt(null)}
+                  className="rounded px-2 py-1 text-xs text-text-muted hover:text-text-primary hover:bg-surface-tertiary transition-colors"
+                >
+                  Dismiss
+                </button>
+                <button
+                  onClick={handleCreateMeeting}
+                  disabled={creatingMeeting}
+                  className="rounded-md bg-accent-primary px-3 py-1 text-xs font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
+                >
+                  {creatingMeeting ? "Creating..." : "Create Meeting"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Loading indicator */}
         {loading && interactionType === "coaching" && (
           <div className="flex justify-start">
@@ -1473,14 +1580,24 @@ export function ThreadChat({
 
         <div className="flex gap-2">
           <textarea
+            ref={textareaRef}
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              autoResizeTextarea(e.target);
+            }}
             onKeyDown={handleKeyDown}
-            onPaste={handlePaste}
+            onPaste={(e) => {
+              handlePaste(e);
+              // Auto-resize after text paste settles
+              setTimeout(() => {
+                if (textareaRef.current) autoResizeTextarea(textareaRef.current);
+              }, 0);
+            }}
             placeholder={pendingImages.length > 0 ? "Add a caption (optional)..." : placeholder}
             rows={interactionType === "coaching" ? 2 : 4}
             maxLength={interactionType === "coaching" ? 5000 : 50000}
-            className="flex-1 resize-none rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+            className="flex-1 resize-y rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none min-h-[44px] max-h-[50vh]"
             disabled={loading}
           />
           <button

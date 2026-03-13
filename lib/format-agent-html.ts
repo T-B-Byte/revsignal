@@ -8,7 +8,8 @@
  * Reversing this order would create an XSS vector.
  */
 export function formatAgentHtml(text: string): string {
-  const lines = text.split('\n');
+  const cleaned = stripFollowUps(text);
+  const lines = cleaned.split('\n');
   const output: string[] = [];
   let inList = false;
 
@@ -60,6 +61,44 @@ function formatInline(text: string): string {
   // Inline code
   result = result.replace(/`(.+?)`/g, '<code>$1</code>');
   return result;
+}
+
+/** Strip system-internal hidden blocks (FOLLOW_UPS, MEETING_DETECTED) from agent messages */
+export function stripFollowUps(text: string): string {
+  return text
+    .replace(/<!-- FOLLOW_UPS\n[\s\S]*?(?:-->|$)/g, "")
+    .replace(/<!-- MEETING_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
+    .trim();
+}
+
+/** Extract MEETING_DETECTED data from agent message */
+export function extractMeetingDetected(text: string): {
+  title: string;
+  attendees: { name: string; role?: string }[];
+  meeting_type?: string;
+  suggested_agenda?: string[];
+} | null {
+  const match = text.match(/<!-- MEETING_DETECTED\n([\s\S]*?)(?:-->|$)/);
+  if (!match) return null;
+  try {
+    const parsed: unknown = JSON.parse(match[1].trim());
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      typeof (parsed as Record<string, unknown>).title !== "string" ||
+      !Array.isArray((parsed as Record<string, unknown>).attendees)
+    ) {
+      return null;
+    }
+    return parsed as {
+      title: string;
+      attendees: { name: string; role?: string }[];
+      meeting_type?: string;
+      suggested_agenda?: string[];
+    };
+  } catch {
+    return null;
+  }
 }
 
 export function escapeHtml(text: string): string {

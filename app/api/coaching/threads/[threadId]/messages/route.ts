@@ -220,6 +220,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       generatedAt: result.generatedAt,
       tokensUsed: result.tokensUsed,
       followUpsExtracted: result.followUpsExtracted ?? [],
+      meetingDetected: result.meetingDetected ?? null,
     });
   } catch (error) {
     console.error(

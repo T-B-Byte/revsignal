@@ -266,6 +266,13 @@ export interface MeetingAttendee {
   role?: string;
 }
 
+export type MeetingStatus = "upcoming" | "completed" | "cancelled";
+
+export interface MeetingAgendaItem {
+  text: string;
+  covered: boolean;
+}
+
 export interface MeetingNote {
   note_id: string;
   user_id: string;
@@ -278,9 +285,32 @@ export interface MeetingNote {
   action_items: ActionItemRef[];
   tags: string[];
   deal_id: string | null;
+  status: MeetingStatus;
+  prep_brief: string | null;
+  agenda: MeetingAgendaItem[];
+  contact_ids: string[];
+  location: string | null;
   created_at: string;
   updated_at: string;
 }
+
+export interface ContactAgendaItem {
+  item_id: string;
+  user_id: string;
+  contact_id: string;
+  description: string;
+  status: "open" | "covered" | "carried";
+  source: "manual" | "strategist" | "action_item";
+  covered_in_meeting: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export const MEETING_STATUSES: { value: MeetingStatus; label: string }[] = [
+  { value: "upcoming", label: "Upcoming" },
+  { value: "completed", label: "Completed" },
+  { value: "cancelled", label: "Cancelled" },
+];
 
 export const MEETING_TYPES: { value: MeetingType; label: string }[] = [
   { value: "one_on_one", label: "1:1" },

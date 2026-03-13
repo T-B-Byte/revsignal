@@ -1812,6 +1812,21 @@ Rules for follow-ups:
 - The FOLLOW_UPS block is hidden from the user display but parsed by the system.
 - If no follow-ups to extract, omit the block entirely.
 
+MEETING DETECTION:
+When Tina pastes an email, chat, or notes that mention a meeting being scheduled, proposed, or confirmed — or when context clearly implies an upcoming meeting with specific people — append a MEETING_DETECTED block at the very end (after FOLLOW_UPS if both exist):
+
+<!-- MEETING_DETECTED
+{"title": "SFDC Architecture Review with RevOps", "attendees": [{"name": "Tim Steward", "role": "Director, FP&A and Revenue Operations"}, {"name": "Jereme Buuck", "role": "Revenue Operations & Commissions Analyst"}], "meeting_type": "cross_functional", "suggested_agenda": ["Account/Contact structure for DaaS deals", "Opportunity types and stage steps"]}
+-->
+
+Rules for meeting detection:
+- Only trigger when there is clear evidence a meeting IS being set up or will happen. Do not trigger for casual mentions of "we should meet sometime."
+- Extract attendee names and roles from the context.
+- meeting_type should be one of: one_on_one, team, strategy, cross_functional, board, standup, other.
+- suggested_agenda is optional — include if the source material mentions specific topics.
+- The MEETING_DETECTED block is hidden from display but parsed by the system to prompt the user to create the meeting.
+- If no meeting is detected, omit the block entirely.
+
 ${coachingToneRules()}`;
 
 const THREAD_CATCHUP_PROMPT = `${STRATEGIST_IDENTITY}
@@ -1854,12 +1869,20 @@ function coachingToneRules(): string {
 /** Threshold: regenerate thread brief after this many messages */
 const THREAD_BRIEF_THRESHOLD = 20;
 
+export interface MeetingDetectedData {
+  title: string;
+  attendees: { name: string; role?: string }[];
+  meeting_type?: string;
+  suggested_agenda?: string[];
+}
+
 export interface ThreadResponseResult {
   response: string;
   generatedAt: string;
   sourcesCited: string[];
   tokensUsed: number;
   followUpsExtracted: { description: string; due_date: string | null }[];
+  meetingDetected: MeetingDetectedData | null;
 }
 
 /**
@@ -1986,7 +2009,7 @@ export async function generateThreadResponse(
       }
       // Strip follow-up extraction blocks from assistant messages (they're system-internal)
       let content = msg.content;
-      content = content.replace(/<!-- FOLLOW_UPS\n[\s\S]*?-->/g, "").trim();
+      content = content.replace(/<!-- FOLLOW_UPS\n[\s\S]*?(?:-->|$)/g, "").trim();
 
       // Label intel notes so the Strategist knows the source type
       const iType = msg.interaction_type ?? "coaching";
@@ -2044,10 +2067,16 @@ export async function generateThreadResponse(
     (response.usage?.input_tokens ?? 0) +
     (response.usage?.output_tokens ?? 0);
 
-  // Step 6: Extract follow-ups from response
+  // Step 6: Extract follow-ups and meeting detection from response, then strip from user-facing text
   const followUpsExtracted = extractFollowUps(fullResponseText);
+  const meetingDetected = extractMeetingDetected(fullResponseText);
+  const cleanResponse = fullResponseText
+    .replace(/<!-- FOLLOW_UPS\n[\s\S]*?(?:-->|$)/g, "")
+    .replace(/<!-- MEETING_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
+    .trim();
 
   // Step 7: Save messages to coaching_conversations (with thread_id)
+  // Save the clean response (no follow-up markup) so historical context is clean
   const sourcesCited = collectCoachingSources(strategicCtx, null);
   const now = new Date().toISOString();
 
@@ -2063,7 +2092,7 @@ export async function generateThreadResponse(
       user_id: userId,
       thread_id: threadId,
       role: "assistant",
-      content: fullResponseText,
+      content: cleanResponse,
       context_used: {
         dealId: options?.dealId ?? null,
         threadBrief: !!options?.threadBrief,
@@ -2119,17 +2148,13 @@ export async function generateThreadResponse(
     durationMs: durationRetrieve + durationGenerate,
   });
 
-  // Strip the follow-up block from the user-facing response
-  const cleanResponse = fullResponseText
-    .replace(/<!-- FOLLOW_UPS\n[\s\S]*?-->/g, "")
-    .trim();
-
   return {
     response: cleanResponse,
     generatedAt: new Date().toISOString(),
     sourcesCited,
     tokensUsed,
     followUpsExtracted,
+    meetingDetected,
   };
 }
 
@@ -2322,7 +2347,7 @@ function extractFollowUps(
   responseText: string
 ): { description: string; due_date: string | null }[] {
   const match = responseText.match(
-    /<!-- FOLLOW_UPS\n([\s\S]*?)-->/
+    /<!-- FOLLOW_UPS\n([\s\S]*?)(?:-->|$)/
   );
   if (!match) return [];
 
@@ -2344,5 +2369,45 @@ function extractFollowUps(
   } catch {
     console.error("[strategist] Failed to parse FOLLOW_UPS block");
     return [];
+  }
+}
+
+/**
+ * Parse meeting detection from the Strategist's response.
+ * Looks for the hidden <!-- MEETING_DETECTED ... --> block.
+ */
+function extractMeetingDetected(
+  responseText: string
+): MeetingDetectedData | null {
+  const match = responseText.match(
+    /<!-- MEETING_DETECTED\n([\s\S]*?)(?:-->|$)/
+  );
+  if (!match) return null;
+
+  try {
+    const parsed = JSON.parse(match[1].trim());
+    if (
+      typeof parsed !== "object" ||
+      parsed === null ||
+      typeof parsed.title !== "string" ||
+      !Array.isArray(parsed.attendees)
+    ) {
+      return null;
+    }
+    return {
+      title: parsed.title,
+      attendees: parsed.attendees.filter(
+        (a: unknown) =>
+          typeof a === "object" &&
+          a !== null &&
+          "name" in a &&
+          typeof (a as Record<string, unknown>).name === "string"
+      ),
+      meeting_type: typeof parsed.meeting_type === "string" ? parsed.meeting_type : undefined,
+      suggested_agenda: Array.isArray(parsed.suggested_agenda) ? parsed.suggested_agenda : undefined,
+    };
+  } catch {
+    console.error("[strategist] Failed to parse MEETING_DETECTED block");
+    return null;
   }
 }
