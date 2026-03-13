@@ -10,18 +10,21 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select } from "@/components/ui/select";
 import { MaHeader } from "./ma-header";
 import { MaContactRow } from "./ma-contact-row";
+import { MaDocumentUpload } from "./ma-document-upload";
 import { addMaContact, addMaNote, deleteMaNote } from "@/app/(dashboard)/ma/actions";
 import {
   MA_NOTE_TYPES,
   type MaEntity,
   type MaContact,
   type MaNote,
+  type MaDocument,
 } from "@/types/database";
 
 interface MaDetailViewProps {
   entity: MaEntity;
   contacts: MaContact[];
   notes: MaNote[];
+  documents: MaDocument[];
 }
 
 const noteTypeOptions = MA_NOTE_TYPES.map((t) => ({
@@ -37,7 +40,7 @@ const noteTypeColors: Record<string, string> = {
   decision: "#22c55e",
 };
 
-export function MaDetailView({ entity, contacts, notes }: MaDetailViewProps) {
+export function MaDetailView({ entity, contacts, notes, documents }: MaDetailViewProps) {
   const router = useRouter();
   const [showAddContact, setShowAddContact] = useState(false);
   const [contactPending, startContactTransition] = useTransition();
@@ -207,6 +210,9 @@ export function MaDetailView({ entity, contacts, notes }: MaDetailViewProps) {
 
         {/* Sidebar */}
         <div className="space-y-4">
+          {/* Documents */}
+          <MaDocumentUpload entityId={entity.entity_id} documents={documents} />
+
           {/* Contacts card */}
           <Card>
             <CardHeader>

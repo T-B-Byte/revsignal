@@ -432,3 +432,45 @@ export async function deleteMaNote(
   revalidatePath("/ma");
   return { success: true };
 }
+
+// --- Document Actions ---
+
+export async function deleteMaDocument(
+  documentId: string
+): Promise<{ success: boolean } | { error: string }> {
+  if (!UUID_REGEX.test(documentId)) return { error: "Invalid document ID" };
+
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Fetch document to get storage path and entity_id for cleanup
+  const { data: doc } = await supabase
+    .from("ma_documents")
+    .select("storage_path, entity_id")
+    .eq("document_id", documentId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!doc) return { error: "Document not found" };
+
+  // Delete from storage
+  await supabase.storage.from("ma-documents").remove([doc.storage_path]);
+
+  // Delete record
+  const { error } = await supabase
+    .from("ma_documents")
+    .delete()
+    .eq("document_id", documentId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("[ma/actions] deleteMaDocument error:", error.message);
+    return { error: "Failed to delete document. Please try again." };
+  }
+
+  revalidatePath(`/ma/${doc.entity_id}`);
+  return { success: true };
+}

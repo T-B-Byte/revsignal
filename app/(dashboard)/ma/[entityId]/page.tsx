@@ -2,7 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import { MaDetailView } from "@/components/ma/ma-detail-view";
-import type { MaEntity, MaContact, MaNote } from "@/types/database";
+import type { MaEntity, MaContact, MaNote, MaDocument } from "@/types/database";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -45,8 +45,8 @@ export default async function MaDetailPage({ params }: MaDetailPageProps) {
   } = await supabase.auth.getUser();
   if (!user) redirect("/login");
 
-  // Fetch entity, contacts, and notes in parallel
-  const [entityResult, contactsResult, notesResult] = await Promise.all([
+  // Fetch entity, contacts, notes, and documents in parallel
+  const [entityResult, contactsResult, notesResult, documentsResult] = await Promise.all([
     supabase
       .from("ma_entities")
       .select("*")
@@ -61,6 +61,12 @@ export default async function MaDetailPage({ params }: MaDetailPageProps) {
       .order("sort_order", { ascending: true }),
     supabase
       .from("ma_notes")
+      .select("*")
+      .eq("entity_id", entityId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
+    supabase
+      .from("ma_documents")
       .select("*")
       .eq("entity_id", entityId)
       .eq("user_id", user.id)
@@ -91,6 +97,7 @@ export default async function MaDetailPage({ params }: MaDetailPageProps) {
         entity={entityResult.data as MaEntity}
         contacts={(contactsResult.data as MaContact[]) ?? []}
         notes={(notesResult.data as MaNote[]) ?? []}
+        documents={(documentsResult.data as MaDocument[]) ?? []}
       />
     </div>
   );

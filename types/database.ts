@@ -848,6 +848,27 @@ export const MA_NOTE_TYPES: { value: MaNoteType; label: string }[] = [
   { value: "decision", label: "Decision" },
 ];
 
+// --- M&A Documents ---
+
+export type MaDocumentAnalysisStatus = "pending" | "analyzing" | "complete" | "failed";
+
+export interface MaDocument {
+  document_id: string;
+  entity_id: string;
+  user_id: string;
+  filename: string;
+  storage_path: string;
+  file_size: number;
+  mime_type: string;
+  analysis_status: MaDocumentAnalysisStatus;
+  created_at: string;
+}
+
+/** MaDocument with a temporary signed download URL */
+export interface MaDocumentWithUrl extends MaDocument {
+  signed_url: string;
+}
+
 // --- Sidebar Folders ---
 
 export interface SidebarFolder {
