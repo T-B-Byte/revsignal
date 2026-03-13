@@ -25,6 +25,8 @@ interface ItemAnnotation {
   status?: 'done' | 'pushed';
   note?: string;
   pushed_to?: string;
+  strategist_reply?: string;
+  thread_id?: string;
 }
 
 type Annotations = Record<string, ItemAnnotation>;
@@ -123,6 +125,15 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
   const [editing, setEditing] = useState(false);
   const [editText, setEditText] = useState('');
   const [saving, setSaving] = useState(false);
+
+  // Right-click context menu
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    itemKey: string;
+    itemText: string;
+  } | null>(null);
+  const [taskCreating, setTaskCreating] = useState(false);
 
   const didAutoGenerate = useRef(false);
 
@@ -275,12 +286,152 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
     closeItemPanel();
   }
 
+  const sections = briefing ? parseBriefing(briefing) : [];
+
+  // Track briefing thread so we reuse the same one per session
+  const briefingThreadRef = useRef<string | null>(null);
+  const [askingStrategist, setAskingStrategist] = useState(false);
+
+  async function getOrCreateBriefingThread(): Promise<string | null> {
+    if (briefingThreadRef.current) return briefingThreadRef.current;
+
+    // Check if any existing annotation has a thread_id we can reuse
+    for (const ann of Object.values(annotations)) {
+      if (ann.thread_id) {
+        briefingThreadRef.current = ann.thread_id;
+        return ann.thread_id;
+      }
+    }
+
+    // Create a new thread for today's briefing discussion
+    const today = new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    const res = await fetch('/api/coaching/threads', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ title: `Briefing Discussion — ${today}` }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    briefingThreadRef.current = data.thread_id;
+    return data.thread_id;
+  }
+
+  async function askStrategist() {
+    if (!activeItem || !noteText.trim()) return;
+    setAskingStrategist(true);
+
+    try {
+      const threadId = await getOrCreateBriefingThread();
+      if (!threadId) {
+        setError('Failed to create discussion thread.');
+        return;
+      }
+
+      // Find the briefing item text for context
+      const itemText = sections
+        .flatMap((s) => s.items)
+        .find((i) => i.key === activeItem)?.text ?? '';
+
+      const contextMessage = `**Briefing item:** ${itemText}\n\n**My update:** ${noteText.trim()}`;
+
+      const res = await fetch(`/api/coaching/threads/${threadId}/messages`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: contextMessage,
+          interaction_type: 'coaching',
+        }),
+      });
+
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || 'Failed to get Strategist response.');
+        return;
+      }
+
+      const data = await res.json();
+
+      // Save note + strategist reply to annotations
+      const updated = { ...annotations };
+      const trimmedNote = noteText.trim();
+      const trimmedDate = pushDate.trim();
+      const annotation: ItemAnnotation = {
+        note: trimmedNote,
+        strategist_reply: data.response,
+        thread_id: threadId,
+      };
+      if (trimmedDate) {
+        annotation.status = 'pushed';
+        annotation.pushed_to = trimmedDate;
+      }
+      const existing = annotations[activeItem];
+      if (existing?.status === 'done' && !trimmedDate) {
+        annotation.status = 'done';
+      }
+      updated[activeItem] = annotation;
+      await persistAnnotations(updated);
+      // Keep panel open so user sees the reply
+      setAnnotations(updated);
+    } catch {
+      setError('Network error.');
+    } finally {
+      setAskingStrategist(false);
+    }
+  }
+
   async function clearAnnotation(itemKey: string) {
     const updated = { ...annotations };
     delete updated[itemKey];
     await persistAnnotations(updated);
     if (activeItem === itemKey) closeItemPanel();
   }
+
+  // ── Right-click context menu handlers ─────────────────────────────
+
+  function handleItemContextMenu(e: React.MouseEvent, itemKey: string, itemText: string) {
+    e.preventDefault();
+    setContextMenu({ x: e.clientX, y: e.clientY, itemKey, itemText });
+  }
+
+  async function createTaskFromItem() {
+    if (!contextMenu) return;
+    setTaskCreating(true);
+    try {
+      const res = await fetch('/api/tasks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          description: contextMenu.itemText,
+          source: 'strategist_briefing',
+        }),
+      });
+      if (!res.ok) {
+        setError('Failed to create task.');
+      }
+    } catch {
+      setError('Network error.');
+    } finally {
+      setTaskCreating(false);
+      setContextMenu(null);
+    }
+  }
+
+  function askStrategistFromContext() {
+    if (!contextMenu) return;
+    // Open the annotation panel for this item so user can talk to the Strategist
+    openItemPanel(contextMenu.itemKey);
+    setContextMenu(null);
+  }
+
+  // Close context menu on click elsewhere
+  useEffect(() => {
+    if (!contextMenu) return;
+    function handleClick() {
+      setContextMenu(null);
+    }
+    window.addEventListener('click', handleClick);
+    return () => window.removeEventListener('click', handleClick);
+  }, [contextMenu]);
 
   // ── Full-briefing edit handlers ────────────────────────────────────
 
@@ -365,7 +516,6 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
     );
   }
 
-  const sections = briefing ? parseBriefing(briefing) : [];
   const doneCount = Object.values(annotations).filter((a) => a.status === 'done').length;
   const pushedCount = Object.values(annotations).filter((a) => a.status === 'pushed').length;
   const noteCount = Object.values(annotations).filter((a) => a.note).length;
@@ -492,6 +642,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                               ? 'bg-accent-primary/5 border border-accent-primary/20'
                               : 'hover:bg-surface-tertiary border border-transparent'
                           } ${isDone ? 'opacity-60' : ''}`}
+                          onContextMenu={(e) => actionable ? handleItemContextMenu(e, item.key, item.text) : undefined}
                         >
                           {/* Checkbox for actionable items */}
                           {actionable ? (
@@ -524,7 +675,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                             </p>
 
                             {/* Inline badges */}
-                            <div className="flex items-center gap-1.5 mt-0.5 empty:mt-0">
+                            <div className="flex flex-wrap items-center gap-1.5 mt-0.5 empty:mt-0">
                               {isPushed && ann?.pushed_to && (
                                 <span className="inline-flex items-center gap-0.5 rounded bg-status-yellow/10 px-1.5 py-0.5 text-[10px] font-medium text-status-yellow">
                                   <svg className="h-2.5 w-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -534,12 +685,24 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                                   {ann.pushed_to}
                                 </span>
                               )}
-                              {hasNote && (
-                                <span className="inline-flex items-center gap-0.5 rounded bg-status-blue/10 px-1.5 py-0.5 text-[10px] text-status-blue max-w-[300px] truncate">
-                                  {ann!.note}
-                                </span>
+                              {ann?.strategist_reply && (
+                                <button
+                                  onClick={() => openItemPanel(item.key)}
+                                  className="inline-flex items-center gap-0.5 rounded bg-accent-primary/10 px-1.5 py-0.5 text-[10px] text-accent-primary hover:bg-accent-primary/20 transition-colors"
+                                  title="View Strategist reply"
+                                >
+                                  <svg className="h-2.5 w-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                                    <path d="M1 3h10v6H3l-2 2V3z" />
+                                  </svg>
+                                  Reply
+                                </button>
                               )}
                             </div>
+                            {hasNote && (
+                              <p className="mt-1 rounded bg-status-blue/10 px-1.5 py-1 text-[11px] leading-relaxed text-status-blue">
+                                {ann!.note}
+                              </p>
+                            )}
                           </div>
 
                           {/* Action buttons (visible on hover) */}
@@ -576,9 +739,13 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                             noteText={noteText}
                             pushDate={pushDate}
                             saving={savingAnnotation}
+                            askingStrategist={askingStrategist}
+                            strategistReply={annotations[item.key]?.strategist_reply}
+                            threadId={annotations[item.key]?.thread_id}
                             onNoteChange={setNoteText}
                             onDateChange={setPushDate}
                             onSave={saveItemAnnotation}
+                            onAskStrategist={askStrategist}
                             onCancel={closeItemPanel}
                           />
                         )}
@@ -613,6 +780,34 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
             </button>
           </div>
         )}
+        {/* Right-click context menu for briefing items */}
+        {contextMenu && (
+          <div
+            className="fixed z-50 rounded-lg border border-border-primary bg-surface-secondary shadow-lg py-1 min-w-[200px]"
+            style={{ left: contextMenu.x, top: contextMenu.y }}
+          >
+            <button
+              onClick={createTaskFromItem}
+              disabled={taskCreating}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-tertiary transition-colors disabled:opacity-50"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2" />
+                <path d="M9 12l2 2 4-4" />
+              </svg>
+              {taskCreating ? 'Creating...' : 'Create Task'}
+            </button>
+            <button
+              onClick={askStrategistFromContext}
+              className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-tertiary transition-colors"
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
+              </svg>
+              Ask Strategist
+            </button>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
@@ -624,9 +819,13 @@ interface AnnotationPanelProps {
   noteText: string;
   pushDate: string;
   saving: boolean;
+  askingStrategist: boolean;
+  strategistReply?: string;
+  threadId?: string;
   onNoteChange: (text: string) => void;
   onDateChange: (date: string) => void;
   onSave: () => void;
+  onAskStrategist: () => void;
   onCancel: () => void;
 }
 
@@ -634,9 +833,13 @@ function AnnotationPanel({
   noteText,
   pushDate,
   saving,
+  askingStrategist,
+  strategistReply,
+  threadId,
   onNoteChange,
   onDateChange,
   onSave,
+  onAskStrategist,
   onCancel,
 }: AnnotationPanelProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -649,23 +852,51 @@ function AnnotationPanel({
 
   return (
     <div className="ml-6 mr-2 mt-1 mb-2 rounded-md border border-accent-primary/20 bg-surface-secondary p-3 space-y-2.5">
-      {/* Note */}
+      {/* Strategist reply (shown if exists) */}
+      {strategistReply && (
+        <div className="rounded-md border border-accent-primary/15 bg-accent-primary/5 p-2.5">
+          <div className="flex items-center gap-1.5 mb-1.5">
+            <svg className="h-3 w-3 text-accent-primary" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+              <path d="M1 3h10v6H3l-2 2V3z" />
+            </svg>
+            <span className="text-[10px] font-semibold text-accent-primary uppercase tracking-wider">
+              The Strategist
+            </span>
+          </div>
+          <p className="text-xs leading-relaxed text-text-primary whitespace-pre-wrap">
+            {strategistReply}
+          </p>
+          {threadId && (
+            <a
+              href={`/coach/${threadId}`}
+              className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-accent-primary hover:underline"
+            >
+              Continue in thread
+              <svg className="h-2.5 w-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M4.5 2l4 4-4 4" />
+              </svg>
+            </a>
+          )}
+        </div>
+      )}
+
+      {/* Message to Strategist */}
       <div>
         <label className="block text-[10px] font-medium text-text-muted uppercase tracking-wider mb-1">
-          Note
+          {strategistReply ? 'Follow-up with the Strategist' : 'Message the Strategist'}
         </label>
         <textarea
           ref={textareaRef}
           value={noteText}
           onChange={(e) => onNoteChange(e.target.value)}
-          placeholder="Update, context, or comment..."
+          placeholder="Tell the Strategist where you are, ask a question, or leave a note..."
           rows={2}
           className="w-full rounded border border-border-primary bg-surface-primary px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none resize-none"
           maxLength={5000}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
               e.preventDefault();
-              onSave();
+              onAskStrategist();
             }
             if (e.key === 'Escape') {
               e.preventDefault();
@@ -697,10 +928,18 @@ function AnnotationPanel({
         )}
       </div>
 
+      {/* Loading state */}
+      {askingStrategist && (
+        <div className="flex items-center gap-2 rounded-md bg-accent-primary/5 px-2.5 py-2">
+          <div className="h-3 w-3 animate-spin rounded-full border-2 border-accent-primary border-t-transparent" />
+          <span className="text-[11px] text-accent-primary">The Strategist is thinking...</span>
+        </div>
+      )}
+
       {/* Actions */}
       <div className="flex items-center justify-between pt-1">
         <p className="text-[10px] text-text-muted">
-          {isMac ? 'Cmd' : 'Ctrl'}+Enter to save
+          {isMac ? 'Cmd' : 'Ctrl'}+Enter to send
         </p>
         <div className="flex items-center gap-1.5">
           <button
@@ -709,13 +948,26 @@ function AnnotationPanel({
           >
             Cancel
           </button>
-          <button
-            onClick={onSave}
-            disabled={saving}
-            className="rounded bg-accent-primary px-2.5 py-1 text-[11px] font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
-          >
-            {saving ? 'Saving...' : 'Save'}
-          </button>
+          {/* Save without AI only when there's a push date but no message */}
+          {pushDate && !noteText.trim() && (
+            <button
+              onClick={onSave}
+              disabled={saving || askingStrategist}
+              className="rounded bg-accent-primary px-2.5 py-1 text-[11px] font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
+            >
+              {saving ? 'Saving...' : 'Save'}
+            </button>
+          )}
+          {/* Any text message always goes to the Strategist */}
+          {(noteText.trim() || !pushDate) && (
+            <button
+              onClick={noteText.trim() ? onAskStrategist : onSave}
+              disabled={askingStrategist || (!noteText.trim() && !pushDate)}
+              className="rounded bg-accent-primary px-2.5 py-1 text-[11px] font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
+            >
+              {askingStrategist ? 'Sending...' : 'Send'}
+            </button>
+          )}
         </div>
       </div>
     </div>

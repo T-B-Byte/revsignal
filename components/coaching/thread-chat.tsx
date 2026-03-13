@@ -4,9 +4,9 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import { formatAgentHtml } from "@/lib/format-agent-html";
 import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
-import type { CoachingMessage, CoachingThread, InteractionType, Deal, Contact } from "@/types/database";
+import type { CoachingMessage, CoachingThread, InteractionType, Deal, Contact, MessageReaction } from "@/types/database";
 import type { MessageChannel } from "@/lib/agents/email-composer";
-import { INTERACTION_TYPES } from "@/types/database";
+import { INTERACTION_TYPES, MESSAGE_REACTIONS } from "@/types/database";
 import { DatePicker } from "@/components/ui/date-picker";
 
 interface ThreadChatProps {
@@ -71,6 +71,7 @@ export function ThreadChat({
   const [linkingDeal, setLinkingDeal] = useState(false);
   const [taskFromId, setTaskFromId] = useState<string | null>(null);
   const [taskDesc, setTaskDesc] = useState("");
+  const [taskSourceText, setTaskSourceText] = useState("");  // original selected text for highlighting
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskSaving, setTaskSaving] = useState(false);
   const [taskCreatedIds, setTaskCreatedIds] = useState<Set<string>>(new Set());
@@ -97,49 +98,54 @@ export function ThreadChat({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
-  // Reset state when thread changes
+  // Reset state and load persisted task highlights when thread changes.
+  // Combined into one effect to avoid a race where the reset clears
+  // highlights before the async fetch can restore them.
   useEffect(() => {
     setMessages(initialMessages);
     setError(null);
     setInput("");
     setLinkedDealId(thread.deal_id);
     setShowDealPicker(false);
-    setTaskTexts({});
-    setTaskCreatedIds(new Set());
-  }, [thread.thread_id, thread.deal_id, initialMessages]);
 
-  // Load persisted task highlights for messages in this thread
-  useEffect(() => {
     const controller = new AbortController();
     const messageIds = initialMessages.map((m) => m.conversation_id);
-    if (messageIds.length === 0) return;
 
+    if (messageIds.length === 0) {
+      setTaskTexts({});
+      setTaskCreatedIds(new Set());
+      return;
+    }
+
+    // Fetch persisted task highlights, then set state atomically
     fetch(`/api/tasks?source_message_ids=${messageIds.join(",")}`, {
       signal: controller.signal,
     })
       .then((res) => res.json())
       .then((data) => {
-        if (!data.tasks) return;
         const restored: Record<string, { text: string; dueDate: string }[]> = {};
-        for (const task of data.tasks as { source_message_id: string; source_text: string; due_date: string | null }[]) {
-          if (!task.source_message_id || !task.source_text) continue;
-          if (!restored[task.source_message_id]) restored[task.source_message_id] = [];
-          restored[task.source_message_id].push({
-            text: task.source_text,
-            dueDate: task.due_date ?? "",
-          });
+        if (data.tasks) {
+          for (const task of data.tasks as { source_message_id: string; source_text: string; due_date: string | null }[]) {
+            if (!task.source_message_id || !task.source_text) continue;
+            if (!restored[task.source_message_id]) restored[task.source_message_id] = [];
+            restored[task.source_message_id].push({
+              text: task.source_text,
+              dueDate: task.due_date ?? "",
+            });
+          }
         }
-        setTaskTexts((prev) => ({ ...prev, ...restored }));
-        setTaskCreatedIds((prev) => {
-          const next = new Set(prev);
-          for (const id of Object.keys(restored)) next.add(id);
-          return next;
-        });
+        // Set restored highlights (replaces previous thread's highlights)
+        setTaskTexts(restored);
+        setTaskCreatedIds(new Set(Object.keys(restored)));
       })
-      .catch(() => {});
+      .catch(() => {
+        // On failure, clear stale highlights from previous thread
+        setTaskTexts({});
+        setTaskCreatedIds(new Set());
+      });
 
     return () => controller.abort();
-  }, [thread.thread_id, initialMessages]);
+  }, [thread.thread_id, thread.deal_id, initialMessages]);
 
   // Close context menu on click anywhere
   useEffect(() => {
@@ -167,6 +173,7 @@ export function ThreadChat({
     if (!contextMenu) return;
     setTaskFromId(contextMenu.messageId);
     setTaskDesc(contextMenu.text);
+    setTaskSourceText(contextMenu.text);  // preserve original for highlight matching
     setTaskDueDate("");
     setContextMenu(null);
   }
@@ -379,6 +386,24 @@ export function ThreadChat({
           )
         );
       }
+      // Cross-post @mentions to other threads (fire-and-forget)
+      const mentions = extractMentions(trimmed);
+      if (mentions.length > 0) {
+        const sourceThreadName = thread.contact_name || thread.title;
+        // Strip @mentions from the content for the cross-post
+        const cleanContent = trimmed.replace(/@(\w+(?:\s+\w+)?)/g, "$1");
+        fetch("/api/coaching/threads/cross-post", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            content: cleanContent,
+            source_thread_name: sourceThreadName,
+            mentions,
+          }),
+        }).catch(() => {
+          // Silent fail — cross-post is best-effort
+        });
+      }
     } catch {
       setError("Network error. Please try again.");
       setMessages((prev) =>
@@ -389,6 +414,18 @@ export function ThreadChat({
       setLoading(false);
       sendingRef.current = false;
     }
+  }
+
+  /** Extract @mentions from message text. Returns array of names. */
+  function extractMentions(text: string): string[] {
+    // Match @Name or @FirstName LastName patterns
+    const regex = /@(\w+(?:\s+\w+)?)/g;
+    const mentions: string[] = [];
+    let match;
+    while ((match = regex.exec(text)) !== null) {
+      mentions.push(match[1]);
+    }
+    return [...new Set(mentions)];
   }
 
   async function handlePin(msg: CoachingMessage) {
@@ -419,6 +456,42 @@ export function ThreadChat({
       // Silent fail on pin
     } finally {
       setPinningId(null);
+    }
+  }
+
+  async function handleReaction(msgId: string, reaction: MessageReaction | null) {
+    // Optimistic update
+    setMessages((prev) =>
+      prev.map((m) =>
+        m.conversation_id === msgId ? { ...m, reaction } : m
+      )
+    );
+
+    try {
+      const res = await fetch(
+        `/api/coaching/threads/${thread.thread_id}/messages/react`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ conversation_id: msgId, reaction }),
+        }
+      );
+
+      if (!res.ok) {
+        // Revert on failure
+        setMessages((prev) =>
+          prev.map((m) =>
+            m.conversation_id === msgId ? { ...m, reaction: null } : m
+          )
+        );
+      }
+    } catch {
+      // Revert on error
+      setMessages((prev) =>
+        prev.map((m) =>
+          m.conversation_id === msgId ? { ...m, reaction: null } : m
+        )
+      );
     }
   }
 
@@ -501,6 +574,7 @@ export function ThreadChat({
 
     setTaskFromId(msg.conversation_id);
     setTaskDesc(prefill);
+    setTaskSourceText("");  // no specific selection — created from full message
     setTaskDueDate("");
   }
 
@@ -511,6 +585,9 @@ export function ThreadChat({
     try {
       // Create one task per line (each bullet becomes its own task)
       const descriptions = taskDesc.split("\n").map((l) => l.trim()).filter(Boolean);
+      // Use original selected text for highlight matching (if created from selection),
+      // otherwise fall back to the task description for highlighting
+      const highlightText = taskSourceText || null;
       for (const desc of descriptions) {
         const res = await fetch("/api/tasks", {
           method: "POST",
@@ -519,25 +596,29 @@ export function ThreadChat({
             description: desc,
             due_date: taskDueDate || undefined,
             source_message_id: taskFromId || undefined,
-            source_text: desc,
+            source_text: highlightText ?? desc,
           }),
         });
         if (!res.ok) throw new Error("Failed to save task");
       }
       if (taskFromId) {
         setTaskCreatedIds((prev) => new Set(prev).add(taskFromId));
-        // Store the text lines + due date that became tasks for highlighting
+        // Store highlight text for immediate rendering
         const savedDueDate = taskDueDate;
+        const textForHighlight = highlightText
+          ? [{ text: highlightText, dueDate: savedDueDate }]
+          : descriptions.map((d) => ({ text: d, dueDate: savedDueDate }));
         setTaskTexts((prev) => ({
           ...prev,
           [taskFromId]: [
             ...(prev[taskFromId] ?? []),
-            ...descriptions.map((d) => ({ text: d, dueDate: savedDueDate })),
+            ...textForHighlight,
           ],
         }));
       }
       setTaskFromId(null);
       setTaskDesc("");
+      setTaskSourceText("");
       setTaskDueDate("");
     } catch {
       // Keep form open on failure
@@ -549,6 +630,7 @@ export function ThreadChat({
   function cancelTask() {
     setTaskFromId(null);
     setTaskDesc("");
+    setTaskSourceText("");
     setTaskDueDate("");
   }
 
@@ -687,13 +769,68 @@ export function ThreadChat({
     const items = e.clipboardData?.items;
     if (!items) return;
 
+    // Check for direct image items first (screenshots, single image copies)
+    let hasDirectImages = false;
     for (const item of Array.from(items)) {
       if (item.type.startsWith("image/")) {
+        hasDirectImages = true;
         e.preventDefault();
         const file = item.getAsFile();
         if (!file) continue;
         const preview = URL.createObjectURL(file);
         setPendingImages((prev) => [...prev, { file, preview }]);
+      }
+    }
+
+    // If no direct images, check for HTML content with embedded <img> tags
+    // (e.g. pasting meeting notes from a browser with inline screenshots)
+    if (!hasDirectImages) {
+      const htmlItem = Array.from(items).find(
+        (item) => item.type === "text/html"
+      );
+      if (htmlItem) {
+        htmlItem.getAsString((html) => {
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, "text/html");
+          const imgs = doc.querySelectorAll("img");
+          if (imgs.length === 0) return;
+
+          // Extract image URLs from the pasted HTML
+          const srcs: string[] = [];
+          imgs.forEach((img) => {
+            const src = img.getAttribute("src");
+            if (src && (src.startsWith("http") || src.startsWith("data:"))) {
+              srcs.push(src);
+            }
+          });
+          if (srcs.length === 0) return;
+
+          // Fetch each image and add to pending
+          srcs.forEach(async (src) => {
+            try {
+              let blob: Blob;
+              if (src.startsWith("data:")) {
+                // Handle data: URIs directly
+                const res = await fetch(src);
+                blob = await res.blob();
+              } else {
+                // Fetch external image — may fail due to CORS
+                const res = await fetch(src, { mode: "cors" });
+                if (!res.ok) return;
+                blob = await res.blob();
+              }
+              if (!blob.type.startsWith("image/")) return;
+              const ext = blob.type.split("/")[1] || "png";
+              const file = new File([blob], `pasted-image.${ext}`, {
+                type: blob.type,
+              });
+              const preview = URL.createObjectURL(file);
+              setPendingImages((prev) => [...prev, { file, preview }]);
+            } catch {
+              // CORS or network error — skip this image silently
+            }
+          });
+        });
       }
     }
   }
@@ -1222,6 +1359,34 @@ export function ThreadChat({
                     </button>
                   </div>
                 </div>
+
+                {/* Emoji reactions (assistant messages) */}
+                {msg.role === "assistant" && (
+                  <div className="mt-1.5 flex items-center gap-1">
+                    {msg.reaction ? (
+                      <button
+                        onClick={() => handleReaction(msg.conversation_id, null)}
+                        className="rounded-full bg-accent-primary/10 px-1.5 py-0.5 text-sm hover:bg-accent-primary/20 transition-colors"
+                        title="Remove reaction"
+                      >
+                        {MESSAGE_REACTIONS.find((r) => r.value === msg.reaction)?.emoji}
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        {MESSAGE_REACTIONS.map((r) => (
+                          <button
+                            key={r.value}
+                            onClick={() => handleReaction(msg.conversation_id, r.value)}
+                            className="rounded-full px-1 py-0.5 text-sm hover:bg-surface-secondary transition-colors"
+                            title={r.value.replace("_", " ")}
+                          >
+                            {r.emoji}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
           );

@@ -391,6 +391,14 @@ export const INTERACTION_TYPES: {
   { value: "in_person_meeting", label: "In-Person", placeholder: "Paste notes from face-to-face meeting..." },
 ];
 
+export type MessageReaction = "thumbs_up" | "ok" | "love";
+
+export const MESSAGE_REACTIONS: { value: MessageReaction; emoji: string }[] = [
+  { value: "thumbs_up", emoji: "👍" },
+  { value: "ok", emoji: "👌" },
+  { value: "love", emoji: "❤️" },
+];
+
 export interface CoachingMessage {
   conversation_id: string;
   user_id: string;
@@ -402,6 +410,7 @@ export interface CoachingMessage {
   sources_cited: string[];
   tokens_used: number | null;
   attachments?: string[];
+  reaction?: MessageReaction | null;
   created_at: string;
 }
 
