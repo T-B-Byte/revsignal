@@ -65,6 +65,55 @@ export async function createProspect(
   return { id: data.id };
 }
 
+const updateProspectSchema = z.object({
+  company: z.string().min(1).optional(),
+  icp_category: z.string().optional().nullable(),
+  website: z.string().url("Invalid URL").optional().or(z.literal("")).nullable(),
+  estimated_acv: z.coerce.number().nonnegative().optional().nullable(),
+  research_notes: z.string().optional().nullable(),
+  why_they_buy: z.string().optional().nullable(),
+  source: z.string().optional().nullable(),
+});
+
+export async function updateProspect(
+  prospectId: string,
+  updates: Record<string, unknown>
+): Promise<{ success: boolean } | { error: string }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  const parsed = updateProspectSchema.safeParse(updates);
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Validation failed" };
+  }
+
+  const clean: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(parsed.data)) {
+    if (value !== undefined) clean[key] = value;
+  }
+
+  if (Object.keys(clean).length === 0) {
+    return { success: true };
+  }
+
+  const { error } = await supabase
+    .from("prospects")
+    .update(clean)
+    .eq("id", prospectId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/prospects");
+  return { success: true };
+}
+
 export async function deleteProspect(
   prospectId: string
 ): Promise<{ success: boolean } | { error: string }> {

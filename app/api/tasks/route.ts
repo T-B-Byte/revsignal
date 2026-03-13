@@ -5,8 +5,9 @@ import { createClient } from "@/lib/supabase/server";
 /**
  * GET /api/tasks
  * List all tasks for the current user, open first then done.
+ * Optional: ?source_message_ids=id1,id2 to filter by source message.
  */
-export async function GET() {
+export async function GET(request: NextRequest) {
   const supabase = await createClient();
   const {
     data: { user },
@@ -15,11 +16,20 @@ export async function GET() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const { data: tasks, error } = await supabase
+  const sourceParam = request.nextUrl.searchParams.get("source_message_ids");
+
+  let query = supabase
     .from("user_tasks")
     .select("*")
-    .eq("user_id", user.id)
-    .order("status", { ascending: true }) // open before done
+    .eq("user_id", user.id);
+
+  if (sourceParam) {
+    const ids = sourceParam.split(",").filter(Boolean);
+    query = query.in("source_message_id", ids);
+  }
+
+  const { data: tasks, error } = await query
+    .order("status", { ascending: true })
     .order("due_date", { ascending: true, nullsFirst: false })
     .order("created_at", { ascending: false });
 
@@ -33,6 +43,8 @@ export async function GET() {
 const createSchema = z.object({
   description: z.string().min(1).max(2000),
   due_date: z.string().max(20).optional(),
+  source_message_id: z.uuid().optional(),
+  source_text: z.string().max(2000).optional(),
 });
 
 /**
@@ -69,6 +81,8 @@ export async function POST(request: NextRequest) {
       user_id: user.id,
       description: parsed.data.description.trim(),
       due_date: parsed.data.due_date || null,
+      source_message_id: parsed.data.source_message_id || null,
+      source_text: parsed.data.source_text || null,
     })
     .select()
     .single();

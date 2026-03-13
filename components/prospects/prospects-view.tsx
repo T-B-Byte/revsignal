@@ -98,7 +98,7 @@ export function ProspectsView({
         ) : (
           <div className="grid gap-3">
             {filtered.map((prospect) => (
-              <ProspectCard key={prospect.id} prospect={prospect} />
+              <ProspectCard key={prospect.id} prospect={prospect} icpCategories={icpCategories} />
             ))}
           </div>
         )}

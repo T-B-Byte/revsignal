@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,9 +62,12 @@ const deploymentLabels: Record<string, string> = {
 };
 
 export function DealHeader({ deal }: DealHeaderProps) {
+  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const stageConfig = DEAL_STAGES.find((s) => s.value === deal.stage);
 
@@ -111,6 +115,23 @@ export function DealHeader({ deal }: DealHeaderProps) {
         setIsEditing(false);
       }
     });
+  }
+
+  async function handleDelete() {
+    setDeleting(true);
+    try {
+      const res = await fetch(`/api/deals/${deal.deal_id}`, { method: "DELETE" });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to delete deal.");
+        setDeleting(false);
+        return;
+      }
+      router.push("/deals");
+    } catch {
+      setError("Network error.");
+      setDeleting(false);
+    }
   }
 
   if (isEditing) {
@@ -196,6 +217,11 @@ export function DealHeader({ deal }: DealHeaderProps) {
   return (
     <Card>
       <CardContent className="pt-4">
+        {error && (
+          <div className="mb-3 p-3 text-sm text-status-red bg-status-red/10 border border-status-red/20 rounded-md">
+            {error}
+          </div>
+        )}
         <div className="flex items-start justify-between">
           <div>
             <h1 className="text-xl font-bold text-text-primary mb-2">
@@ -237,22 +263,61 @@ export function DealHeader({ deal }: DealHeaderProps) {
             </div>
           </div>
 
-          <Button
-            variant="secondary"
-            size="sm"
-            onClick={() => setIsEditing(true)}
-          >
-            <svg
-              className="w-3.5 h-3.5"
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
+          <div className="flex items-center gap-2">
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={() => setIsEditing(true)}
             >
-              <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5Z" />
-            </svg>
-            Edit
-          </Button>
+              <svg
+                className="w-3.5 h-3.5"
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+              >
+                <path d="M11.5 1.5l3 3L5 14H2v-3L11.5 1.5Z" />
+              </svg>
+              Edit
+            </Button>
+
+            {confirmDelete ? (
+              <div className="flex items-center gap-1.5">
+                <span className="text-xs text-status-red">Delete this deal?</span>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={() => setConfirmDelete(false)}
+                  disabled={deleting}
+                >
+                  No
+                </Button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="rounded-md bg-status-red px-3 py-1.5 text-xs font-medium text-white hover:bg-status-red/90 disabled:opacity-50 transition-colors"
+                >
+                  {deleting ? "Deleting..." : "Yes, delete"}
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setConfirmDelete(true)}
+                className="rounded-md p-1.5 text-text-muted hover:text-status-red hover:bg-status-red/10 transition-colors"
+                title="Delete deal"
+              >
+                <svg
+                  className="w-4 h-4"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path d="M2 4h12M5.5 4V2.5h5V4M6 7v5M10 7v5M3.5 4l.5 9.5a1 1 0 001 .5h6a1 1 0 001-.5L12.5 4" />
+                </svg>
+              </button>
+            )}
+          </div>
         </div>
 
         {deal.notes && (
