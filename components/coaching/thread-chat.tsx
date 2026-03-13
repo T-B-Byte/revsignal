@@ -93,7 +93,6 @@ export function ThreadChat({
   const [meetingPrompt, setMeetingPrompt] = useState<{
     title: string;
     attendees: { name: string; role?: string }[];
-    meeting_type?: string;
     suggested_agenda?: string[];
   } | null>(null);
   const [creatingMeeting, setCreatingMeeting] = useState(false);
@@ -747,7 +746,6 @@ export function ThreadChat({
         body: JSON.stringify({
           title: meetingPrompt.title,
           meeting_date: new Date().toISOString(), // placeholder — user can edit in meetings view
-          meeting_type: meetingPrompt.meeting_type || "other",
           attendees: meetingPrompt.attendees,
           agenda: (meetingPrompt.suggested_agenda ?? []).map((text) => ({ text, covered: false })),
           deal_id: linkedDealId || undefined,

@@ -1708,7 +1708,7 @@ function buildMeetingDebriefContextDoc(
     .join(", ");
 
   sections.push(
-    `MEETING: ${meetingNote.title}\nDATE: ${meetingNote.meeting_date}\nTYPE: ${meetingNote.meeting_type}\nATTENDEES: ${attendeeStr || "none listed"}`
+    `MEETING: ${meetingNote.title}\nDATE: ${meetingNote.meeting_date}\nATTENDEES: ${attendeeStr || "none listed"}`
   );
 
   // Original meeting content (truncate to prevent context window overflow)
@@ -1816,13 +1816,12 @@ MEETING DETECTION:
 When Tina pastes an email, chat, or notes that mention a meeting being scheduled, proposed, or confirmed — or when context clearly implies an upcoming meeting with specific people — append a MEETING_DETECTED block at the very end (after FOLLOW_UPS if both exist):
 
 <!-- MEETING_DETECTED
-{"title": "SFDC Architecture Review with RevOps", "attendees": [{"name": "Tim Steward", "role": "Director, FP&A and Revenue Operations"}, {"name": "Jereme Buuck", "role": "Revenue Operations & Commissions Analyst"}], "meeting_type": "cross_functional", "suggested_agenda": ["Account/Contact structure for DaaS deals", "Opportunity types and stage steps"]}
+{"title": "SFDC Architecture Review with RevOps", "attendees": [{"name": "Tim Steward", "role": "Director, FP&A and Revenue Operations"}, {"name": "Jereme Buuck", "role": "Revenue Operations & Commissions Analyst"}], "suggested_agenda": ["Account/Contact structure for DaaS deals", "Opportunity types and stage steps"]}
 -->
 
 Rules for meeting detection:
 - Only trigger when there is clear evidence a meeting IS being set up or will happen. Do not trigger for casual mentions of "we should meet sometime."
 - Extract attendee names and roles from the context.
-- meeting_type should be one of: one_on_one, team, strategy, cross_functional, board, standup, other.
 - suggested_agenda is optional — include if the source material mentions specific topics.
 - The MEETING_DETECTED block is hidden from display but parsed by the system to prompt the user to create the meeting.
 - If no meeting is detected, omit the block entirely.
@@ -1872,7 +1871,6 @@ const THREAD_BRIEF_THRESHOLD = 20;
 export interface MeetingDetectedData {
   title: string;
   attendees: { name: string; role?: string }[];
-  meeting_type?: string;
   suggested_agenda?: string[];
 }
 
@@ -2403,7 +2401,6 @@ function extractMeetingDetected(
           "name" in a &&
           typeof (a as Record<string, unknown>).name === "string"
       ),
-      meeting_type: typeof parsed.meeting_type === "string" ? parsed.meeting_type : undefined,
       suggested_agenda: Array.isArray(parsed.suggested_agenda) ? parsed.suggested_agenda : undefined,
     };
   } catch {

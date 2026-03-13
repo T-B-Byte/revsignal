@@ -5,11 +5,9 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import {
-  MEETING_TYPES,
   PHAROSIQ_TEAM,
   type MeetingNote,
   type MeetingAttendee,
-  type MeetingType,
 } from "@/types/database";
 
 // ---------------------------------------------------------------------------
@@ -253,12 +251,6 @@ function MeetingCard({
             </span>
           )}
 
-          {/* Meeting type */}
-          <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium bg-surface-tertiary text-text-muted">
-            {MEETING_TYPES.find((t) => t.value === meeting.meeting_type)
-              ?.label ?? meeting.meeting_type}
-          </span>
-
           {/* Location */}
           {meeting.location && (
             <span className="inline-flex items-center gap-1 text-[10px] text-text-muted">
@@ -299,7 +291,6 @@ function NewMeetingForm({
   // Form state
   const [title, setTitle] = useState("");
   const [meetingDate, setMeetingDate] = useState("");
-  const [meetingType, setMeetingType] = useState<MeetingType>("one_on_one");
   const [attendees, setAttendees] = useState<MeetingAttendee[]>([]);
   const [attendeeName, setAttendeeName] = useState("");
   const [attendeeRole, setAttendeeRole] = useState("");
@@ -346,7 +337,6 @@ function NewMeetingForm({
         body: JSON.stringify({
           title: title.trim(),
           meeting_date: new Date(meetingDate).toISOString(),
-          meeting_type: meetingType,
           attendees,
           location: location.trim() || undefined,
           deal_id: dealId || undefined,
@@ -413,34 +403,18 @@ function NewMeetingForm({
         />
       </div>
 
-      {/* Date/time + Type row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="block text-xs text-text-muted mb-1">
-            Date & Time *
-          </label>
-          <input
-            type="datetime-local"
-            required
-            value={meetingDate}
-            onChange={(e) => setMeetingDate(e.target.value)}
-            className="w-full rounded-md border border-border-primary bg-surface-tertiary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary [color-scheme:dark]"
-          />
-        </div>
-        <div>
-          <label className="block text-xs text-text-muted mb-1">Type</label>
-          <select
-            value={meetingType}
-            onChange={(e) => setMeetingType(e.target.value as MeetingType)}
-            className="w-full rounded-md border border-border-primary bg-surface-tertiary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
-          >
-            {MEETING_TYPES.map((t) => (
-              <option key={t.value} value={t.value}>
-                {t.label}
-              </option>
-            ))}
-          </select>
-        </div>
+      {/* Date/time */}
+      <div>
+        <label className="block text-xs text-text-muted mb-1">
+          Date & Time *
+        </label>
+        <input
+          type="datetime-local"
+          required
+          value={meetingDate}
+          onChange={(e) => setMeetingDate(e.target.value)}
+          className="w-full rounded-md border border-border-primary bg-surface-tertiary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary [color-scheme:dark]"
+        />
       </div>
 
       {/* Attendees */}

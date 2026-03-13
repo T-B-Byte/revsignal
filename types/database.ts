@@ -312,16 +312,6 @@ export const MEETING_STATUSES: { value: MeetingStatus; label: string }[] = [
   { value: "cancelled", label: "Cancelled" },
 ];
 
-export const MEETING_TYPES: { value: MeetingType; label: string }[] = [
-  { value: "one_on_one", label: "1:1" },
-  { value: "team", label: "Team Meeting" },
-  { value: "strategy", label: "Strategy" },
-  { value: "cross_functional", label: "Cross-Functional" },
-  { value: "board", label: "Board / Exec" },
-  { value: "standup", label: "Standup" },
-  { value: "other", label: "Other" },
-];
-
 /** pharosIQ leadership team — pre-populated for attendee autocomplete */
 export const PHAROSIQ_TEAM: MeetingAttendee[] = [
   { name: "Jeff Rokuskie", role: "CEO" },

@@ -7,22 +7,10 @@ import type {
   MeetingAgendaItem,
   ContactAgendaItem,
   Deal,
-  MeetingType,
   MeetingStatus,
 } from "@/types/database";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-
-// Re-declare constants to avoid importing non-type exports from types module
-const MEETING_TYPE_LABELS: Record<MeetingType, string> = {
-  one_on_one: "1:1",
-  team: "Team Meeting",
-  strategy: "Strategy",
-  cross_functional: "Cross-Functional",
-  board: "Board / Exec",
-  standup: "Standup",
-  other: "Other",
-};
 
 const STATUS_STYLES: Record<
   MeetingStatus,
@@ -114,7 +102,6 @@ export function MeetingDetail({
   const [editDealId, setEditDealId] = useState<string | null>(
     meeting.deal_id
   );
-  const [editType, setEditType] = useState<MeetingType>(meeting.meeting_type);
   const [editLocation, setEditLocation] = useState(meeting.location ?? "");
   const [editDate, setEditDate] = useState(meeting.meeting_date);
   const [editStatus, setEditStatus] = useState<MeetingStatus>(meeting.status);
@@ -290,7 +277,6 @@ export function MeetingDetail({
     setIsSavingInfo(true);
     const result = await patchMeeting({
       deal_id: editDealId || null,
-      meeting_type: editType,
       location: editLocation || null,
       meeting_date: editDate,
       status: editStatus,
@@ -299,7 +285,7 @@ export function MeetingDetail({
     if (result) {
       setIsEditingInfo(false);
     }
-  }, [editDealId, editType, editLocation, editDate, editStatus, patchMeeting]);
+  }, [editDealId, editLocation, editDate, editStatus, patchMeeting]);
 
   // ---- Group contact agenda items by contact ----
 
@@ -450,7 +436,7 @@ export function MeetingDetail({
 
             {meeting.prep_brief ? (
               <div
-                className="prose prose-sm max-w-none text-text-primary prose-headings:text-text-primary prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-p:text-text-secondary prose-p:text-sm prose-p:my-1 prose-li:text-text-secondary prose-li:text-sm prose-strong:text-text-primary prose-strong:font-medium prose-ul:my-1 prose-ol:my-1"
+                className="prose prose-sm max-w-none font-mono text-[13px] leading-relaxed text-text-primary prose-headings:text-text-primary prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-5 prose-headings:mb-2 prose-p:text-text-secondary prose-p:text-[13px] prose-p:my-1.5 prose-li:text-text-secondary prose-li:text-[13px] prose-strong:text-text-primary prose-strong:font-medium prose-ul:my-2 prose-ol:my-2 prose-hr:my-4 prose-hr:border-border-primary"
                 dangerouslySetInnerHTML={{
                   __html: formatAgentHtml(meeting.prep_brief),
                 }}
@@ -739,14 +725,6 @@ export function MeetingDetail({
             {!isEditingInfo ? (
               <dl className="space-y-2.5 text-sm">
                 <div>
-                  <dt className="text-xs text-text-muted">Type</dt>
-                  <dd className="mt-0.5">
-                    <span className="inline-flex rounded-full bg-surface-tertiary px-2 py-0.5 text-xs text-text-secondary">
-                      {MEETING_TYPE_LABELS[meeting.meeting_type]}
-                    </span>
-                  </dd>
-                </div>
-                <div>
                   <dt className="text-xs text-text-muted">Status</dt>
                   <dd className="mt-0.5">
                     <span
@@ -802,26 +780,6 @@ export function MeetingDetail({
                     <option value="upcoming">Upcoming</option>
                     <option value="completed">Completed</option>
                     <option value="cancelled">Cancelled</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="mb-1 block text-xs text-text-muted">
-                    Type
-                  </label>
-                  <select
-                    value={editType}
-                    onChange={(e) =>
-                      setEditType(e.target.value as MeetingType)
-                    }
-                    className="w-full rounded-md border border-border-primary bg-surface-primary px-2.5 py-1.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
-                  >
-                    {Object.entries(MEETING_TYPE_LABELS).map(
-                      ([value, label]) => (
-                        <option key={value} value={value}>
-                          {label}
-                        </option>
-                      )
-                    )}
                   </select>
                 </div>
                 <div>

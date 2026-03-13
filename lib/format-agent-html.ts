@@ -38,8 +38,10 @@ export function formatAgentHtml(text: string): string {
       }
       if (line.startsWith('## ')) {
         output.push(`<h3>${escapeHtml(line.slice(3))}</h3>`);
+      } else if (line.trim() === '---' || line.trim() === '***') {
+        output.push('<hr />');
       } else if (line.trim() === '') {
-        // skip empty lines
+        output.push('<br />');
       } else {
         output.push(`<p>${formatInline(line)}</p>`);
       }
@@ -75,7 +77,6 @@ export function stripFollowUps(text: string): string {
 export function extractMeetingDetected(text: string): {
   title: string;
   attendees: { name: string; role?: string }[];
-  meeting_type?: string;
   suggested_agenda?: string[];
 } | null {
   const match = text.match(/<!-- MEETING_DETECTED\n([\s\S]*?)(?:-->|$)/);
@@ -93,7 +94,6 @@ export function extractMeetingDetected(text: string): {
     return parsed as {
       title: string;
       attendees: { name: string; role?: string }[];
-      meeting_type?: string;
       suggested_agenda?: string[];
     };
   } catch {
