@@ -1,64 +1,320 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSidebar } from "@/components/dashboard/sidebar-context";
+import { OrganizeSidebarDialog } from "@/components/dashboard/organize-sidebar-dialog";
+import {
+  getSidebarOrganization,
+  toggleFolderOpen,
+} from "@/app/(dashboard)/settings/sidebar-actions";
 
-const NAV_ITEMS = [
-  { href: "/", label: "Dashboard", icon: HomeIcon },
-  { href: "/deals", label: "Deals", icon: BriefcaseIcon },
-  { href: "/coach", label: "StrategyGPT", icon: SparklesIcon },
-  { href: "/prospects", label: "Prospects", icon: SearchIcon },
-  { href: "/tradeshows", label: "Tradeshows", icon: MapPinIcon },
-  { href: "/flashcards", label: "Flashcards", icon: FlashcardsIcon },
-  { href: "/playbook", label: "Playbook", icon: BookIcon },
-  { href: "/compete", label: "Compete", icon: ShieldIcon },
-  { href: "/marketing", label: "Marketing", icon: MegaphoneIcon },
-  { href: "/settings", label: "Settings", icon: GearIcon },
+interface NavItem {
+  href: string;
+  label: string;
+  icon: React.ComponentType<{ className?: string }>;
+  key: string;
+  pinned?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/", label: "Dashboard", icon: HomeIcon, key: "dashboard", pinned: true },
+  { href: "/deals", label: "Deals", icon: BriefcaseIcon, key: "deals" },
+  { href: "/coach", label: "StrategyGPT", icon: SparklesIcon, key: "coach" },
+  { href: "/prospects", label: "Prospects", icon: SearchIcon, key: "prospects" },
+  { href: "/tradeshows", label: "Tradeshows", icon: MapPinIcon, key: "tradeshows" },
+  { href: "/flashcards", label: "Flashcards", icon: FlashcardsIcon, key: "flashcards" },
+  { href: "/playbook", label: "Playbook", icon: BookIcon, key: "playbook" },
+  { href: "/compete", label: "Compete", icon: ShieldIcon, key: "compete" },
+  { href: "/ma", label: "M&A", icon: HandshakeIcon, key: "ma" },
+  { href: "/marketing", label: "Marketing", icon: MegaphoneIcon, key: "marketing" },
+  { href: "/settings", label: "Settings", icon: GearIcon, key: "settings", pinned: true },
 ];
+
+interface FolderData {
+  folder_id: string;
+  name: string;
+  sort_order: number;
+  is_open: boolean;
+}
+
+interface AssignmentData {
+  nav_key: string;
+  folder_id: string;
+  sort_order: number;
+}
 
 export function Sidebar() {
   const pathname = usePathname();
+  const { isCollapsed, toggleSidebar } = useSidebar();
+  const [showOrganize, setShowOrganize] = useState(false);
+  const [folders, setFolders] = useState<FolderData[]>([]);
+  const [assignments, setAssignments] = useState<AssignmentData[]>([]);
+
+  const loadOrganization = useCallback(async () => {
+    const result = await getSidebarOrganization();
+    if ("error" in result) return;
+    setFolders(result.folders);
+    setAssignments(result.assignments);
+  }, []);
+
+  useEffect(() => {
+    loadOrganization();
+  }, [loadOrganization]);
+
+  // Build render structure
+  const assignmentMap = new Map(assignments.map((a) => [a.nav_key, a.folder_id]));
+  const pinnedTop = NAV_ITEMS.filter((item) => item.key === "dashboard");
+  const pinnedBottom = NAV_ITEMS.filter((item) => item.key === "settings");
+  const organizable = NAV_ITEMS.filter((item) => !item.pinned);
+
+  // Items not assigned to any folder
+  const rootItems = organizable.filter((item) => !assignmentMap.has(item.key));
+
+  // Items grouped by folder
+  const folderGroups = folders.map((folder) => ({
+    ...folder,
+    items: organizable.filter((item) => assignmentMap.get(item.key) === folder.folder_id),
+  }));
+
+  function handleToggleFolder(folderId: string, currentOpen: boolean) {
+    // Optimistic update
+    setFolders((prev) =>
+      prev.map((f) =>
+        f.folder_id === folderId ? { ...f, is_open: !currentOpen } : f
+      )
+    );
+    toggleFolderOpen(folderId, !currentOpen);
+  }
 
   return (
-    <aside className="flex h-screen w-60 flex-col border-r border-border-primary bg-surface-secondary">
-      <div className="flex h-14 items-center px-5">
-        <Link href="/" className="text-lg font-bold text-text-primary">
-          Rev<span className="text-accent-primary">Signal</span>
-        </Link>
-      </div>
+    <>
+      <aside
+        className={`flex h-screen flex-col border-r border-border-primary bg-surface-secondary transition-[width] duration-200 ${
+          isCollapsed ? "w-16" : "w-60"
+        }`}
+      >
+        {/* Logo */}
+        <div className="flex h-14 items-center px-5">
+          <Link href="/" className="text-lg font-bold text-text-primary">
+            {isCollapsed ? (
+              <span>
+                R<span className="text-accent-primary">S</span>
+              </span>
+            ) : (
+              <span>
+                Rev<span className="text-accent-primary">Signal</span>
+              </span>
+            )}
+          </Link>
+        </div>
 
-      <nav className="flex-1 space-y-1 px-3 py-2">
-        {NAV_ITEMS.map((item) => {
-          const isActive =
-            item.href === "/"
-              ? pathname === "/"
-              : pathname.startsWith(item.href);
+        {/* Navigation */}
+        <nav className="flex-1 overflow-y-auto px-3 py-2">
+          {/* Pinned: Dashboard */}
+          {pinnedTop.map((item) => (
+            <NavLink
+              key={item.key}
+              item={item}
+              pathname={pathname}
+              isCollapsed={isCollapsed}
+            />
+          ))}
 
-          return (
-            <Link
-              key={item.href}
-              href={item.href}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
-                isActive
-                  ? "bg-accent-glow text-accent-primary"
-                  : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
-              }`}
+          {/* Folders */}
+          {folderGroups.map((folder) => {
+            if (folder.items.length === 0) return null;
+
+            // Check if any item in folder is active
+            const hasActiveItem = folder.items.some((item) =>
+              item.href === "/" ? pathname === "/" : pathname.startsWith(item.href)
+            );
+
+            return (
+              <div key={folder.folder_id} className="mt-1">
+                {/* Folder header */}
+                {!isCollapsed ? (
+                  <button
+                    onClick={() =>
+                      handleToggleFolder(folder.folder_id, folder.is_open)
+                    }
+                    className="flex w-full items-center gap-2 rounded px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    <svg
+                      className={`h-3 w-3 shrink-0 transition-transform duration-150 ${
+                        folder.is_open ? "rotate-90" : ""
+                      }`}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M9 5l7 7-7 7"
+                      />
+                    </svg>
+                    <span className="truncate">{folder.name}</span>
+                    {!folder.is_open && hasActiveItem && (
+                      <span className="ml-auto h-1.5 w-1.5 rounded-full bg-accent-primary shrink-0" />
+                    )}
+                  </button>
+                ) : (
+                  <div className="my-1 mx-3 border-t border-border-primary" />
+                )}
+
+                {/* Folder items */}
+                {(folder.is_open || isCollapsed) &&
+                  folder.items.map((item) => (
+                    <NavLink
+                      key={item.key}
+                      item={item}
+                      pathname={pathname}
+                      isCollapsed={isCollapsed}
+                    />
+                  ))}
+              </div>
+            );
+          })}
+
+          {/* Root items (not in any folder) */}
+          {rootItems.length > 0 && folderGroups.some((f) => f.items.length > 0) && !isCollapsed && (
+            <div className="my-1 mx-3 border-t border-border-primary" />
+          )}
+          {rootItems.map((item) => (
+            <NavLink
+              key={item.key}
+              item={item}
+              pathname={pathname}
+              isCollapsed={isCollapsed}
+            />
+          ))}
+
+          {/* Pinned: Settings */}
+          {pinnedBottom.map((item) => (
+            <NavLink
+              key={item.key}
+              item={item}
+              pathname={pathname}
+              isCollapsed={isCollapsed}
+            />
+          ))}
+        </nav>
+
+        {/* Footer */}
+        <div className="border-t border-border-primary px-3 py-3 space-y-1">
+          {/* Organize button */}
+          {!isCollapsed && (
+            <button
+              onClick={() => setShowOrganize(true)}
+              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-tertiary hover:text-text-primary"
             >
-              <item.icon className="h-4 w-4 shrink-0" />
-              {item.label}
-            </Link>
-          );
-        })}
-      </nav>
+              <FolderIcon className="h-4 w-4 shrink-0" />
+              <span>Organize</span>
+            </button>
+          )}
 
-      <div className="border-t border-border-primary px-5 py-3">
-        <p className="font-data text-xs text-text-muted">RevSignal v0.1</p>
-      </div>
-    </aside>
+          {/* Collapse toggle */}
+          <button
+            onClick={toggleSidebar}
+            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-tertiary hover:text-text-primary ${
+              isCollapsed ? "justify-center" : ""
+            }`}
+            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            <CollapseIcon className="h-4 w-4 shrink-0" collapsed={isCollapsed} />
+            {!isCollapsed && <span>Collapse</span>}
+          </button>
+
+          {/* Version */}
+          {!isCollapsed && (
+            <p className="px-3 font-data text-xs text-text-muted">
+              RevSignal v0.1
+            </p>
+          )}
+        </div>
+      </aside>
+
+      <OrganizeSidebarDialog
+        open={showOrganize}
+        onOpenChange={setShowOrganize}
+        onSaved={loadOrganization}
+      />
+    </>
   );
 }
 
-// --- Icons (minimal inline SVGs) ---
+// --- Nav Link ---
+
+function NavLink({
+  item,
+  pathname,
+  isCollapsed,
+}: {
+  item: NavItem;
+  pathname: string;
+  isCollapsed: boolean;
+}) {
+  const isActive =
+    item.href === "/"
+      ? pathname === "/"
+      : pathname.startsWith(item.href);
+
+  return (
+    <Link
+      href={item.href}
+      title={isCollapsed ? item.label : undefined}
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+        isCollapsed ? "justify-center" : ""
+      } ${
+        isActive
+          ? "bg-accent-glow text-accent-primary"
+          : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
+      }`}
+    >
+      <item.icon className="h-4 w-4 shrink-0" />
+      {!isCollapsed && <span className="truncate">{item.label}</span>}
+    </Link>
+  );
+}
+
+// --- Icons ---
+
+function CollapseIcon({
+  className,
+  collapsed,
+}: {
+  className?: string;
+  collapsed: boolean;
+}) {
+  return (
+    <svg
+      className={`${className} transition-transform duration-200 ${
+        collapsed ? "rotate-180" : ""
+      }`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={1.5}
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M18.75 19.5l-7.5-7.5 7.5-7.5m-6 15L5.25 12l7.5-7.5"
+      />
+    </svg>
+  );
+}
+
+function FolderIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+    </svg>
+  );
+}
 
 function HomeIcon({ className }: { className?: string }) {
   return (
@@ -130,6 +386,14 @@ function FlashcardsIcon({ className }: { className?: string }) {
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <rect x="2" y="6" width="16" height="14" rx="2" strokeLinecap="round" strokeLinejoin="round" />
       <path strokeLinecap="round" strokeLinejoin="round" d="M6 2h12a2 2 0 0 1 2 2v12" />
+    </svg>
+  );
+}
+
+function HandshakeIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M10.05 4.575a1.575 1.575 0 10-3.15 0v3.15M10.05 4.575a1.575 1.575 0 013.15 0v3.15M10.05 4.575v3.15M3.75 9.75h16.5M3.75 9.75a2.25 2.25 0 00-2.25 2.25v1.5a2.25 2.25 0 002.25 2.25h1.318m12.682-6h.932a2.25 2.25 0 012.25 2.25v1.5a2.25 2.25 0 01-2.25 2.25h-.932M10.05 7.725h3.9m-3.9 0L6.75 15.75m7.2-8.025L17.25 15.75m-10.5 0h10.5m-10.5 0l-1.068 2.135A1.125 1.125 0 006.182 19.5h11.636a1.125 1.125 0 001-1.615L17.75 15.75" />
     </svg>
   );
 }

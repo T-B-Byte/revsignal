@@ -249,6 +249,14 @@ function ThreadItem({
               </span>
             </p>
           )}
+          {thread.ma_entities && (
+            <p className="mt-0.5 truncate text-xs text-purple-400">
+              {thread.ma_entities.company}
+              <span className="ml-1 text-text-muted">
+                ({thread.ma_entities.entity_type} &middot; {thread.ma_entities.stage})
+              </span>
+            </p>
+          )}
           <p className="mt-0.5 text-[10px] text-text-muted">
             {formatDistanceToNow(new Date(thread.last_message_at), {
               addSuffix: true,
@@ -267,6 +275,14 @@ function ThreadItem({
           {(thread.open_follow_up_count ?? 0) > 0 && !thread.has_overdue && (
             <span className="text-[10px] font-medium text-status-yellow">
               {thread.open_follow_up_count}
+            </span>
+          )}
+          {(thread.open_task_count ?? 0) > 0 && (
+            <span
+              className="text-[10px] font-medium text-emerald-400"
+              title={`${thread.open_task_count} open task${thread.open_task_count === 1 ? "" : "s"}`}
+            >
+              {thread.open_task_count}
             </span>
           )}
           {isStale && (

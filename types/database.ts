@@ -413,6 +413,7 @@ export interface CoachingThread {
   thread_id: string;
   user_id: string;
   deal_id: string | null;
+  ma_entity_id: string | null;
   title: string;
   contact_name: string | null;
   contact_role: string | null;
@@ -439,11 +440,13 @@ export interface ThreadFollowUp {
   completed_at: string | null;
 }
 
-/** Thread with joined deal info for sidebar display */
+/** Thread with joined deal/M&A info for sidebar display */
 export interface CoachingThreadWithDeal extends CoachingThread {
   deals?: Pick<Deal, "deal_id" | "company" | "stage"> | null;
+  ma_entities?: Pick<MaEntity, "entity_id" | "company" | "entity_type" | "stage"> | null;
   open_follow_up_count?: number;
   has_overdue?: boolean;
+  open_task_count?: number;
 }
 
 export interface Nudge {
@@ -745,6 +748,126 @@ export const MASTERY_THRESHOLDS = {
   mastered: 0.9,
   minSeen: 3,
 } as const;
+
+// --- M&A Entities ---
+
+export type MaEntityType = "acquirer" | "target";
+
+export type MaStage =
+  | "identified"
+  | "researching"
+  | "outreach"
+  | "conversations"
+  | "diligence"
+  | "negotiation"
+  | "closed"
+  | "passed"
+  | "dead";
+
+export type MaNoteType = "update" | "meeting" | "research" | "document" | "decision";
+
+export interface MaEntity {
+  entity_id: string;
+  user_id: string;
+  company: string;
+  entity_type: MaEntityType;
+  stage: MaStage;
+  strategic_rationale: string | null;
+  estimated_valuation: number | null;
+  key_date: string | null;
+  key_date_label: string | null;
+  website: string | null;
+  notes: string | null;
+  source: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MaContact {
+  contact_id: string;
+  entity_id: string;
+  user_id: string;
+  name: string;
+  title: string | null;
+  email: string | null;
+  phone: string | null;
+  linkedin_url: string | null;
+  role_in_process: string | null;
+  notes: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface MaNote {
+  note_id: string;
+  entity_id: string;
+  user_id: string;
+  content: string;
+  note_type: MaNoteType;
+  created_at: string;
+}
+
+/** Entity with contact count for list view */
+export interface MaEntityWithCounts extends MaEntity {
+  contact_count?: number;
+  note_count?: number;
+}
+
+export const MA_STAGES: { value: MaStage; label: string; color: string }[] = [
+  { value: "identified", label: "Identified", color: "#6b7280" },
+  { value: "researching", label: "Researching", color: "#8b5cf6" },
+  { value: "outreach", label: "Outreach", color: "#3b82f6" },
+  { value: "conversations", label: "Conversations", color: "#06b6d4" },
+  { value: "diligence", label: "Diligence", color: "#eab308" },
+  { value: "negotiation", label: "Negotiation", color: "#f97316" },
+  { value: "closed", label: "Closed", color: "#22c55e" },
+  { value: "passed", label: "Passed", color: "#9ca3af" },
+  { value: "dead", label: "Dead", color: "#ef4444" },
+];
+
+export const MA_ACTIVE_STAGES: MaStage[] = [
+  "identified",
+  "researching",
+  "outreach",
+  "conversations",
+  "diligence",
+  "negotiation",
+];
+
+export const MA_ENTITY_TYPES: { value: MaEntityType; label: string; color: string }[] = [
+  { value: "acquirer", label: "Acquirer", color: "#3b82f6" },
+  { value: "target", label: "Target", color: "#8b5cf6" },
+];
+
+export const MA_NOTE_TYPES: { value: MaNoteType; label: string }[] = [
+  { value: "update", label: "Update" },
+  { value: "meeting", label: "Meeting" },
+  { value: "research", label: "Research" },
+  { value: "document", label: "Document" },
+  { value: "decision", label: "Decision" },
+];
+
+// --- Sidebar Folders ---
+
+export interface SidebarFolder {
+  folder_id: string;
+  user_id: string;
+  name: string;
+  sort_order: number;
+  is_open: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface SidebarItemAssignment {
+  id: string;
+  user_id: string;
+  nav_key: string;
+  folder_id: string;
+  sort_order: number;
+  created_at: string;
+}
 
 // --- Revenue Math Constants ---
 

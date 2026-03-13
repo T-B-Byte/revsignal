@@ -73,7 +73,8 @@ export default async function ThreadPage({
         .from("coaching_threads")
         .select(`
           *,
-          deals:deal_id (deal_id, company, stage)
+          deals:deal_id (deal_id, company, stage),
+          ma_entities:ma_entity_id (entity_id, company, entity_type, stage)
         `)
         .eq("thread_id", threadId)
         .eq("user_id", user.id)
@@ -82,7 +83,8 @@ export default async function ThreadPage({
         .from("coaching_threads")
         .select(`
           *,
-          deals:deal_id (deal_id, company, stage)
+          deals:deal_id (deal_id, company, stage),
+          ma_entities:ma_entity_id (entity_id, company, entity_type, stage)
         `)
         .eq("user_id", user.id)
         .order("last_message_at", { ascending: false }),
@@ -110,15 +112,24 @@ export default async function ThreadPage({
     (dealsResult.data as Pick<Deal, "deal_id" | "company" | "stage">[]) || [];
   const messages = (messagesResult.data as CoachingMessage[]) || [];
 
-  // Enrich threads with follow-up counts
+  // Enrich threads with follow-up counts and task counts
   const threadIds = threads.map((t) => t.thread_id);
   if (threadIds.length > 0) {
-    const { data: followUps } = await supabase
-      .from("thread_follow_ups")
-      .select("thread_id, due_date")
-      .eq("user_id", user.id)
-      .eq("status", "open")
-      .in("thread_id", threadIds);
+    const [{ data: followUps }, { data: taskRows }] = await Promise.all([
+      supabase
+        .from("thread_follow_ups")
+        .select("thread_id, due_date")
+        .eq("user_id", user.id)
+        .eq("status", "open")
+        .in("thread_id", threadIds),
+      // Count open tasks per thread by joining through source_message_id
+      supabase
+        .from("user_tasks")
+        .select("source_message_id, coaching_conversations!inner(thread_id)")
+        .eq("user_id", user.id)
+        .eq("status", "open")
+        .not("source_message_id", "is", null),
+    ]);
 
     if (followUps) {
       const today = new Date().toISOString().split("T")[0];
@@ -136,6 +147,20 @@ export default async function ThreadPage({
       for (const t of threads) {
         t.open_follow_up_count = counts[t.thread_id]?.count ?? 0;
         t.has_overdue = counts[t.thread_id]?.has_overdue ?? false;
+      }
+    }
+
+    if (taskRows) {
+      const taskCounts: Record<string, number> = {};
+      for (const row of taskRows as unknown as { coaching_conversations: { thread_id: string } }[]) {
+        const conv = row.coaching_conversations;
+        const tid = Array.isArray(conv) ? conv[0]?.thread_id : conv?.thread_id;
+        if (tid && threadIds.includes(tid)) {
+          taskCounts[tid] = (taskCounts[tid] ?? 0) + 1;
+        }
+      }
+      for (const t of threads) {
+        t.open_task_count = taskCounts[t.thread_id] ?? 0;
       }
     }
   }
