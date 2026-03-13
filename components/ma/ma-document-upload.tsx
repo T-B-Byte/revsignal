@@ -200,7 +200,8 @@ export function MaDocumentUpload({
               const isAnalyzing = analyzing === doc.document_id;
               const canAnalyze =
                 doc.analysis_status === "pending" ||
-                doc.analysis_status === "failed";
+                doc.analysis_status === "failed" ||
+                doc.analysis_status === "analyzing"; // allow retry if stuck
 
               return (
                 <div

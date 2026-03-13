@@ -4,6 +4,7 @@ import { useState, useMemo, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
+import { DatePicker } from "@/components/ui/date-picker";
 import {
   PHAROSIQ_TEAM,
   type MeetingNote,
@@ -290,7 +291,8 @@ function NewMeetingForm({
 
   // Form state
   const [title, setTitle] = useState("");
-  const [meetingDate, setMeetingDate] = useState("");
+  const [meetingDatePart, setMeetingDatePart] = useState("");
+  const [meetingTimePart, setMeetingTimePart] = useState("09:00");
   const [attendees, setAttendees] = useState<MeetingAttendee[]>([]);
   const [attendeeName, setAttendeeName] = useState("");
   const [attendeeRole, setAttendeeRole] = useState("");
@@ -325,7 +327,7 @@ function NewMeetingForm({
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!title.trim() || !meetingDate) return;
+    if (!title.trim() || !meetingDatePart) return;
 
     setSaving(true);
     setError(null);
@@ -336,7 +338,7 @@ function NewMeetingForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title: title.trim(),
-          meeting_date: new Date(meetingDate).toISOString(),
+          meeting_date: new Date(`${meetingDatePart}T${meetingTimePart}`).toISOString(),
           attendees,
           location: location.trim() || undefined,
           deal_id: dealId || undefined,
@@ -408,13 +410,22 @@ function NewMeetingForm({
         <label className="block text-xs text-text-muted mb-1">
           Date & Time *
         </label>
-        <input
-          type="datetime-local"
-          required
-          value={meetingDate}
-          onChange={(e) => setMeetingDate(e.target.value)}
-          className="w-full rounded-md border border-border-primary bg-surface-tertiary px-3 py-2 text-sm text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary [color-scheme:dark]"
-        />
+        <div className="flex items-center gap-2">
+          <div className="flex-1">
+            <DatePicker
+              value={meetingDatePart}
+              onChange={(d) => setMeetingDatePart(d)}
+              size="sm"
+              placeholder="Pick date"
+            />
+          </div>
+          <input
+            type="time"
+            value={meetingTimePart}
+            onChange={(e) => setMeetingTimePart(e.target.value)}
+            className="rounded-md border border-border-primary bg-surface-tertiary px-2.5 py-1 text-xs text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary [color-scheme:dark]"
+          />
+        </div>
       </div>
 
       {/* Attendees */}
@@ -558,7 +569,7 @@ function NewMeetingForm({
           type="submit"
           size="sm"
           loading={saving}
-          disabled={!title.trim() || !meetingDate}
+          disabled={!title.trim() || !meetingDatePart}
         >
           Create Meeting
         </Button>

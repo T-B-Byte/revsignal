@@ -11,6 +11,7 @@ import type {
 } from "@/types/database";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { DatePicker } from "@/components/ui/date-picker";
 
 const STATUS_STYLES: Record<
   MeetingStatus,
@@ -786,14 +787,32 @@ export function MeetingDetail({
                   <label className="mb-1 block text-xs text-text-muted">
                     Date & Time
                   </label>
-                  <input
-                    type="datetime-local"
-                    value={editDate.slice(0, 16)}
-                    onChange={(e) =>
-                      setEditDate(new Date(e.target.value).toISOString())
-                    }
-                    className="w-full rounded-md border border-border-primary bg-surface-primary px-2.5 py-1.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
-                  />
+                  <div className="flex items-center gap-2">
+                    <div className="flex-1">
+                      <DatePicker
+                        value={editDate.slice(0, 10)}
+                        onChange={(d) => {
+                          const time = editDate.slice(11, 16) || "09:00";
+                          setEditDate(
+                            new Date(`${d}T${time}`).toISOString()
+                          );
+                        }}
+                        size="sm"
+                        placeholder="Pick date"
+                      />
+                    </div>
+                    <input
+                      type="time"
+                      value={editDate.slice(11, 16)}
+                      onChange={(e) => {
+                        const date = editDate.slice(0, 10);
+                        setEditDate(
+                          new Date(`${date}T${e.target.value}`).toISOString()
+                        );
+                      }}
+                      className="rounded-md border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none focus:ring-2 focus:ring-accent-primary/40"
+                    />
+                  </div>
                 </div>
                 <div>
                   <label className="mb-1 block text-xs text-text-muted">

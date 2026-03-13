@@ -1894,6 +1894,7 @@ export async function generateThreadResponse(
   userMessage: string,
   options?: {
     dealId?: string;
+    maEntityId?: string;
     threadBrief?: string;
     messageCount?: number;
   }
@@ -1908,6 +1909,77 @@ export async function generateThreadResponse(
   let dealContext: DealContext | null = null;
   if (options?.dealId) {
     dealContext = await retrieveDealContext(supabase, userId, options.dealId);
+  }
+
+  // M&A entity context: fetch entity details, contacts, notes, and documents
+  let maEntityContext: string | null = null;
+  if (options?.maEntityId) {
+    const [entityRes, contactsRes, notesRes, docsRes] = await Promise.all([
+      supabase
+        .from("ma_entities")
+        .select("*")
+        .eq("entity_id", options.maEntityId)
+        .eq("user_id", userId)
+        .maybeSingle(),
+      supabase
+        .from("ma_contacts")
+        .select("name, title, role_in_process, email")
+        .eq("entity_id", options.maEntityId)
+        .eq("user_id", userId)
+        .order("sort_order", { ascending: true }),
+      supabase
+        .from("ma_notes")
+        .select("note_type, content, created_at")
+        .eq("entity_id", options.maEntityId)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false })
+        .limit(20),
+      supabase
+        .from("ma_documents")
+        .select("filename, mime_type, analysis_status, created_at")
+        .eq("entity_id", options.maEntityId)
+        .eq("user_id", userId)
+        .order("created_at", { ascending: false }),
+    ]);
+
+    if (!entityRes.data) {
+      console.warn(`[strategist] MA entity ${options.maEntityId} not found for user ${userId}`);
+    }
+    if (entityRes.data) {
+      const e = entityRes.data;
+      const sections: string[] = [
+        `M&A ENTITY: ${e.company}`,
+        `Type: ${e.entity_type === "acquirer" ? "Potential Acquirer" : "Acquisition Target"}`,
+        `Stage: ${e.stage}`,
+      ];
+      if (e.strategic_rationale) sections.push(`Strategic Rationale: ${e.strategic_rationale}`);
+      if (e.website) sections.push(`Website: ${e.website}`);
+      if (e.notes) sections.push(`Notes: ${e.notes}`);
+      if (e.source) sections.push(`Source: ${e.source}`);
+
+      if (contactsRes.data && contactsRes.data.length > 0) {
+        const contactLines = contactsRes.data.map(
+          (c) => `- ${c.name}${c.title ? ` (${c.title})` : ""}${c.role_in_process ? ` — ${c.role_in_process}` : ""}`
+        );
+        sections.push(`Key Contacts:\n${contactLines.join("\n")}`);
+      }
+
+      if (notesRes.data && notesRes.data.length > 0) {
+        const noteLines = notesRes.data.slice(0, 10).map(
+          (n) => `[${n.created_at.split("T")[0]}] (${n.note_type}) ${n.content.length > 300 ? n.content.slice(0, 300) + " [...]" : n.content}`
+        );
+        sections.push(`Recent Notes:\n${noteLines.join("\n")}`);
+      }
+
+      if (docsRes.data && docsRes.data.length > 0) {
+        const docLines = docsRes.data.map(
+          (d) => `- ${d.filename} (${d.analysis_status})`
+        );
+        sections.push(`Documents:\n${docLines.join("\n")}`);
+      }
+
+      maEntityContext = sections.join("\n");
+    }
   }
 
   // Step 2: Fetch thread follow-ups (open items)
@@ -1935,6 +2007,11 @@ export async function generateThreadResponse(
       return `- ${fu.description}${dueStr}${overdue}`;
     });
     contextSections.push(`OPEN FOLLOW-UPS:\n${fuLines.join("\n")}`);
+  }
+
+  // M&A entity context
+  if (maEntityContext) {
+    contextSections.push(maEntityContext);
   }
 
   // Strategic context (stakeholders, notes, nudges)

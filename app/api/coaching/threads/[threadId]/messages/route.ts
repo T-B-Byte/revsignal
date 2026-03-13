@@ -124,7 +124,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
   // Verify thread ownership and get deal_id
   const { data: thread } = await supabase
     .from("coaching_threads")
-    .select("thread_id, deal_id, thread_brief, message_count")
+    .select("thread_id, deal_id, ma_entity_id, thread_brief, message_count")
     .eq("thread_id", threadId)
     .eq("user_id", user.id)
     .maybeSingle();
@@ -210,6 +210,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
       parsed.data.message,
       {
         dealId: thread.deal_id ?? undefined,
+        maEntityId: thread.ma_entity_id ?? undefined,
         threadBrief: thread.thread_brief ?? undefined,
         messageCount: thread.message_count,
       }
@@ -223,12 +224,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
       meetingDetected: result.meetingDetected ?? null,
     });
   } catch (error) {
+    const errMsg = error instanceof Error ? error.message : String(error);
+    const apiErr = error as Error & { status?: number; error?: { message?: string } };
     console.error(
       "[api/coaching/threads/messages] POST error:",
-      error instanceof Error ? error.message : error
+      errMsg,
+      apiErr.status ?? "",
     );
+
+    let message = "Failed to generate response. Please try again.";
+    if (apiErr.status === 429) {
+      message = "Rate limited by Claude API — wait a moment and try again.";
+    } else if (apiErr.status === 400) {
+      message = `Claude rejected the request: ${apiErr.error?.message ?? errMsg}`;
+    } else if (errMsg) {
+      message = `Failed to generate response: ${errMsg}`;
+    }
+
     return NextResponse.json(
-      { error: "Failed to generate response. Please try again." },
+      { error: message },
       { status: 500 }
     );
   }

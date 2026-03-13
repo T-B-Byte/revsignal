@@ -9,6 +9,7 @@ const createThreadSchema = z.object({
   company: z.string().min(1).max(200).optional(),
   contact_id: z.string().uuid().optional(),
   deal_id: z.string().uuid().optional(),
+  ma_entity_id: z.string().uuid().optional(),
 });
 
 /**
@@ -122,6 +123,20 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // If ma_entity_id provided, verify it belongs to the user
+  if (parsed.data.ma_entity_id) {
+    const { data: entity } = await supabase
+      .from("ma_entities")
+      .select("entity_id")
+      .eq("entity_id", parsed.data.ma_entity_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!entity) {
+      return NextResponse.json({ error: "Entity not found" }, { status: 404 });
+    }
+  }
+
   const { data: thread, error } = await supabase
     .from("coaching_threads")
     .insert({
@@ -132,6 +147,7 @@ export async function POST(request: NextRequest) {
       company: parsed.data.company ?? null,
       contact_id: parsed.data.contact_id ?? null,
       deal_id: parsed.data.deal_id ?? null,
+      ma_entity_id: parsed.data.ma_entity_id ?? null,
     })
     .select()
     .single();

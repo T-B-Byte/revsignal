@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogContent,
@@ -23,6 +23,8 @@ interface NewThreadDialogProps {
   }) => void;
   activeDeals: Pick<Deal, "deal_id" | "company" | "stage">[];
   onDealCreated?: (deal: Pick<Deal, "deal_id" | "company" | "stage">) => void;
+  /** Known company names from existing threads/deals for autocomplete */
+  knownCompanies?: string[];
 }
 
 export function NewThreadDialog({
@@ -31,6 +33,7 @@ export function NewThreadDialog({
   onCreated,
   activeDeals,
   onDealCreated,
+  knownCompanies = [],
 }: NewThreadDialogProps) {
   const [contactName, setContactName] = useState("");
   const [contactRole, setContactRole] = useState("");
@@ -39,6 +42,46 @@ export function NewThreadDialog({
   const [loading, setLoading] = useState(false);
   const [creatingDeal, setCreatingDeal] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showCompanySuggestions, setShowCompanySuggestions] = useState(false);
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+  const companyInputRef = useRef<HTMLInputElement>(null);
+  const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  const companySuggestions = useMemo(() => {
+    if (!company.trim()) return [];
+    const lower = company.toLowerCase();
+    return knownCompanies.filter(
+      (c) => c.toLowerCase().includes(lower) && c.toLowerCase() !== lower
+    );
+  }, [company, knownCompanies]);
+
+  // Close suggestions on click outside
+  useEffect(() => {
+    if (!showCompanySuggestions) return;
+    function onClickOutside(e: MouseEvent) {
+      if (
+        companyInputRef.current &&
+        !companyInputRef.current.contains(e.target as Node) &&
+        suggestionsRef.current &&
+        !suggestionsRef.current.contains(e.target as Node)
+      ) {
+        setShowCompanySuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [showCompanySuggestions]);
+
+  function selectCompany(value: string) {
+    setCompany(value);
+    setShowCompanySuggestions(false);
+    setHighlightedIndex(-1);
+    // Auto-link to deal if company matches
+    const matchingDeal = activeDeals.find(
+      (d) => d.company.toLowerCase() === value.toLowerCase()
+    );
+    if (matchingDeal) setDealId(matchingDeal.deal_id);
+  }
 
   // Reset form when dialog opens/closes
   function resetForm() {
@@ -165,7 +208,7 @@ export function NewThreadDialog({
           </div>
 
           {/* Account / Company */}
-          <div>
+          <div className="relative">
             <label
               htmlFor="company"
               className="mb-1 block text-xs font-medium text-text-secondary"
@@ -173,15 +216,65 @@ export function NewThreadDialog({
               Account / Company
             </label>
             <input
+              ref={companyInputRef}
               id="company"
               type="text"
               value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              onKeyDown={handleKeyDown}
+              onChange={(e) => {
+                setCompany(e.target.value);
+                setShowCompanySuggestions(true);
+                setHighlightedIndex(-1);
+              }}
+              onFocus={() => setShowCompanySuggestions(true)}
+              onKeyDown={(e) => {
+                if (showCompanySuggestions && companySuggestions.length > 0) {
+                  if (e.key === "ArrowDown") {
+                    e.preventDefault();
+                    setHighlightedIndex((i) =>
+                      i < companySuggestions.length - 1 ? i + 1 : 0
+                    );
+                  } else if (e.key === "ArrowUp") {
+                    e.preventDefault();
+                    setHighlightedIndex((i) =>
+                      i > 0 ? i - 1 : companySuggestions.length - 1
+                    );
+                  } else if (e.key === "Enter" && highlightedIndex >= 0) {
+                    e.preventDefault();
+                    selectCompany(companySuggestions[highlightedIndex]);
+                    return;
+                  } else if (e.key === "Escape") {
+                    setShowCompanySuggestions(false);
+                    return;
+                  }
+                }
+                handleKeyDown(e);
+              }}
               placeholder="e.g. pharosIQ"
               maxLength={200}
+              autoComplete="off"
               className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
             />
+            {showCompanySuggestions && companySuggestions.length > 0 && (
+              <div
+                ref={suggestionsRef}
+                className="absolute left-0 right-0 top-full z-50 mt-1 max-h-40 overflow-y-auto rounded-md border border-border-primary bg-surface-secondary shadow-lg"
+              >
+                {companySuggestions.map((c, i) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => selectCompany(c)}
+                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
+                      i === highlightedIndex
+                        ? "bg-accent-primary/15 text-accent-primary"
+                        : "text-text-primary hover:bg-surface-tertiary"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Role / Title */}

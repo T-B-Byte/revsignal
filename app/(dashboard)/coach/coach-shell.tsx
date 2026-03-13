@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { ThreadSidebar } from "@/components/coaching/thread-sidebar";
 import { NewThreadDialog } from "@/components/coaching/new-thread-dialog";
@@ -18,6 +18,18 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
   const [threads, setThreads] = useState(initialThreads);
   const [deals, setDeals] = useState(initialDeals);
   const [dialogOpen, setDialogOpen] = useState(false);
+
+  // Derive unique company names from threads + deals for autocomplete
+  const knownCompanies = useMemo(() => {
+    const names = new Set<string>();
+    for (const t of threads) {
+      if (t.company) names.add(t.company);
+    }
+    for (const d of deals) {
+      if (d.company) names.add(d.company);
+    }
+    return [...names].sort((a, b) => a.localeCompare(b));
+  }, [threads, deals]);
 
   function handleThreadCreated(thread: {
     thread_id: string;
@@ -125,6 +137,7 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
         onCreated={handleThreadCreated}
         activeDeals={deals}
         onDealCreated={(deal) => setDeals((prev) => [deal, ...prev])}
+        knownCompanies={knownCompanies}
       />
     </>
   );

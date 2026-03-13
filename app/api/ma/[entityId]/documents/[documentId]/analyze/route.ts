@@ -65,11 +65,18 @@ export async function POST(_request: NextRequest, context: RouteContext) {
   const entity = entityResult.data;
 
   // Race condition guard: only start if status is pending or failed
+  // If stuck in "analyzing" for over 5 minutes, allow retry
   if (doc.analysis_status === "analyzing") {
-    return NextResponse.json(
-      { error: "Analysis already in progress" },
-      { status: 409 }
-    );
+    const updatedAt = doc.created_at; // no updated_at on ma_documents, use heuristic
+    const fiveMinAgo = Date.now() - 5 * 60 * 1000;
+    const docTime = new Date(updatedAt).getTime();
+    if (docTime > fiveMinAgo) {
+      return NextResponse.json(
+        { error: "Analysis already in progress" },
+        { status: 409 }
+      );
+    }
+    // Stale "analyzing" — fall through to allow retry
   }
 
   if (doc.analysis_status === "complete") {
@@ -85,7 +92,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
     .update({ analysis_status: "analyzing" })
     .eq("document_id", documentId)
     .eq("user_id", user.id)
-    .in("analysis_status", ["pending", "failed"])
+    .in("analysis_status", ["pending", "failed", "analyzing"])
     .select("document_id")
     .maybeSingle();
 
@@ -243,8 +250,24 @@ Be direct and specific. Cite page numbers or slide numbers when referencing spec
       .eq("document_id", documentId)
       .eq("user_id", user.id);
 
+    // Surface the actual error for debugging
+    let message = "Analysis failed. Please try again.";
+    if (err instanceof Error) {
+      // Anthropic API errors have a status and message
+      const apiErr = err as Error & { status?: number; error?: { message?: string } };
+      if (apiErr.status === 400) {
+        message = `Claude could not process this document: ${apiErr.error?.message ?? apiErr.message}`;
+      } else if (apiErr.status === 413 || apiErr.message?.includes("too large")) {
+        message = "Document is too large for AI analysis. Try a shorter PDF.";
+      } else if (apiErr.status === 429) {
+        message = "Rate limited — please wait a minute and try again.";
+      } else {
+        message = `Analysis failed: ${apiErr.message}`;
+      }
+    }
+
     return NextResponse.json(
-      { error: "Analysis failed. Please try again." },
+      { error: message },
       { status: 500 }
     );
   }
