@@ -201,29 +201,47 @@ export async function POST(request: NextRequest, context: RouteContext) {
     });
   }
 
-  // Coaching mode — call the Strategist for a response
-  try {
-    const result = await generateThreadResponse(
-      supabase,
-      user.id,
-      threadId,
-      parsed.data.message,
-      {
-        dealId: thread.deal_id ?? undefined,
-        maEntityId: thread.ma_entity_id ?? undefined,
-        threadBrief: thread.thread_brief ?? undefined,
-        messageCount: thread.message_count,
-      }
-    );
+  // Coaching mode — call the Strategist with retry for transient errors
+  const RETRYABLE_STATUSES = new Set([429, 503, 529]);
+  const MAX_RETRIES = 2;
 
-    return NextResponse.json({
-      response: result.response,
-      generatedAt: result.generatedAt,
-      tokensUsed: result.tokensUsed,
-      followUpsExtracted: result.followUpsExtracted ?? [],
-      meetingDetected: result.meetingDetected ?? null,
-    });
-  } catch (error) {
+  let lastError: unknown = null;
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const result = await generateThreadResponse(
+        supabase,
+        user.id,
+        threadId,
+        parsed.data.message,
+        {
+          dealId: thread.deal_id ?? undefined,
+          maEntityId: thread.ma_entity_id ?? undefined,
+          threadBrief: thread.thread_brief ?? undefined,
+          messageCount: thread.message_count,
+        }
+      );
+
+      return NextResponse.json({
+        response: result.response,
+        generatedAt: result.generatedAt,
+        tokensUsed: result.tokensUsed,
+        followUpsExtracted: result.followUpsExtracted ?? [],
+        meetingDetected: result.meetingDetected ?? null,
+      });
+    } catch (err) {
+      lastError = err;
+      const status = (err as { status?: number }).status;
+      if (status && RETRYABLE_STATUSES.has(status) && attempt < MAX_RETRIES) {
+        // Exponential backoff: 2s, 4s
+        await new Promise((r) => setTimeout(r, 2000 * (attempt + 1)));
+        continue;
+      }
+      break;
+    }
+  }
+
+  {
+    const error = lastError;
     const errMsg = error instanceof Error ? error.message : String(error);
     const apiErr = error as Error & { status?: number; error?: { message?: string } };
     console.error(
@@ -234,9 +252,13 @@ export async function POST(request: NextRequest, context: RouteContext) {
 
     let message = "Failed to generate response. Please try again.";
     if (apiErr.status === 429) {
-      message = "Rate limited by Claude API — wait a moment and try again.";
+      message = "Rate limited by Claude — wait a moment and try again.";
+    } else if (apiErr.status === 529 || apiErr.status === 503) {
+      message = "Claude is temporarily overloaded. Try again in a few seconds.";
     } else if (apiErr.status === 400) {
       message = `Claude rejected the request: ${apiErr.error?.message ?? errMsg}`;
+    } else if (apiErr.status === 500) {
+      message = "Claude API error — try again in a moment.";
     } else if (errMsg) {
       message = `Failed to generate response: ${errMsg}`;
     }

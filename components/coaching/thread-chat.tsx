@@ -1731,9 +1731,9 @@ export function ThreadChat({
               }, 0);
             }}
             placeholder={pendingImages.length > 0 ? "Add a caption (optional)..." : placeholder}
-            rows={interactionType === "coaching" ? 2 : 4}
+            rows={interactionType === "coaching" ? 4 : 6}
             maxLength={interactionType === "coaching" ? 5000 : 50000}
-            className="flex-1 resize-y rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none min-h-[44px] max-h-[50vh]"
+            className="flex-1 resize-y rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none min-h-[88px] max-h-[50vh]"
             disabled={loading}
           />
           <button
