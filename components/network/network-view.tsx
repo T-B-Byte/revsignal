@@ -141,9 +141,37 @@ export function NetworkView({ initialProjects }: NetworkViewProps) {
     }
   }
 
+  const [seeding, setSeeding] = useState(false);
+  const [seedResult, setSeedResult] = useState<string | null>(null);
+
+  async function handleSeed() {
+    setSeeding(true);
+    setSeedResult(null);
+    try {
+      const res = await fetch("/api/projects/seed", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.projectsCreated > 0) {
+        // Refetch projects
+        const listRes = await fetch("/api/projects");
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          setProjects(listData.projects ?? []);
+        }
+        setSeedResult(`Found ${data.projectsCreated} projects from your StrategyGPT conversations.`);
+      } else if (res.ok) {
+        setSeedResult("No projects found in your conversations. Try adding one manually.");
+      } else {
+        setSeedResult(data.error ?? "Something went wrong.");
+      }
+    } catch {
+      setSeedResult("Failed to connect. Try again.");
+    }
+    setSeeding(false);
+  }
+
   if (projects.length === 0 && !showDialog) {
     return (
-      <div className="flex h-full flex-col items-center justify-center gap-4 text-text-muted">
+      <div className="flex h-full flex-col items-center justify-center gap-6 text-text-muted">
         <svg
           className="h-16 w-16 opacity-40"
           fill="none"
@@ -154,13 +182,25 @@ export function NetworkView({ initialProjects }: NetworkViewProps) {
           <circle cx="12" cy="12" r="3" />
           <path d="M12 2v4m0 12v4m10-10h-4M6 12H2m15.07-7.07l-2.83 2.83M9.76 14.24l-2.83 2.83m11.14 0l-2.83-2.83M9.76 9.76L6.93 6.93" />
         </svg>
-        <p className="text-sm">No projects yet. Add your first project to build your network map.</p>
-        <button
-          onClick={handleAddProject}
-          className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent-primary/90 transition-colors"
-        >
-          Add Your First Project
-        </button>
+        <p className="text-sm">No projects yet. Build your network map.</p>
+        <div className="flex gap-3">
+          <button
+            onClick={handleSeed}
+            disabled={seeding}
+            className="rounded-lg border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary hover:bg-accent-primary/10 transition-colors disabled:opacity-50"
+          >
+            {seeding ? "Scanning conversations..." : "Seed from StrategyGPT"}
+          </button>
+          <button
+            onClick={handleAddProject}
+            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent-primary/90 transition-colors"
+          >
+            Add Manually
+          </button>
+        </div>
+        {seedResult && (
+          <p className="text-xs text-text-secondary">{seedResult}</p>
+        )}
       </div>
     );
   }
