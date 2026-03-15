@@ -919,6 +919,46 @@ export interface SidebarItemAssignment {
   created_at: string;
 }
 
+// --- Projects (Network Mindmap) ---
+
+export type ProjectStatus = "active" | "paused" | "completed";
+
+export interface Project {
+  project_id: string;
+  user_id: string;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  color: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ProjectMember {
+  member_id: string;
+  project_id: string;
+  user_id: string;
+  contact_id: string | null;
+  name: string;
+  role: string | null;
+  created_at: string;
+}
+
+export interface ProjectWithMembers extends Project {
+  project_members: ProjectMember[];
+}
+
+export const PROJECT_STATUSES: { value: ProjectStatus; label: string }[] = [
+  { value: "active", label: "Active" },
+  { value: "paused", label: "Paused" },
+  { value: "completed", label: "Completed" },
+];
+
+export const PROJECT_COLORS: string[] = [
+  "#3b82f6", "#22c55e", "#eab308", "#f97316", "#ef4444",
+  "#8b5cf6", "#06b6d4", "#ec4899", "#14b8a6", "#6b7280",
+];
+
 // --- Revenue Math Constants ---
 
 export const REVENUE_TARGET = 1_000_000;

@@ -2,19 +2,16 @@
 
 import { useMemo } from "react";
 import type { Node, Edge } from "@xyflow/react";
-import type { Deal, Contact, DealStage } from "@/types/database";
-import { DEAL_STAGES } from "@/types/database";
+import type { ProjectWithMembers, ProjectStatus } from "@/types/database";
 
 export interface NetworkFilters {
-  stages: DealStage[];
-  company: string | null;
+  statuses: ProjectStatus[];
   showCrossConnections: boolean;
   search: string;
 }
 
 export const DEFAULT_FILTERS: NetworkFilters = {
-  stages: [],
-  company: null,
+  statuses: [],
   showCrossConnections: true,
   search: "",
 };
@@ -25,109 +22,86 @@ export interface UserNodeData {
   [key: string]: unknown;
 }
 
-export interface DealNodeData {
-  dealId: string;
-  company: string;
-  stage: DealStage;
-  stageLabel: string;
-  stageColor: string;
-  acv: number | null;
+export interface ProjectNodeData {
+  projectId: string;
+  name: string;
+  description: string | null;
+  status: ProjectStatus;
+  color: string;
+  memberCount: number;
   [key: string]: unknown;
 }
 
-export interface ContactNodeData {
-  contactId: string;
+export interface MemberNodeData {
+  memberId: string;
   name: string;
   role: string | null;
-  company: string;
   isCrossConnected: boolean;
+  projectColors: string[];
   [key: string]: unknown;
 }
-
-export interface CompanyGroupData {
-  company: string;
-  [key: string]: unknown;
-}
-
-const STAGE_COLOR_MAP = new Map(DEAL_STAGES.map((s) => [s.value, s.color]));
-const STAGE_LABEL_MAP = new Map(DEAL_STAGES.map((s) => [s.value, s.label]));
 
 /**
- * Transforms deals + contacts into React Flow nodes and edges
+ * Transforms projects + members into React Flow nodes and edges
  * with a radial layout centered on the user.
+ *
+ * Center: You
+ * First ring: Projects
+ * Second ring: Members (people), with cross-connections when
+ * the same person appears on multiple projects (matched by name).
  */
 export function useNetworkGraph(
-  deals: Deal[],
-  contacts: Contact[],
+  projects: ProjectWithMembers[],
   filters: NetworkFilters
 ) {
   return useMemo(() => {
-    // 1. Filter deals by stage
-    let filteredDeals = deals;
-    if (filters.stages.length > 0) {
-      filteredDeals = deals.filter((d) => filters.stages.includes(d.stage));
+    // 1. Filter projects by status
+    let filtered = projects;
+    if (filters.statuses.length > 0) {
+      filtered = projects.filter((p) => filters.statuses.includes(p.status));
     }
 
-    // 2. Filter by company
-    if (filters.company) {
-      filteredDeals = filteredDeals.filter(
-        (d) => d.company.toLowerCase() === filters.company!.toLowerCase()
-      );
-    }
+    // 2. Build person-to-projects mapping (by lowercase name for cross-connections)
+    const nameToProjects = new Map<string, { projectId: string; color: string }[]>();
+    const nameToMember = new Map<string, { memberId: string; name: string; role: string | null }>();
 
-    // 3. Build contact lookup from full contacts table
-    const contactMap = new Map(contacts.map((c) => [c.contact_id, c]));
+    for (const project of filtered) {
+      for (const member of project.project_members ?? []) {
+        const key = member.name.toLowerCase().trim();
+        const existing = nameToProjects.get(key) ?? [];
+        existing.push({ projectId: project.project_id, color: project.color });
+        nameToProjects.set(key, existing);
 
-    // 4. Build contact-to-deals mapping for cross-connections
-    const contactToDeals = new Map<string, string[]>();
-    for (const deal of filteredDeals) {
-      for (const ref of deal.contacts ?? []) {
-        const existing = contactToDeals.get(ref.contact_id) ?? [];
-        existing.push(deal.deal_id);
-        contactToDeals.set(ref.contact_id, existing);
-      }
-    }
-
-    // 5. Collect unique contacts and group by company
-    const companyContacts = new Map<string, Set<string>>(); // company -> contact_ids
-    const seenContacts = new Set<string>();
-
-    for (const deal of filteredDeals) {
-      for (const ref of deal.contacts ?? []) {
-        if (seenContacts.has(ref.contact_id)) continue;
-        seenContacts.add(ref.contact_id);
-
-        const fullContact = contactMap.get(ref.contact_id);
-        const company = fullContact?.company ?? deal.company;
-        const companyKey = company.toLowerCase();
-
-        if (!companyContacts.has(companyKey)) {
-          companyContacts.set(companyKey, new Set());
+        // Keep the most recent member record for display
+        if (!nameToMember.has(key) || member.role) {
+          nameToMember.set(key, {
+            memberId: member.member_id,
+            name: member.name,
+            role: member.role,
+          });
         }
-        companyContacts.get(companyKey)!.add(ref.contact_id);
       }
     }
 
-    // 6. Search filtering — determine which nodes to highlight
+    // 3. Search filtering
     const searchLower = filters.search.toLowerCase().trim();
     const hasSearch = searchLower.length > 0;
     const matchedNodeIds = new Set<string>();
 
     if (hasSearch) {
-      for (const deal of filteredDeals) {
-        if (deal.company.toLowerCase().includes(searchLower)) {
-          matchedNodeIds.add(`deal-${deal.deal_id}`);
+      for (const project of filtered) {
+        if (project.name.toLowerCase().includes(searchLower)) {
+          matchedNodeIds.add(`project-${project.project_id}`);
         }
       }
-      for (const contactId of seenContacts) {
-        const ref = contactMap.get(contactId);
-        if (ref && ref.name.toLowerCase().includes(searchLower)) {
-          matchedNodeIds.add(`contact-${contactId}`);
+      for (const [key, member] of nameToMember) {
+        if (member.name.toLowerCase().includes(searchLower)) {
+          matchedNodeIds.add(`member-${key}`);
         }
       }
     }
 
-    // 7. Generate nodes
+    // 4. Generate nodes and edges
     const nodes: Node[] = [];
     const edges: Edge[] = [];
 
@@ -140,164 +114,114 @@ export function useNetworkGraph(
       draggable: true,
     });
 
-    // Deal nodes in a circle around center
-    const dealRadius = 320;
-    const dealCount = filteredDeals.length;
+    // Project nodes in a circle around center
+    const projectRadius = 300;
+    const projectCount = filtered.length;
 
-    filteredDeals.forEach((deal, i) => {
-      const angle = (i / Math.max(dealCount, 1)) * 2 * Math.PI - Math.PI / 2;
-      const x = Math.cos(angle) * dealRadius;
-      const y = Math.sin(angle) * dealRadius;
-      const nodeId = `deal-${deal.deal_id}`;
+    filtered.forEach((project, i) => {
+      const angle = (i / Math.max(projectCount, 1)) * 2 * Math.PI - Math.PI / 2;
+      const x = Math.cos(angle) * projectRadius;
+      const y = Math.sin(angle) * projectRadius;
+      const nodeId = `project-${project.project_id}`;
 
       nodes.push({
         id: nodeId,
-        type: "dealNode",
+        type: "projectNode",
         position: { x, y },
         data: {
-          dealId: deal.deal_id,
-          company: deal.company,
-          stage: deal.stage,
-          stageLabel: STAGE_LABEL_MAP.get(deal.stage) ?? deal.stage,
-          stageColor: STAGE_COLOR_MAP.get(deal.stage) ?? "#6b7280",
-          acv: deal.acv,
-        } satisfies DealNodeData,
+          projectId: project.project_id,
+          name: project.name,
+          description: project.description,
+          status: project.status,
+          color: project.color,
+          memberCount: (project.project_members ?? []).length,
+        } satisfies ProjectNodeData,
         className: hasSearch && !matchedNodeIds.has(nodeId) ? "opacity-30" : "",
         draggable: true,
       });
 
-      // Edge: user → deal
+      // Edge: user → project
       edges.push({
-        id: `user-${deal.deal_id}`,
+        id: `user-${project.project_id}`,
         source: "user",
         target: nodeId,
         type: "default",
         style: {
-          stroke: STAGE_COLOR_MAP.get(deal.stage) ?? "#6b7280",
+          stroke: project.color,
           strokeWidth: 2,
         },
         className: hasSearch && !matchedNodeIds.has(nodeId) ? "opacity-30" : "",
       });
     });
 
-    // Company group nodes + contact nodes
-    const contactRadius = 180; // distance from deal node to contacts
-    let companyIndex = 0;
+    // Member nodes — placed near the projects they belong to
+    const memberRadius = 200;
+    const placedMembers = new Set<string>();
 
-    for (const [companyKey, contactIds] of companyContacts) {
-      // Find deals for this company to position the group near them
-      const companyDeals = filteredDeals.filter(
-        (d) => d.company.toLowerCase() === companyKey
-      );
+    for (const project of filtered) {
+      const projectIdx = filtered.indexOf(project);
+      const projectAngle = (projectIdx / Math.max(projectCount, 1)) * 2 * Math.PI - Math.PI / 2;
+      const members = project.project_members ?? [];
 
-      // Use the first deal's position as anchor, or distribute if no direct match
-      let anchorAngle: number;
-      if (companyDeals.length > 0) {
-        const dealIdx = filteredDeals.indexOf(companyDeals[0]);
-        anchorAngle = (dealIdx / Math.max(dealCount, 1)) * 2 * Math.PI - Math.PI / 2;
-      } else {
-        // Contact belongs to a company that isn't a direct deal company
-        // Place them at an offset angle
-        anchorAngle = (companyIndex / Math.max(companyContacts.size, 1)) * 2 * Math.PI - Math.PI / 2;
-      }
+      members.forEach((member, mi) => {
+        const key = member.name.toLowerCase().trim();
+        if (placedMembers.has(key)) return; // Only place each person once
+        placedMembers.add(key);
 
-      const groupX = Math.cos(anchorAngle) * (dealRadius + contactRadius + 60);
-      const groupY = Math.sin(anchorAngle) * (dealRadius + contactRadius + 60);
+        const memberInfo = nameToMember.get(key)!;
+        const memberProjects = nameToProjects.get(key) ?? [];
+        const isCrossConnected = memberProjects.length > 1;
+        const memberNodeId = `member-${key}`;
 
-      // Get display company name from first contact
-      const firstContactId = Array.from(contactIds)[0];
-      const firstContact = contactMap.get(firstContactId);
-      const displayCompany = firstContact?.company ?? companyKey;
+        // Position around the first project they appear on
+        const spread = Math.PI * 0.6; // spread members across an arc
+        const memberAngle =
+          projectAngle +
+          (members.length === 1
+            ? 0
+            : -spread / 2 + (mi / Math.max(members.length - 1, 1)) * spread);
 
-      const groupId = `company-${companyKey}`;
-
-      // Calculate group dimensions
-      const contactCount = contactIds.size;
-      const cols = Math.min(contactCount, 3);
-      const rows = Math.ceil(contactCount / cols);
-      const cardW = 160;
-      const cardH = 60;
-      const gap = 12;
-      const padding = 16;
-      const headerH = 32;
-      const groupW = cols * cardW + (cols - 1) * gap + padding * 2;
-      const groupH = rows * cardH + (rows - 1) * gap + padding * 2 + headerH;
-
-      nodes.push({
-        id: groupId,
-        type: "companyGroup",
-        position: { x: groupX - groupW / 2, y: groupY - groupH / 2 },
-        data: { company: displayCompany } satisfies CompanyGroupData,
-        style: { width: groupW, height: groupH },
-        draggable: true,
-      });
-
-      // Contact nodes inside group
-      let contactIdx = 0;
-      for (const contactId of contactIds) {
-        const fullContact = contactMap.get(contactId);
-        const ref = [...filteredDeals.flatMap((d) => d.contacts ?? [])].find(
-          (c) => c.contact_id === contactId
-        );
-
-        const col = contactIdx % cols;
-        const row = Math.floor(contactIdx / cols);
-        const cx = padding + col * (cardW + gap);
-        const cy = headerH + padding + row * (cardH + gap);
-
-        const isCrossConnected = (contactToDeals.get(contactId)?.length ?? 0) > 1;
-        const contactNodeId = `contact-${contactId}`;
+        const mx =
+          Math.cos(projectAngle) * projectRadius +
+          Math.cos(memberAngle) * memberRadius;
+        const my =
+          Math.sin(projectAngle) * projectRadius +
+          Math.sin(memberAngle) * memberRadius;
 
         nodes.push({
-          id: contactNodeId,
-          type: "contactNode",
-          position: { x: cx, y: cy },
-          parentId: groupId,
-          extent: "parent" as const,
+          id: memberNodeId,
+          type: "memberNode",
+          position: { x: mx, y: my },
           data: {
-            contactId,
-            name: fullContact?.name ?? ref?.name ?? "Unknown",
-            role: fullContact?.role ?? ref?.role ?? null,
-            company: displayCompany,
+            memberId: memberInfo.memberId,
+            name: memberInfo.name,
+            role: memberInfo.role,
             isCrossConnected,
-          } satisfies ContactNodeData,
-          className: hasSearch && !matchedNodeIds.has(contactNodeId) ? "opacity-30" : "",
+            projectColors: memberProjects.map((p) => p.color),
+          } satisfies MemberNodeData,
+          className: hasSearch && !matchedNodeIds.has(memberNodeId) ? "opacity-30" : "",
           draggable: true,
         });
 
-        // Edges: deal → contact (for each deal this contact is on)
-        const dealIds = contactToDeals.get(contactId) ?? [];
-        for (const dealId of dealIds) {
+        // Edges: project → member (for each project this person is on)
+        for (const mp of memberProjects) {
           edges.push({
-            id: `deal-${dealId}-contact-${contactId}`,
-            source: `deal-${dealId}`,
-            target: contactNodeId,
-            type: "default",
-            style: { stroke: "#6b728080", strokeWidth: 1 },
-            className: hasSearch && !matchedNodeIds.has(contactNodeId) ? "opacity-30" : "",
+            id: `project-${mp.projectId}-member-${key}`,
+            source: `project-${mp.projectId}`,
+            target: memberNodeId,
+            type: isCrossConnected && mp.projectId !== project.project_id
+              ? "crossEdge"
+              : "default",
+            style: isCrossConnected && mp.projectId !== project.project_id
+              ? undefined
+              : { stroke: `${mp.color}80`, strokeWidth: 1.5 },
+            animated: isCrossConnected && mp.projectId !== project.project_id,
+            className: hasSearch && !matchedNodeIds.has(memberNodeId) ? "opacity-30" : "",
           });
         }
-
-        // Cross-deal dotted edges
-        if (filters.showCrossConnections && isCrossConnected && dealIds.length > 1) {
-          for (let di = 1; di < dealIds.length; di++) {
-            edges.push({
-              id: `cross-${contactId}-${dealIds[di]}`,
-              source: contactNodeId,
-              target: `deal-${dealIds[di]}`,
-              type: "crossEdge",
-              animated: true,
-              data: { contactName: fullContact?.name ?? ref?.name ?? "" },
-            });
-          }
-        }
-
-        contactIdx++;
-      }
-
-      companyIndex++;
+      });
     }
 
     return { nodes, edges };
-  }, [deals, contacts, filters]);
+  }, [projects, filters]);
 }
