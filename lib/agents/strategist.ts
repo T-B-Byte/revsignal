@@ -1826,6 +1826,24 @@ Rules for meeting detection:
 - The MEETING_DETECTED block is hidden from display but parsed by the system to prompt the user to create the meeting.
 - If no meeting is detected, omit the block entirely.
 
+PROJECT DETECTION:
+When Tina mentions working on a project, initiative, or workstream with specific people, append a PROJECT_DETECTED block. This powers her Network mindmap that shows who she's collaborating with on what.
+
+<!-- PROJECT_DETECTED
+[{"name": "SAP", "members": [{"name": "Marty Fettig", "role": "EVP"}]}, {"name": "Leadpredict", "members": [{"name": "Ben Luck", "role": "Chief Data Scientist"}, {"name": "Romano Ditoro", "role": "CIO"}]}]
+-->
+
+Rules for project detection:
+- Detect when Tina mentions working on a named initiative, project, partnership, or workstream with specific people.
+- Include the project name and the people involved (with roles if known).
+- Trigger on statements like "I'm working with Marty on SAP", "Ben and I are building Leadpredict", "the Leadscale project with Marty", etc.
+- Also trigger when Tina pastes intel about a project and mentions collaborators.
+- Do NOT trigger for general mentions of a company without a clear project/initiative context.
+- Do NOT trigger for deal pipeline activity (that's tracked separately in Deals).
+- Multiple projects can be detected in one message.
+- The PROJECT_DETECTED block is hidden from display but parsed by the system to auto-create/update projects in the Network mindmap.
+- If no projects are detected, omit the block entirely.
+
 ${coachingToneRules()}`;
 
 const THREAD_CATCHUP_PROMPT = `${STRATEGIST_IDENTITY}
@@ -1881,6 +1899,7 @@ export interface ThreadResponseResult {
   tokensUsed: number;
   followUpsExtracted: { description: string; due_date: string | null }[];
   meetingDetected: MeetingDetectedData | null;
+  projectsDetected: ProjectDetectedData[];
 }
 
 /**
@@ -2142,12 +2161,14 @@ export async function generateThreadResponse(
     (response.usage?.input_tokens ?? 0) +
     (response.usage?.output_tokens ?? 0);
 
-  // Step 6: Extract follow-ups and meeting detection from response, then strip from user-facing text
+  // Step 6: Extract follow-ups, meeting detection, and project detection from response, then strip from user-facing text
   const followUpsExtracted = extractFollowUps(fullResponseText);
   const meetingDetected = extractMeetingDetected(fullResponseText);
+  const projectsDetected = extractProjectDetected(fullResponseText);
   const cleanResponse = fullResponseText
     .replace(/<!-- FOLLOW_UPS\n[\s\S]*?(?:-->|$)/g, "")
     .replace(/<!-- MEETING_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
+    .replace(/<!-- PROJECT_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
     .trim();
 
   // Step 7: Save messages to coaching_conversations (with thread_id)
@@ -2191,6 +2212,13 @@ export async function generateThreadResponse(
     );
   }
 
+  // Step 8b: Auto-create/update projects from detected project mentions
+  if (projectsDetected.length > 0) {
+    upsertDetectedProjects(supabase, userId, projectsDetected).catch((err) =>
+      console.error("[strategist] Project upsert failed:", err)
+    );
+  }
+
   // Step 9: Check if thread brief needs regeneration
   const currentMessageCount = (options?.messageCount ?? 0) + 2; // +2 for user + assistant
   if (
@@ -2215,6 +2243,7 @@ export async function generateThreadResponse(
       hasThreadBrief: !!options?.threadBrief,
       messageCount: currentMessageCount,
       followUpsExtracted: followUpsExtracted.length,
+      projectsDetected: projectsDetected.length,
       retrieveDurationMs: durationRetrieve,
     },
     output: fullResponseText.slice(0, 500),
@@ -2230,6 +2259,7 @@ export async function generateThreadResponse(
     tokensUsed,
     followUpsExtracted,
     meetingDetected,
+    projectsDetected,
   };
 }
 
@@ -2483,5 +2513,140 @@ function extractMeetingDetected(
   } catch {
     console.error("[strategist] Failed to parse MEETING_DETECTED block");
     return null;
+  }
+}
+
+// ── Project Detection ──────────────────────────────────────────────────
+
+export interface ProjectDetectedData {
+  name: string;
+  members: { name: string; role?: string }[];
+}
+
+/**
+ * Parse project detection from the Strategist's response.
+ * Looks for the hidden <!-- PROJECT_DETECTED ... --> block.
+ */
+export function extractProjectDetected(
+  responseText: string
+): ProjectDetectedData[] {
+  const match = responseText.match(
+    /<!-- PROJECT_DETECTED\n([\s\S]*?)(?:-->|$)/
+  );
+  if (!match) return [];
+
+  try {
+    const parsed = JSON.parse(match[1].trim());
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter(
+        (item: unknown) =>
+          typeof item === "object" &&
+          item !== null &&
+          "name" in item &&
+          typeof (item as Record<string, unknown>).name === "string" &&
+          "members" in item &&
+          Array.isArray((item as Record<string, unknown>).members)
+      )
+      .map((item: { name: string; members: { name: string; role?: string }[] }) => ({
+        name: item.name,
+        members: item.members.filter(
+          (m: unknown) =>
+            typeof m === "object" &&
+            m !== null &&
+            "name" in m &&
+            typeof (m as Record<string, unknown>).name === "string"
+        ),
+      }));
+  } catch {
+    console.error("[strategist] Failed to parse PROJECT_DETECTED block");
+    return [];
+  }
+}
+
+/**
+ * Auto-create or update projects from detected project data.
+ * - If a project with the same name exists, adds any new members.
+ * - If no match, creates a new project with the detected members.
+ */
+export async function upsertDetectedProjects(
+  supabase: SupabaseClient,
+  userId: string,
+  detected: ProjectDetectedData[]
+): Promise<void> {
+  if (detected.length === 0) return;
+
+  // Fetch existing projects for this user
+  const { data: existing } = await supabase
+    .from("projects")
+    .select("project_id, name, project_members(member_id, name)")
+    .eq("user_id", userId);
+
+  const existingMap = new Map(
+    (existing ?? []).map((p: { project_id: string; name: string; project_members: { member_id: string; name: string }[] }) => [
+      p.name.toLowerCase().trim(),
+      p,
+    ])
+  );
+
+  const colors = ["#3b82f6", "#22c55e", "#eab308", "#f97316", "#ef4444", "#8b5cf6", "#06b6d4", "#ec4899", "#14b8a6", "#6b7280"];
+
+  for (const project of detected) {
+    const key = project.name.toLowerCase().trim();
+    const match = existingMap.get(key);
+
+    if (match) {
+      // Project exists — add any new members
+      const existingNames = new Set(
+        match.project_members.map((m: { name: string }) => m.name.toLowerCase().trim())
+      );
+      const newMembers = project.members.filter(
+        (m) => !existingNames.has(m.name.toLowerCase().trim())
+      );
+
+      if (newMembers.length > 0) {
+        await supabase.from("project_members").insert(
+          newMembers.map((m) => ({
+            project_id: match.project_id,
+            user_id: userId,
+            name: m.name,
+            role: m.role ?? null,
+          }))
+        );
+      }
+    } else {
+      // New project — create it
+      const colorIndex = (existing?.length ?? 0 + Array.from(existingMap.keys()).indexOf(key)) % colors.length;
+
+      const { data: newProject } = await supabase
+        .from("projects")
+        .insert({
+          user_id: userId,
+          name: project.name,
+          color: colors[colorIndex],
+        })
+        .select("project_id")
+        .single();
+
+      if (newProject && project.members.length > 0) {
+        await supabase.from("project_members").insert(
+          project.members.map((m) => ({
+            project_id: newProject.project_id,
+            user_id: userId,
+            name: m.name,
+            role: m.role ?? null,
+          }))
+        );
+      }
+
+      // Track for dedup within same batch
+      if (newProject) {
+        existingMap.set(key, {
+          project_id: newProject.project_id,
+          name: project.name,
+          project_members: project.members.map((m) => ({ member_id: "", name: m.name })),
+        });
+      }
+    }
   }
 }
