@@ -21,6 +21,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: HomeIcon, key: "dashboard", pinned: true },
   { href: "/deals", label: "Deals", icon: BriefcaseIcon, key: "deals" },
+  { href: "/network", label: "Network", icon: NetworkIcon, key: "network" },
   { href: "/coach", label: "StrategyGPT", icon: SparklesIcon, key: "coach" },
   { href: "/prospects", label: "Prospects", icon: SearchIcon, key: "prospects" },
   { href: "/meetings", label: "Meetings", icon: CalendarIcon, key: "meetings" },
@@ -403,6 +404,19 @@ function HandshakeIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M10.05 4.575a1.575 1.575 0 10-3.15 0v3.15M10.05 4.575a1.575 1.575 0 013.15 0v3.15M10.05 4.575v3.15M3.75 9.75h16.5M3.75 9.75a2.25 2.25 0 00-2.25 2.25v1.5a2.25 2.25 0 002.25 2.25h1.318m12.682-6h.932a2.25 2.25 0 012.25 2.25v1.5a2.25 2.25 0 01-2.25 2.25h-.932M10.05 7.725h3.9m-3.9 0L6.75 15.75m7.2-8.025L17.25 15.75m-10.5 0h10.5m-10.5 0l-1.068 2.135A1.125 1.125 0 006.182 19.5h11.636a1.125 1.125 0 001-1.615L17.75 15.75" />
+    </svg>
+  );
+}
+
+function NetworkIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <circle cx="12" cy="12" r="2.5" />
+      <circle cx="4.5" cy="7" r="1.5" />
+      <circle cx="19.5" cy="7" r="1.5" />
+      <circle cx="4.5" cy="17" r="1.5" />
+      <circle cx="19.5" cy="17" r="1.5" />
+      <path strokeLinecap="round" d="M9.75 10.75L6 8.25m8.25 2.5L18 8.25m-8.25 3.25L6 15.75m8.25-2.25L18 15.75" />
     </svg>
   );
 }
