@@ -150,6 +150,8 @@ export interface ActionItem {
 
 export type FitScore = "strong" | "moderate" | "weak" | "not_a_fit";
 
+export type ProspectStatus = "active" | "passed" | "converted";
+
 export interface SuggestedContact {
   title: string;
   why_they_care: string;
@@ -172,6 +174,7 @@ export interface Prospect {
   fit_analysis: string | null;
   suggested_contacts: SuggestedContact[];
   next_action: string | null;
+  status: ProspectStatus;
   created_at: string;
   updated_at: string;
 }

@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { formatAgentHtml } from '@/lib/format-agent-html';
+import { updateProspect } from '@/app/(dashboard)/prospects/actions';
 import type { FitScore, SuggestedContact } from '@/types/database';
 
 interface ProspectResearchFormProps {
@@ -12,6 +13,7 @@ interface ProspectResearchFormProps {
 }
 
 interface ResearchResult {
+  prospectId: string | null;
   company: string;
   researchNotes: string;
   icpCategory: string | null;
@@ -55,6 +57,8 @@ export function ProspectResearchForm({
   const [result, setResult] = useState<ResearchResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [passing, setPassing] = useState(false);
+  const [passed, setPassed] = useState(false);
 
   async function handleResearch() {
     if (mode === 'company' && !company.trim()) return;
@@ -91,6 +95,7 @@ export function ProspectResearchForm({
 
       const data = await res.json();
       setResult({
+        prospectId: data.prospectId ?? null,
         company: data.company,
         researchNotes: data.researchNotes,
         icpCategory: data.icpCategory,
@@ -306,20 +311,43 @@ export function ProspectResearchForm({
                 hour: 'numeric',
                 minute: '2-digit',
               })}
-              {' \u00b7 Saved to prospects'}
+              {passed
+                ? ' \u00b7 Passed'
+                : ' \u00b7 Saved to prospects'}
             </p>
 
-            <button
-              onClick={() => {
-                setResult(null);
-                setCompany('');
-                setUrl('');
-                setIcpCategory('');
-              }}
-              className="text-xs text-accent-primary hover:underline"
-            >
-              Analyze another company
-            </button>
+            <div className="flex items-center gap-3">
+              {!passed && result.prospectId && (
+                <button
+                  onClick={async () => {
+                    if (!result.prospectId) return;
+                    setPassing(true);
+                    const res = await updateProspect(result.prospectId, { status: 'passed' });
+                    setPassing(false);
+                    if (!('error' in res)) {
+                      setPassed(true);
+                      router.refresh();
+                    }
+                  }}
+                  disabled={passing}
+                  className="rounded-md border border-text-muted/30 px-3 py-1.5 text-xs font-medium text-text-muted hover:border-status-red/30 hover:text-status-red hover:bg-status-red/5 transition-colors disabled:opacity-50"
+                >
+                  {passing ? 'Passing...' : 'Pass'}
+                </button>
+              )}
+              <button
+                onClick={() => {
+                  setResult(null);
+                  setCompany('');
+                  setUrl('');
+                  setIcpCategory('');
+                  setPassed(false);
+                }}
+                className="text-xs text-accent-primary hover:underline"
+              >
+                Analyze another company
+              </button>
+            </div>
           </div>
         )}
       </CardContent>

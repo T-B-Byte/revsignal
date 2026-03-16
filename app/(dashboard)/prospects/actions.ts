@@ -81,6 +81,7 @@ const updateProspectSchema = z.object({
     approach: z.string(),
   })).optional().nullable(),
   next_action: z.string().optional().nullable(),
+  status: z.enum(["active", "passed", "converted"]).optional(),
 });
 
 export async function updateProspect(

@@ -26,9 +26,17 @@ export function ProspectsView({
 }: ProspectsViewProps) {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [selectedFit, setSelectedFit] = useState<string>('');
+  const [showPassed, setShowPassed] = useState(false);
   const [showAddDialog, setShowAddDialog] = useState(false);
 
+  const passedCount = prospects.filter((p) => p.status === 'passed').length;
+
   let filtered = prospects;
+
+  // Hide passed prospects by default
+  if (!showPassed) {
+    filtered = filtered.filter((p) => p.status !== 'passed');
+  }
 
   if (selectedCategory) {
     filtered = filtered.filter((p) => p.icp_category === selectedCategory);
@@ -77,6 +85,20 @@ export function ProspectsView({
           </h2>
 
           <div className="flex items-center gap-2">
+            {/* Show passed toggle */}
+            {passedCount > 0 && (
+              <button
+                onClick={() => setShowPassed(!showPassed)}
+                className={`rounded-md border px-3 py-1.5 text-xs font-medium transition-colors ${
+                  showPassed
+                    ? 'border-accent-primary/30 bg-accent-primary/10 text-accent-primary'
+                    : 'border-border-primary bg-surface-secondary text-text-muted hover:text-text-secondary'
+                }`}
+              >
+                {showPassed ? `Hiding ${passedCount} passed` : `${passedCount} passed`}
+              </button>
+            )}
+
             {/* Fit score filter */}
             <select
               value={selectedFit}

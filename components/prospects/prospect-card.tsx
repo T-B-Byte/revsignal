@@ -51,6 +51,8 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [passing, setPassing] = useState(false);
+  const isPassed = prospect.status === "passed";
 
   async function handleOpenChat() {
     if (chatThread) {
@@ -146,6 +148,18 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
     }
   }
 
+  async function handleTogglePass() {
+    setPassing(true);
+    const newStatus = isPassed ? "active" : "passed";
+    const result = await updateProspect(prospect.id, { status: newStatus });
+    if ("error" in result) {
+      setError(result.error);
+    } else {
+      router.refresh();
+    }
+    setPassing(false);
+  }
+
   if (editing) {
     return (
       <Card>
@@ -236,7 +250,7 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
 
   return (
     <Card>
-      <CardContent className="py-4">
+      <CardContent className={`py-4 ${isPassed ? "opacity-60" : ""}`}>
         {error && (
           <div className="mb-2 rounded-md border border-status-red/20 bg-status-red/10 p-2 text-xs text-status-red">
             {error}
@@ -252,9 +266,14 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
           <div className="flex items-start justify-between gap-3">
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h3 className="text-sm font-semibold text-text-primary truncate">
+                <h3 className={`text-sm font-semibold truncate ${isPassed ? "text-text-muted line-through" : "text-text-primary"}`}>
                   {prospect.company}
                 </h3>
+                {isPassed && (
+                  <span className="shrink-0 rounded-full border border-text-muted/30 bg-text-muted/10 px-2 py-0.5 text-[10px] font-semibold text-text-muted">
+                    Passed
+                  </span>
+                )}
                 {prospect.fit_score && (
                   <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${FIT_BADGE_STYLES[prospect.fit_score]}`}>
                     {FIT_LABELS[prospect.fit_score]}
@@ -411,6 +430,29 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
                   <path d="M2 3h12v8H5l-3 3V3Z" />
                 </svg>
                 {creatingThread ? "Opening..." : "Talk to Strategist"}
+              </Button>
+
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleTogglePass}
+                disabled={passing}
+              >
+                {isPassed ? (
+                  <>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M2 8h12M8 2v12" />
+                    </svg>
+                    {passing ? "Reactivating..." : "Reactivate"}
+                  </>
+                ) : (
+                  <>
+                    <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M4 4l8 8M12 4l-8 8" />
+                    </svg>
+                    {passing ? "Passing..." : "Pass"}
+                  </>
+                )}
               </Button>
 
               <Button

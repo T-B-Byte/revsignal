@@ -158,6 +158,7 @@ Structure:
 // ── Result Types ───────────────────────────────────────────────────────
 
 export interface ProspectResearchResult {
+  prospectId: string | null;
   company: string;
   researchNotes: string;
   icpCategory: string | null;
@@ -421,7 +422,10 @@ export async function runProspectResearch(
     website: fitData.website,
   };
 
+  let prospectId: string | null = null;
+
   if (existingProspect) {
+    prospectId = existingProspect.id;
     const { error: dbError } = await supabase
       .from("prospects")
       .update(prospectFields)
@@ -431,16 +435,17 @@ export async function runProspectResearch(
       console.error("[prospect-scout] DB update error:", dbError.message);
     }
   } else {
-    const { error: dbError } = await supabase.from("prospects").insert({
+    const { data: inserted, error: dbError } = await supabase.from("prospects").insert({
       user_id: userId,
       company,
       source: "prospect-scout",
       contacts: [],
       ...prospectFields,
-    });
+    }).select("id").single();
     if (dbError) {
       console.error("[prospect-scout] DB insert error:", dbError.message);
     }
+    if (inserted) prospectId = inserted.id;
   }
 
   const totalRetrieveDuration = durationRetrieve1 + durationRetrieve2;
@@ -465,6 +470,7 @@ export async function runProspectResearch(
   });
 
   return {
+    prospectId,
     company,
     researchNotes: narrativeText,
     icpCategory: resolvedIcp,
@@ -705,7 +711,10 @@ export async function analyzeCompanyFromUrl(
     website: url,
   };
 
+  let prospectId: string | null = null;
+
   if (existingProspect) {
+    prospectId = existingProspect.id;
     const { error: dbError } = await supabase
       .from("prospects")
       .update(prospectFields)
@@ -715,16 +724,17 @@ export async function analyzeCompanyFromUrl(
       console.error("[prospect-scout] DB update error (URL analysis):", dbError.message);
     }
   } else {
-    const { error: dbError } = await supabase.from("prospects").insert({
+    const { data: inserted, error: dbError } = await supabase.from("prospects").insert({
       user_id: userId,
       company: companyName,
       source: "url-analysis",
       contacts: [],
       ...prospectFields,
-    });
+    }).select("id").single();
     if (dbError) {
       console.error("[prospect-scout] DB insert error (URL analysis):", dbError.message);
     }
+    if (inserted) prospectId = inserted.id;
   }
 
   const totalRetrieveDuration = durationRetrieve1 + durationRetrieve2;
@@ -748,6 +758,7 @@ export async function analyzeCompanyFromUrl(
   });
 
   return {
+    prospectId,
     company: companyName,
     researchNotes: narrativeText,
     icpCategory: fitData.icp_category,

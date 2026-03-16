@@ -86,6 +86,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json({
+      prospectId: result.prospectId,
       company: result.company,
       researchNotes: result.researchNotes,
       icpCategory: result.icpCategory,
