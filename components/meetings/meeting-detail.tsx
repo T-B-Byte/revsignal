@@ -34,9 +34,11 @@ const STATUS_STYLES: Record<
 function getCountdown(dateStr: string): string {
   const now = new Date();
   const meeting = new Date(dateStr);
-  const diffMs = meeting.getTime() - now.getTime();
-  const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
-  if (diffDays < 0) return `${Math.abs(diffDays)} days ago`;
+  // Compare calendar dates, not raw milliseconds
+  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const meetingDate = new Date(meeting.getFullYear(), meeting.getMonth(), meeting.getDate());
+  const diffDays = Math.round((meetingDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+  if (diffDays < 0) return `${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? "" : "s"} ago`;
   if (diffDays === 0) return "today";
   if (diffDays === 1) return "tomorrow";
   return `in ${diffDays} days`;
