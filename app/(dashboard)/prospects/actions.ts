@@ -73,6 +73,14 @@ const updateProspectSchema = z.object({
   research_notes: z.string().optional().nullable(),
   why_they_buy: z.string().optional().nullable(),
   source: z.string().optional().nullable(),
+  fit_score: z.enum(["strong", "moderate", "weak", "not_a_fit"]).optional().nullable(),
+  fit_analysis: z.string().optional().nullable(),
+  suggested_contacts: z.array(z.object({
+    title: z.string(),
+    why_they_care: z.string(),
+    approach: z.string(),
+  })).optional().nullable(),
+  next_action: z.string().optional().nullable(),
 });
 
 export async function updateProspect(

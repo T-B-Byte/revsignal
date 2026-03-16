@@ -10,6 +10,7 @@ const createThreadSchema = z.object({
   contact_id: z.string().uuid().optional(),
   deal_id: z.string().uuid().optional(),
   ma_entity_id: z.string().uuid().optional(),
+  prospect_id: z.string().uuid().optional(),
 });
 
 /**
@@ -137,6 +138,20 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // If prospect_id provided, verify it belongs to the user
+  if (parsed.data.prospect_id) {
+    const { data: prospect } = await supabase
+      .from("prospects")
+      .select("id")
+      .eq("id", parsed.data.prospect_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!prospect) {
+      return NextResponse.json({ error: "Prospect not found" }, { status: 404 });
+    }
+  }
+
   // Check for duplicate threads (same contact_name + company, case-insensitive)
   if (parsed.data.contact_name && parsed.data.company) {
     const { data: existing } = await supabase
@@ -171,6 +186,7 @@ export async function POST(request: NextRequest) {
       contact_id: parsed.data.contact_id ?? null,
       deal_id: parsed.data.deal_id ?? null,
       ma_entity_id: parsed.data.ma_entity_id ?? null,
+      prospect_id: parsed.data.prospect_id ?? null,
     })
     .select()
     .single();

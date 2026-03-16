@@ -6,12 +6,17 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { ThreadChat } from "@/components/coaching/thread-chat";
+import { formatAgentHtml } from "@/lib/format-agent-html";
 import { updateProspect, deleteProspect } from "@/app/(dashboard)/prospects/actions";
-import type { Prospect } from "@/types/database";
+import type { Prospect, FitScore, CoachingThread, CoachingMessage, Deal } from "@/types/database";
 
 interface ProspectCardProps {
   prospect: Prospect;
   icpCategories: string[];
+  thread?: CoachingThread | null;
+  threadMessages?: CoachingMessage[];
+  activeDeals?: Pick<Deal, "deal_id" | "company" | "stage">[];
 }
 
 const acvFormatter = new Intl.NumberFormat("en-US", {
@@ -20,14 +25,67 @@ const acvFormatter = new Intl.NumberFormat("en-US", {
   maximumFractionDigits: 0,
 });
 
-export function ProspectCard({ prospect, icpCategories }: ProspectCardProps) {
+const FIT_BADGE_STYLES: Record<FitScore, string> = {
+  strong: "bg-status-green/15 text-status-green border-status-green/30",
+  moderate: "bg-status-yellow/15 text-status-yellow border-status-yellow/30",
+  weak: "bg-status-red/15 text-status-red border-status-red/30",
+  not_a_fit: "bg-text-muted/15 text-text-muted border-text-muted/30",
+};
+
+const FIT_LABELS: Record<FitScore, string> = {
+  strong: "Strong Fit",
+  moderate: "Moderate Fit",
+  weak: "Weak Fit",
+  not_a_fit: "Not a Fit",
+};
+
+export function ProspectCard({ prospect, icpCategories, thread, threadMessages = [], activeDeals = [] }: ProspectCardProps) {
   const router = useRouter();
   const [expanded, setExpanded] = useState(false);
   const [editing, setEditing] = useState(false);
+  const [showChat, setShowChat] = useState(false);
+  const [chatThread, setChatThread] = useState<CoachingThread | null>(thread ?? null);
+  const [chatMessages, setChatMessages] = useState<CoachingMessage[]>(threadMessages);
+  const [creatingThread, setCreatingThread] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
+
+  async function handleOpenChat() {
+    if (chatThread) {
+      setShowChat(true);
+      return;
+    }
+
+    // Create a thread for this prospect
+    setCreatingThread(true);
+    try {
+      const res = await fetch("/api/coaching/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: prospect.company,
+          company: prospect.company,
+          prospect_id: prospect.id,
+        }),
+      });
+
+      if (!res.ok) {
+        setError("Failed to start Strategist conversation.");
+        return;
+      }
+
+      const thread = await res.json();
+      setChatThread(thread);
+      setChatMessages([]);
+      setShowChat(true);
+    } catch {
+      setError("Failed to start Strategist conversation.");
+    } finally {
+      setCreatingThread(false);
+    }
+  }
 
   function handleSave(formData: FormData) {
     setError(null);
@@ -197,6 +255,11 @@ export function ProspectCard({ prospect, icpCategories }: ProspectCardProps) {
                 <h3 className="text-sm font-semibold text-text-primary truncate">
                   {prospect.company}
                 </h3>
+                {prospect.fit_score && (
+                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${FIT_BADGE_STYLES[prospect.fit_score]}`}>
+                    {FIT_LABELS[prospect.fit_score]}
+                  </span>
+                )}
                 {prospect.icp_category && (
                   <span className="shrink-0 rounded-full bg-accent-primary/10 px-2 py-0.5 text-xs font-medium text-accent-primary">
                     {prospect.icp_category}
@@ -204,9 +267,10 @@ export function ProspectCard({ prospect, icpCategories }: ProspectCardProps) {
                 )}
               </div>
 
-              {!expanded && (prospect.why_they_buy || prospect.research_notes) && (
+              {/* Preview line when collapsed — show why they'd buy if available */}
+              {!expanded && (
                 <p className="mt-1 text-sm text-text-secondary line-clamp-2">
-                  {prospect.why_they_buy || prospect.research_notes?.slice(0, 200)}
+                  {prospect.why_they_buy || prospect.research_notes?.slice(0, 200) || "No analysis yet"}
                 </p>
               )}
 
@@ -219,7 +283,7 @@ export function ProspectCard({ prospect, icpCategories }: ProspectCardProps) {
                 {prospect.source && <span>{prospect.source}</span>}
                 {prospect.last_researched_date && (
                   <span>
-                    Researched{" "}
+                    Analyzed{" "}
                     {new Date(prospect.last_researched_date).toLocaleDateString(
                       "en-US",
                       { month: "short", day: "numeric" }
@@ -246,27 +310,71 @@ export function ProspectCard({ prospect, icpCategories }: ProspectCardProps) {
 
         {/* Expanded details */}
         {expanded && (
-          <div className="mt-3 space-y-3 border-t border-border-primary pt-3">
+          <div className="mt-3 space-y-4 border-t border-border-primary pt-3">
+            {/* Why They'd Buy — prominent */}
             {prospect.why_they_buy && (
-              <div>
+              <div className="rounded-md bg-accent-primary/5 px-3 py-2">
                 <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-0.5">
                   Why They&apos;d Buy
                 </p>
-                <p className="text-sm text-text-secondary whitespace-pre-wrap">
+                <p className="text-sm text-text-primary">
                   {prospect.why_they_buy}
                 </p>
               </div>
             )}
 
-            {prospect.research_notes && (
-              <div>
+            {/* Next Action */}
+            {prospect.next_action && (
+              <div className="rounded-md bg-status-green/5 border border-status-green/20 px-3 py-2">
                 <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-0.5">
-                  Research Notes
+                  Next Action
                 </p>
-                <p className="text-sm text-text-secondary whitespace-pre-wrap">
-                  {prospect.research_notes}
+                <p className="text-sm text-text-primary">
+                  {prospect.next_action}
                 </p>
               </div>
+            )}
+
+            {/* Suggested Contacts */}
+            {prospect.suggested_contacts && prospect.suggested_contacts.length > 0 && (
+              <div>
+                <p className="text-[10px] font-medium text-text-muted uppercase tracking-wider mb-1.5">
+                  Target Contacts
+                </p>
+                <div className="space-y-2">
+                  {prospect.suggested_contacts.map((contact, i) => (
+                    <div key={i} className="rounded-md border border-border-primary bg-surface-tertiary px-3 py-2">
+                      <p className="text-sm font-medium text-text-primary">{contact.title}</p>
+                      {contact.why_they_care && (
+                        <p className="mt-0.5 text-xs text-text-secondary">{contact.why_they_care}</p>
+                      )}
+                      {contact.approach && (
+                        <p className="mt-0.5 text-xs text-text-muted italic">{contact.approach}</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Full research notes (collapsible) */}
+            {prospect.fit_analysis && (
+              <details className="group">
+                <summary className="cursor-pointer text-[10px] font-medium text-text-muted uppercase tracking-wider hover:text-text-secondary">
+                  Full Research Notes
+                  <span className="ml-1 group-open:hidden">+</span>
+                  <span className="ml-1 hidden group-open:inline">-</span>
+                </summary>
+                <div
+                  className="mt-2 prose prose-sm max-w-none text-text-secondary
+                    prose-headings:text-text-primary prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1
+                    prose-p:text-text-secondary prose-p:text-sm prose-p:my-1
+                    prose-li:text-text-secondary prose-li:text-sm
+                    prose-strong:text-text-primary prose-strong:font-medium
+                    prose-ul:my-1"
+                  dangerouslySetInnerHTML={{ __html: formatAgentHtml(prospect.fit_analysis) }}
+                />
+              </details>
             )}
 
             {prospect.website && (
@@ -287,6 +395,24 @@ export function ProspectCard({ prospect, icpCategories }: ProspectCardProps) {
 
             {/* Action buttons */}
             <div className="flex items-center gap-2 pt-1">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={handleOpenChat}
+                disabled={creatingThread}
+              >
+                <svg
+                  className="w-3.5 h-3.5"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                >
+                  <path d="M2 3h12v8H5l-3 3V3Z" />
+                </svg>
+                {creatingThread ? "Opening..." : "Talk to Strategist"}
+              </Button>
+
               <Button
                 variant="secondary"
                 size="sm"
@@ -341,6 +467,18 @@ export function ProspectCard({ prospect, icpCategories }: ProspectCardProps) {
                 </button>
               )}
             </div>
+
+            {/* Strategist Chat */}
+            {showChat && chatThread && (
+              <div className="mt-3 border-t border-border-primary pt-3">
+                <ThreadChat
+                  thread={chatThread}
+                  initialMessages={chatMessages}
+                  dealCompany={prospect.company}
+                  activeDeals={activeDeals}
+                />
+              </div>
+            )}
           </div>
         )}
       </CardContent>

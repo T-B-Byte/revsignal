@@ -148,6 +148,14 @@ export interface ActionItem {
   updated_at: string;
 }
 
+export type FitScore = "strong" | "moderate" | "weak" | "not_a_fit";
+
+export interface SuggestedContact {
+  title: string;
+  why_they_care: string;
+  approach: string;
+}
+
 export interface Prospect {
   id: string;
   user_id: string;
@@ -160,6 +168,10 @@ export interface Prospect {
   source: string | null;
   website: string | null;
   why_they_buy: string | null;
+  fit_score: FitScore | null;
+  fit_analysis: string | null;
+  suggested_contacts: SuggestedContact[];
+  next_action: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -443,6 +455,7 @@ export interface CoachingThread {
   user_id: string;
   deal_id: string | null;
   ma_entity_id: string | null;
+  prospect_id: string | null;
   title: string;
   contact_name: string | null;
   contact_role: string | null;

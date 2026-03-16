@@ -1,24 +1,24 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { PLANS } from "@/lib/stripe/config";
-import { runProspectResearch } from "@/lib/agents/prospect-scout";
+import { analyzeCompanyFromUrl } from "@/lib/agents/prospect-scout";
 import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import type { SubscriptionTier } from "@/types/database";
 
-// 20 prospect research requests per user per hour
+// 10 URL analyses per user per hour
 const limiter = rateLimit({ interval: 60 * 60 * 1000 });
 
 const bodySchema = z.object({
-  company: z.string().min(1).max(200),
-  icpCategory: z.string().max(100).optional(),
+  url: z.string().url().max(2000),
 });
 
 /**
- * POST /api/agents/prospect-research
+ * POST /api/agents/company-url-analyze
  *
- * Triggers the Prospect Scout to research a specific company.
- * Requires Starter+ tier (prospectSearches > 0).
+ * Fetches a company URL and analyzes DaaS fit via the Prospect Scout.
+ * Creates/updates prospect record with pre-computed fit data.
+ * Requires Starter+ tier.
  */
 export async function POST(request: NextRequest) {
   const supabase = await createClient();
@@ -33,8 +33,8 @@ export async function POST(request: NextRequest) {
   }
 
   const { success: withinLimit } = limiter.check(
-    20,
-    `prospect-research:${user.id}`
+    10,
+    `company-url-analyze:${user.id}`
   );
   if (!withinLimit) {
     return NextResponse.json(
@@ -43,7 +43,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Check subscription tier — requires prospect searches
+  // Check subscription tier
   const { data: subscription } = await supabase
     .from("subscriptions")
     .select("tier, status")
@@ -51,10 +51,10 @@ export async function POST(request: NextRequest) {
     .eq("status", "active")
     .maybeSingle();
 
-  const tier: SubscriptionTier = subscription?.tier ?? 'power';
+  const tier: SubscriptionTier = subscription?.tier ?? "power";
   if (PLANS[tier].limits.prospectSearches <= 0) {
     return NextResponse.json(
-      { error: "Prospect research requires the Starter plan or higher." },
+      { error: "URL analysis requires the Starter plan or higher." },
       { status: 403 }
     );
   }
@@ -65,22 +65,17 @@ export async function POST(request: NextRequest) {
     body = bodySchema.parse(await request.json());
   } catch {
     return NextResponse.json(
-      { error: "Invalid request. Provide a company name." },
+      { error: "Invalid request. Provide a valid URL." },
       { status: 400 }
     );
   }
 
   try {
-    const result = await runProspectResearch(
-      supabase,
-      user.id,
-      body.company,
-      body.icpCategory
-    );
+    const result = await analyzeCompanyFromUrl(supabase, user.id, body.url);
 
     if (!result) {
       return NextResponse.json(
-        { error: "Failed to generate research." },
+        { error: "Failed to analyze company." },
         { status: 500 }
       );
     }
@@ -100,12 +95,22 @@ export async function POST(request: NextRequest) {
       tokensUsed: result.tokensUsed,
     });
   } catch (error) {
-    console.error(
-      "[api/agents/prospect-research] Research failed:",
-      error instanceof Error ? error.message : error
-    );
+    const message = error instanceof Error ? error.message : "Unknown error";
+
+    // Return user-friendly messages for known errors
+    if (message === "Invalid URL" || message === "Only HTTP/HTTPS URLs are allowed") {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    if (message === "Internal URLs are not allowed") {
+      return NextResponse.json({ error: message }, { status: 400 });
+    }
+    if (message.startsWith("Failed to fetch URL:") || message.startsWith("Page content too short")) {
+      return NextResponse.json({ error: message }, { status: 422 });
+    }
+
+    console.error("[api/agents/company-url-analyze] Analysis failed:", message);
     return NextResponse.json(
-      { error: "Failed to complete prospect research. Please try again." },
+      { error: "Failed to analyze company. Please try again." },
       { status: 500 }
     );
   }
