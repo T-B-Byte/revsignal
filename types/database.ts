@@ -453,6 +453,13 @@ export interface CoachingMessage {
 
 export type ThreadFollowUpStatus = "open" | "completed" | "dismissed";
 
+export interface ThreadParticipant {
+  name: string;
+  role?: string;
+  company?: string;
+  contact_id?: string;
+}
+
 export interface CoachingThread {
   thread_id: string;
   user_id: string;
@@ -465,6 +472,7 @@ export interface CoachingThread {
   contact_role: string | null;
   company: string | null;
   contact_id: string | null;
+  participants: ThreadParticipant[];
   thread_brief: string | null;
   brief_updated_at: string | null;
   last_message_at: string;
@@ -493,6 +501,25 @@ export interface CoachingThreadWithDeal extends CoachingThread {
   open_follow_up_count?: number;
   has_overdue?: boolean;
   open_task_count?: number;
+}
+
+export type TalkingPointSource = "manual" | "strategist";
+
+export interface TalkingPoint {
+  id: string;
+  user_id: string;
+  contact_id: string;
+  thread_id: string | null;
+  content: string;
+  priority: number;
+  source: TalkingPointSource;
+  is_completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export interface TalkingPointWithThread extends TalkingPoint {
+  coaching_threads?: Pick<CoachingThread, "thread_id" | "title"> | null;
 }
 
 export interface Nudge {

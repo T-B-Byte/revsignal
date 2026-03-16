@@ -1067,7 +1067,7 @@ export function ThreadChat({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="text-base font-semibold text-text-primary">
-              {thread.contact_name || thread.title}
+              {thread.title}
             </h2>
             {thread.company && (
               <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs text-text-secondary">
@@ -1091,7 +1091,24 @@ export function ThreadChat({
           </button>
         </div>
         <div className="flex items-center gap-2 mt-0.5">
-          {thread.contact_role && (
+          {/* Participant chips */}
+          {thread.participants && thread.participants.length > 0 && (
+            <div className="flex flex-wrap gap-1">
+              {thread.participants.map((p, i) => (
+                <span
+                  key={i}
+                  className="inline-flex items-center gap-1 rounded-full bg-accent-primary/10 px-2 py-0.5 text-[11px] font-medium text-accent-primary"
+                >
+                  {p.name}
+                  {p.role && (
+                    <span className="text-text-muted font-normal">· {p.role}</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          )}
+          {/* Fallback for threads without participants */}
+          {(!thread.participants || thread.participants.length === 0) && thread.contact_role && (
             <p className="text-xs text-text-secondary">{thread.contact_role}</p>
           )}
           {dealCompany && !thread.company && (

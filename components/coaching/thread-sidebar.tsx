@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { formatDistanceToNow } from "date-fns";
 import type { CoachingThreadWithDeal } from "@/types/database";
@@ -17,6 +17,10 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
   const pathname = usePathname();
   const [showArchived, setShowArchived] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [contentMatchIds, setContentMatchIds] = useState<Set<string>>(new Set());
+  const [contentSnippets, setContentSnippets] = useState<Record<string, string>>({});
+  const [isSearching, setIsSearching] = useState(false);
+  const searchAbortRef = useRef<AbortController | null>(null);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -24,15 +28,61 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
   } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
+  // Debounced content search
+  const searchContent = useCallback(async (query: string) => {
+    // Cancel any in-flight request
+    searchAbortRef.current?.abort();
+
+    if (!query || query.length < 2) {
+      setContentMatchIds(new Set());
+      setContentSnippets({});
+      setIsSearching(false);
+      return;
+    }
+
+    setIsSearching(true);
+    const controller = new AbortController();
+    searchAbortRef.current = controller;
+
+    try {
+      const res = await fetch(
+        `/api/coaching/threads/search?q=${encodeURIComponent(query)}`,
+        { signal: controller.signal }
+      );
+      if (!res.ok) throw new Error("Search failed");
+      const data = await res.json();
+      setContentMatchIds(new Set(data.thread_ids));
+      setContentSnippets(data.snippets);
+    } catch (e: unknown) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
+      setContentMatchIds(new Set());
+      setContentSnippets({});
+    } finally {
+      if (!controller.signal.aborted) setIsSearching(false);
+    }
+  }, []);
+
+  // Debounce: fire content search 300ms after user stops typing
+  useEffect(() => {
+    const timer = setTimeout(() => searchContent(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery, searchContent]);
+
+  // Filter threads: metadata match OR content match
   const filteredThreads = threads.filter((t) => {
     if (!searchQuery) return true;
     const q = searchQuery.toLowerCase();
-    return (
+    const metadataMatch =
       t.title?.toLowerCase().includes(q) ||
       t.contact_name?.toLowerCase().includes(q) ||
       t.contact_role?.toLowerCase().includes(q) ||
-      t.company?.toLowerCase().includes(q)
-    );
+      t.company?.toLowerCase().includes(q) ||
+      t.participants?.some(
+        (p) =>
+          p.name.toLowerCase().includes(q) ||
+          p.role?.toLowerCase().includes(q)
+      );
+    return metadataMatch || contentMatchIds.has(t.thread_id);
   });
 
   const activeThreads = filteredThreads.filter((t) => !t.is_archived);
@@ -109,12 +159,17 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
           </svg>
           <input
             type="text"
-            placeholder="Search threads…"
+            placeholder="Search threads & messages…"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-md border border-border-primary bg-surface-secondary py-1.5 pl-8 pr-8 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
           />
-          {searchQuery && (
+          {isSearching && (
+            <div className="absolute right-2 top-1/2 -translate-y-1/2">
+              <div className="h-3 w-3 animate-spin rounded-full border border-text-muted border-t-accent-primary" />
+            </div>
+          )}
+          {searchQuery && !isSearching && (
             <button
               onClick={() => setSearchQuery("")}
               className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
@@ -131,13 +186,21 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
       <div className="flex-1 overflow-y-auto">
         {activeThreads.length === 0 && (
           <div className="px-4 py-8 text-center">
-            <p className="text-xs text-text-muted">No threads yet.</p>
-            <button
-              onClick={onNewThread}
-              className="mt-2 text-xs font-medium text-accent-primary hover:underline"
-            >
-              Start your first thread
-            </button>
+            {searchQuery ? (
+              <p className="text-xs text-text-muted">
+                {isSearching ? "Searching messages…" : "No matching threads or messages."}
+              </p>
+            ) : (
+              <>
+                <p className="text-xs text-text-muted">No threads yet.</p>
+                <button
+                  onClick={onNewThread}
+                  className="mt-2 text-xs font-medium text-accent-primary hover:underline"
+                >
+                  Start your first thread
+                </button>
+              </>
+            )}
           </div>
         )}
 
@@ -155,6 +218,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
                 thread={thread}
                 isActive={currentThreadId === thread.thread_id}
                 isConfirmingDelete={confirmDelete === thread.thread_id}
+                contentSnippet={searchQuery.length >= 2 ? contentSnippets[thread.thread_id] : undefined}
                 onClick={() => router.push(`/coach/${thread.thread_id}`)}
                 onContextMenu={(e) => handleContextMenu(e, thread)}
                 onConfirmDelete={() => handleConfirmDelete(thread.thread_id)}
@@ -180,6 +244,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
                   thread={thread}
                   isActive={currentThreadId === thread.thread_id}
                   isConfirmingDelete={confirmDelete === thread.thread_id}
+                  contentSnippet={searchQuery.length >= 2 ? contentSnippets[thread.thread_id] : undefined}
                   onClick={() => router.push(`/coach/${thread.thread_id}`)}
                   onContextMenu={(e) => handleContextMenu(e, thread)}
                   onConfirmDelete={() => handleConfirmDelete(thread.thread_id)}
@@ -222,6 +287,7 @@ function ThreadItem({
   thread,
   isActive,
   isConfirmingDelete,
+  contentSnippet,
   onClick,
   onContextMenu,
   onConfirmDelete,
@@ -230,6 +296,7 @@ function ThreadItem({
   thread: CoachingThreadWithDeal;
   isActive: boolean;
   isConfirmingDelete: boolean;
+  contentSnippet?: string;
   onClick: () => void;
   onContextMenu: (e: React.MouseEvent) => void;
   onConfirmDelete: () => void;
@@ -244,7 +311,7 @@ function ThreadItem({
     return (
       <div className="px-4 py-3 bg-red-500/5 border-y border-red-500/20">
         <p className="text-xs text-text-primary mb-2">
-          Delete <span className="font-medium">{thread.contact_name || thread.title}</span>?
+          Delete <span className="font-medium">{thread.title}</span>?
         </p>
         <p className="text-[10px] text-text-muted mb-2">
           This permanently removes the thread and all messages.
@@ -278,13 +345,17 @@ function ThreadItem({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-medium text-text-primary">
-            {thread.contact_name || thread.title}
+            {thread.title}
           </p>
-          {thread.contact_role && (
+          {thread.participants && thread.participants.length > 0 ? (
             <p className="mt-0.5 truncate text-xs text-text-secondary">
-              {thread.contact_role}
+              {thread.participants.map((p) => p.name).join(", ")}
             </p>
-          )}
+          ) : thread.contact_name ? (
+            <p className="mt-0.5 truncate text-xs text-text-secondary">
+              {thread.contact_name}{thread.contact_role ? ` · ${thread.contact_role}` : ""}
+            </p>
+          ) : null}
           {thread.deals && (
             <p className="mt-0.5 truncate text-xs text-accent-primary">
               {thread.deals.company}
@@ -306,6 +377,11 @@ function ThreadItem({
               addSuffix: true,
             })}
           </p>
+          {contentSnippet && (
+            <p className="mt-1 line-clamp-2 text-[10px] italic text-text-muted/70 leading-relaxed">
+              &ldquo;{contentSnippet}&rdquo;
+            </p>
+          )}
         </div>
 
         {/* Status indicators */}

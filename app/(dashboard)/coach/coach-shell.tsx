@@ -4,7 +4,7 @@ import { useState, useCallback, useMemo } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { ThreadSidebar } from "@/components/coaching/thread-sidebar";
 import { NewThreadDialog } from "@/components/coaching/new-thread-dialog";
-import type { CoachingThreadWithDeal, Deal } from "@/types/database";
+import type { CoachingThreadWithDeal, Deal, ThreadParticipant } from "@/types/database";
 
 interface CoachShellProps {
   threads: CoachingThreadWithDeal[];
@@ -37,6 +37,7 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
     contact_name: string | null;
     contact_role: string | null;
     company: string | null;
+    participants: ThreadParticipant[];
   }) {
     // Optimistically add the new thread to the list
     const newThread: CoachingThreadWithDeal = {
@@ -60,6 +61,7 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
       updated_at: new Date().toISOString(),
       open_follow_up_count: 0,
       has_overdue: false,
+      participants: thread.participants,
     };
     setThreads((prev) => [newThread, ...prev]);
     setDialogOpen(false);

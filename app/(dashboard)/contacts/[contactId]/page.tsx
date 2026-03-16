@@ -6,6 +6,7 @@ import { ConversationTimeline } from "@/components/deals/conversation-timeline";
 import { LogConversationForContact } from "@/components/contacts/log-conversation-for-contact";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
+import { TalkingPointsCard } from "@/components/contacts/talking-points-card";
 import type {
   Contact,
   Conversation,
@@ -14,6 +15,7 @@ import type {
   DealStage,
   ContactRef,
   EscalationLevel,
+  TalkingPointWithThread,
 } from "@/types/database";
 import { format } from "date-fns";
 
@@ -119,8 +121,8 @@ export default async function ContactDetailPage({
     notFound();
   }
 
-  // Parallel fetch: conversations, action items, deals
-  const [conversationsResult, actionItemsResult, dealsResult] =
+  // Parallel fetch: conversations, action items, deals, talking points
+  const [conversationsResult, actionItemsResult, dealsResult, talkingPointsResult] =
     await Promise.all([
       supabase
         .from("conversations")
@@ -140,10 +142,23 @@ export default async function ContactDetailPage({
         .from("deals")
         .select("deal_id, company, stage, acv, contacts")
         .eq("user_id", user.id),
+
+      supabase
+        .from("talking_points")
+        .select(`
+          *,
+          coaching_threads:thread_id (thread_id, title)
+        `)
+        .eq("contact_id", contactId)
+        .eq("user_id", user.id)
+        .order("is_completed", { ascending: true })
+        .order("priority", { ascending: true })
+        .order("created_at", { ascending: false }),
     ]);
 
   const conversations = (conversationsResult.data as Conversation[]) ?? [];
   const actionItems = (actionItemsResult.data as ActionItem[]) ?? [];
+  const talkingPoints = (talkingPointsResult.data as TalkingPointWithThread[]) ?? [];
 
   // Filter deals that reference this contact in their JSONB contacts array
   const relatedDeals = ((dealsResult.data as Deal[]) ?? []).filter((d) =>
@@ -196,6 +211,12 @@ export default async function ContactDetailPage({
 
         {/* Sidebar - 1/3 */}
         <div className="space-y-6">
+          {/* Talking Points */}
+          <TalkingPointsCard
+            contactId={contactId}
+            initialPoints={talkingPoints}
+          />
+
           {/* Linked Deals */}
           <Card>
             <CardHeader>

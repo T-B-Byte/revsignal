@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod/v4";
 
+const participantSchema = z.object({
+  name: z.string().min(1).max(200),
+  role: z.string().max(200).optional(),
+  company: z.string().max(200).optional(),
+  contact_id: z.string().uuid().optional(),
+});
+
 const updateThreadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   contact_name: z.string().min(1).max(200).nullable().optional(),
@@ -9,6 +16,7 @@ const updateThreadSchema = z.object({
   company: z.string().min(1).max(200).nullable().optional(),
   deal_id: z.string().uuid().nullable().optional(),
   is_archived: z.boolean().optional(),
+  participants: z.array(participantSchema).max(20).optional(),
 });
 
 type RouteContext = { params: Promise<{ threadId: string }> };

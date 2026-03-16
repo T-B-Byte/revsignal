@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { z } from "zod/v4";
 
+const participantSchema = z.object({
+  name: z.string().min(1).max(200),
+  role: z.string().max(200).optional(),
+  company: z.string().max(200).optional(),
+  contact_id: z.string().uuid().optional(),
+});
+
 const createThreadSchema = z.object({
   title: z.string().min(1).max(200),
   contact_name: z.string().min(1).max(200).optional(),
@@ -12,6 +19,7 @@ const createThreadSchema = z.object({
   ma_entity_id: z.string().uuid().optional(),
   prospect_id: z.string().uuid().optional(),
   meeting_note_id: z.string().uuid().optional(),
+  participants: z.array(participantSchema).max(20).default([]),
 });
 
 /**
@@ -167,13 +175,13 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  // Check for duplicate threads (same contact_name + company, case-insensitive)
-  if (parsed.data.contact_name && parsed.data.company) {
+  // Check for duplicate threads (same title + company, case-insensitive)
+  if (parsed.data.title && parsed.data.company) {
     const { data: existing } = await supabase
       .from("coaching_threads")
       .select("thread_id, title, contact_name, company")
       .eq("user_id", user.id)
-      .ilike("contact_name", parsed.data.contact_name)
+      .ilike("title", parsed.data.title)
       .ilike("company", parsed.data.company)
       .limit(1)
       .maybeSingle();
@@ -181,7 +189,7 @@ export async function POST(request: NextRequest) {
     if (existing) {
       return NextResponse.json(
         {
-          error: `A thread for "${existing.contact_name}" at "${existing.company}" already exists.`,
+          error: `A thread named "${existing.title}" for "${existing.company}" already exists.`,
           duplicate: true,
           existing_thread_id: existing.thread_id,
         },
@@ -203,6 +211,7 @@ export async function POST(request: NextRequest) {
       ma_entity_id: parsed.data.ma_entity_id ?? null,
       prospect_id: parsed.data.prospect_id ?? null,
       meeting_note_id: parsed.data.meeting_note_id ?? null,
+      participants: parsed.data.participants,
     })
     .select()
     .single();
