@@ -179,10 +179,19 @@ function TimelineStrip({ meetings }: { meetings: MeetingNote[] }) {
 function MeetingCard({
   meeting,
   muted,
+  onDelete,
+  onRename,
 }: {
   meeting: MeetingNote;
   muted?: boolean;
+  onDelete: (id: string) => void;
+  onRename: (id: string, newTitle: string) => void;
 }) {
+  const [showMenu, setShowMenu] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [renaming, setRenaming] = useState(false);
+  const [renameValue, setRenameValue] = useState(meeting.title);
+
   const countdown = getCountdown(meeting.meeting_date);
   const dateFormatted = formatMeetingDate(meeting.meeting_date);
   const timeFormatted = formatMeetingTime(meeting.meeting_date);
@@ -192,24 +201,117 @@ function MeetingCard({
 
   const hasPrep = !!meeting.prep_brief;
 
+  function handleRenameSubmit() {
+    const trimmed = renameValue.trim();
+    if (trimmed && trimmed !== meeting.title) {
+      onRename(meeting.note_id, trimmed);
+    }
+    setRenaming(false);
+  }
+
   return (
-    <Link href={`/meetings/${meeting.note_id}`}>
-      <div
-        className={`rounded-lg border border-border-primary p-4 transition-colors hover:border-accent-primary/40 hover:bg-surface-tertiary/50 cursor-pointer ${
-          muted
-            ? "bg-surface-secondary/50 opacity-70"
-            : "bg-surface-secondary"
-        }`}
-      >
+    <div
+      className={`relative rounded-lg border border-border-primary p-4 transition-colors hover:border-accent-primary/40 hover:bg-surface-tertiary/50 ${
+        muted
+          ? "bg-surface-secondary/50 opacity-70"
+          : "bg-surface-secondary"
+      }`}
+    >
+      {/* Actions menu button */}
+      <div className="absolute top-3 right-3 z-10">
+        <button
+          type="button"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            setShowMenu(!showMenu);
+            setConfirmDelete(false);
+          }}
+          className="rounded-md p-1 text-text-muted hover:text-text-primary hover:bg-surface-tertiary transition-colors"
+        >
+          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="currentColor">
+            <circle cx="8" cy="3" r="1.5" />
+            <circle cx="8" cy="8" r="1.5" />
+            <circle cx="8" cy="13" r="1.5" />
+          </svg>
+        </button>
+
+        {showMenu && (
+          <div className="absolute right-0 top-full mt-1 rounded-md border border-border-primary bg-surface-primary shadow-lg z-30 min-w-[140px]">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                setShowMenu(false);
+                setRenaming(true);
+                setRenameValue(meeting.title);
+              }}
+              className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-surface-tertiary transition-colors"
+            >
+              Rename
+            </button>
+            {!confirmDelete ? (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setConfirmDelete(true);
+                }}
+                className="w-full text-left px-3 py-2 text-sm text-status-red hover:bg-status-red/10 transition-colors"
+              >
+                Delete
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  onDelete(meeting.note_id);
+                }}
+                className="w-full text-left px-3 py-2 text-sm text-status-red font-medium bg-status-red/10 hover:bg-status-red/20 transition-colors"
+              >
+                Confirm delete
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Inline rename */}
+      {renaming ? (
+        <div className="mb-2" onClick={(e) => e.stopPropagation()}>
+          <input
+            type="text"
+            value={renameValue}
+            onChange={(e) => setRenameValue(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleRenameSubmit();
+              if (e.key === "Escape") setRenaming(false);
+            }}
+            onBlur={handleRenameSubmit}
+            autoFocus
+            maxLength={200}
+            className="w-full rounded-md border border-accent-primary bg-surface-tertiary px-2 py-1 text-sm font-semibold text-text-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+          />
+        </div>
+      ) : null}
+
+      <Link href={`/meetings/${meeting.note_id}`}>
         {/* Top row: title + countdown */}
-        <div className="flex items-start justify-between gap-3">
-          <h3
-            className={`font-semibold ${
-              muted ? "text-text-secondary" : "text-text-primary"
-            }`}
-          >
-            {meeting.title}
-          </h3>
+        <div className="flex items-start justify-between gap-3 pr-6">
+          {!renaming && (
+            <h3
+              className={`font-semibold ${
+                muted ? "text-text-secondary" : "text-text-primary"
+              }`}
+            >
+              {meeting.title}
+            </h3>
+          )}
           <span
             className={`shrink-0 text-xs font-medium ${
               countdown === "today" || countdown === "tomorrow"
@@ -271,8 +373,8 @@ function MeetingCard({
             </span>
           )}
         </div>
-      </div>
-    </Link>
+      </Link>
+    </div>
   );
 }
 
@@ -585,8 +687,31 @@ function NewMeetingForm({
 // ---------------------------------------------------------------------------
 
 export function MeetingsView({ meetings, deals }: MeetingsViewProps) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [showPast, setShowPast] = useState(false);
+
+  async function handleDelete(meetingId: string) {
+    try {
+      const res = await fetch(`/api/meetings/${meetingId}`, { method: "DELETE" });
+      if (res.ok) router.refresh();
+    } catch {
+      // Silently fail — card will remain until next refresh
+    }
+  }
+
+  async function handleRename(meetingId: string, newTitle: string) {
+    try {
+      const res = await fetch(`/api/meetings/${meetingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: newTitle }),
+      });
+      if (res.ok) router.refresh();
+    } catch {
+      // Silently fail
+    }
+  }
 
   const upcomingMeetings = useMemo(
     () =>
@@ -664,7 +789,7 @@ export function MeetingsView({ meetings, deals }: MeetingsViewProps) {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingMeetings.map((m) => (
-              <MeetingCard key={m.note_id} meeting={m} />
+              <MeetingCard key={m.note_id} meeting={m} onDelete={handleDelete} onRename={handleRename} />
             ))}
           </div>
         )}
@@ -695,7 +820,7 @@ export function MeetingsView({ meetings, deals }: MeetingsViewProps) {
           {showPast && (
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {pastMeetings.map((m) => (
-                <MeetingCard key={m.note_id} meeting={m} muted />
+                <MeetingCard key={m.note_id} meeting={m} muted onDelete={handleDelete} onRename={handleRename} />
               ))}
             </div>
           )}
