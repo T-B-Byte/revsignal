@@ -137,6 +137,29 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // Check for duplicate threads (same contact_name + company, case-insensitive)
+  if (parsed.data.contact_name && parsed.data.company) {
+    const { data: existing } = await supabase
+      .from("coaching_threads")
+      .select("thread_id, title, contact_name, company")
+      .eq("user_id", user.id)
+      .ilike("contact_name", parsed.data.contact_name)
+      .ilike("company", parsed.data.company)
+      .limit(1)
+      .maybeSingle();
+
+    if (existing) {
+      return NextResponse.json(
+        {
+          error: `A thread for "${existing.contact_name}" at "${existing.company}" already exists.`,
+          duplicate: true,
+          existing_thread_id: existing.thread_id,
+        },
+        { status: 409 }
+      );
+    }
+  }
+
   const { data: thread, error } = await supabase
     .from("coaching_threads")
     .insert({

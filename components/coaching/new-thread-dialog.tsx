@@ -11,6 +11,13 @@ import {
 import { Button } from "@/components/ui/button";
 import type { Deal } from "@/types/database";
 
+interface ExistingThread {
+  thread_id: string;
+  title: string;
+  contact_name: string | null;
+  company: string | null;
+}
+
 interface NewThreadDialogProps {
   open: boolean;
   onClose: () => void;
@@ -25,6 +32,8 @@ interface NewThreadDialogProps {
   onDealCreated?: (deal: Pick<Deal, "deal_id" | "company" | "stage">) => void;
   /** Known company names from existing threads/deals for autocomplete */
   knownCompanies?: string[];
+  /** Existing threads for duplicate detection */
+  existingThreads?: ExistingThread[];
 }
 
 export function NewThreadDialog({
@@ -34,6 +43,7 @@ export function NewThreadDialog({
   activeDeals,
   onDealCreated,
   knownCompanies = [],
+  existingThreads = [],
 }: NewThreadDialogProps) {
   const [contactName, setContactName] = useState("");
   const [contactRole, setContactRole] = useState("");
@@ -46,6 +56,18 @@ export function NewThreadDialog({
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const companyInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
+
+  // Detect duplicate thread as user types
+  const duplicateThread = useMemo(() => {
+    const name = contactName.trim().toLowerCase();
+    const comp = company.trim().toLowerCase();
+    if (!name || !comp) return null;
+    return existingThreads.find(
+      (t) =>
+        t.contact_name?.toLowerCase() === name &&
+        t.company?.toLowerCase() === comp
+    ) ?? null;
+  }, [contactName, company, existingThreads]);
 
   const companySuggestions = useMemo(() => {
     if (!company.trim()) return [];
@@ -332,6 +354,14 @@ export function NewThreadDialog({
             </div>
           </div>
 
+          {duplicateThread && (
+            <div className="rounded-md border border-status-yellow/40 bg-status-yellow/10 px-3 py-2">
+              <p className="text-xs font-medium text-status-yellow">
+                A thread for &ldquo;{duplicateThread.contact_name}&rdquo; at &ldquo;{duplicateThread.company}&rdquo; already exists.
+              </p>
+            </div>
+          )}
+
           {error && (
             <p className="text-xs text-status-red">{error}</p>
           )}
@@ -344,7 +374,7 @@ export function NewThreadDialog({
               size="sm"
               onClick={handleCreate}
               loading={loading}
-              disabled={!contactName.trim() || !company.trim()}
+              disabled={!contactName.trim() || !company.trim() || !!duplicateThread}
             >
               Create Thread
             </Button>

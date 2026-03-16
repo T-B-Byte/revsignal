@@ -138,6 +138,7 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
         activeDeals={deals}
         onDealCreated={(deal) => setDeals((prev) => [deal, ...prev])}
         knownCompanies={knownCompanies}
+        existingThreads={threads}
       />
     </>
   );
