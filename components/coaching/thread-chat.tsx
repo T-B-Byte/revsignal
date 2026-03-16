@@ -52,6 +52,7 @@ export function ThreadChat({
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editContent, setEditContent] = useState("");
   const [editSaving, setEditSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
   const [showCompose, setShowCompose] = useState(false);
   const [composeChannel, setComposeChannel] = useState<MessageChannel>("email");
@@ -643,6 +644,54 @@ export function ThreadChat({
   function cancelEdit() {
     setEditingId(null);
     setEditContent("");
+  }
+
+  async function handleDelete(msg: CoachingMessage) {
+    if (deletingId) return;
+    setDeletingId(msg.conversation_id);
+    setError(null);
+
+    // If deleting a user message, also delete the AI response that follows it
+    const deletePair = msg.role === "user";
+
+    // Find IDs to remove optimistically
+    const idsToRemove = new Set([msg.conversation_id]);
+    if (deletePair) {
+      const idx = messages.findIndex((m) => m.conversation_id === msg.conversation_id);
+      if (idx >= 0 && idx + 1 < messages.length && messages[idx + 1].role === "assistant") {
+        idsToRemove.add(messages[idx + 1].conversation_id);
+      }
+    }
+
+    // Optimistic removal
+    const previousMessages = messages;
+    setMessages((prev) => prev.filter((m) => !idsToRemove.has(m.conversation_id)));
+
+    try {
+      const res = await fetch(
+        `/api/coaching/threads/${thread.thread_id}/messages`,
+        {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            conversation_id: msg.conversation_id,
+            delete_pair: deletePair,
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        // Revert on failure
+        setMessages(previousMessages);
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to delete message.");
+      }
+    } catch {
+      setMessages(previousMessages);
+      setError("Network error deleting message.");
+    } finally {
+      setDeletingId(null);
+    }
   }
 
   async function handleLinkDeal(dealId: string | null) {
@@ -1465,6 +1514,21 @@ export function ThreadChat({
                         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                           <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                           <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                        </svg>
+                      </button>
+                    )}
+                    {/* Delete button */}
+                    {editingId !== msg.conversation_id && (
+                      <button
+                        onClick={() => handleDelete(msg)}
+                        disabled={deletingId === msg.conversation_id}
+                        title={msg.role === "user" ? "Delete message & response" : "Delete message"}
+                        className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-status-red transition-opacity disabled:opacity-50"
+                      >
+                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2" />
+                          <path d="M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6" />
                         </svg>
                       </button>
                     )}

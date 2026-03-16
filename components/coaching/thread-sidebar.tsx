@@ -16,6 +16,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
   const router = useRouter();
   const pathname = usePathname();
   const [showArchived, setShowArchived] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -23,8 +24,19 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
   } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  const activeThreads = threads.filter((t) => !t.is_archived);
-  const archivedThreads = threads.filter((t) => t.is_archived);
+  const filteredThreads = threads.filter((t) => {
+    if (!searchQuery) return true;
+    const q = searchQuery.toLowerCase();
+    return (
+      t.title?.toLowerCase().includes(q) ||
+      t.contact_name?.toLowerCase().includes(q) ||
+      t.contact_role?.toLowerCase().includes(q) ||
+      t.company?.toLowerCase().includes(q)
+    );
+  });
+
+  const activeThreads = filteredThreads.filter((t) => !t.is_archived);
+  const archivedThreads = filteredThreads.filter((t) => t.is_archived);
 
   // Extract threadId from pathname like /coach/[threadId]
   const currentThreadId = pathname.split("/coach/")[1] ?? null;
@@ -81,6 +93,38 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
         >
           + New
         </button>
+      </div>
+
+      {/* Search */}
+      <div className="px-3 py-2 border-b border-border-primary">
+        <div className="relative">
+          <svg
+            className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-text-muted"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+            strokeWidth={2}
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+          </svg>
+          <input
+            type="text"
+            placeholder="Search threads…"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full rounded-md border border-border-primary bg-surface-secondary py-1.5 pl-8 pr-8 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery("")}
+              className="absolute right-2 top-1/2 -translate-y-1/2 text-text-muted hover:text-text-primary"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Thread list */}

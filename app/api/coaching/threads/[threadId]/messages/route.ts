@@ -29,6 +29,12 @@ const editMessageSchema = z.object({
   content: z.string().min(1).max(50000),
 });
 
+const deleteMessageSchema = z.object({
+  conversation_id: z.string().uuid(),
+  /** If true, also delete the AI response that immediately follows this user message */
+  delete_pair: z.boolean().default(false),
+});
+
 type RouteContext = { params: Promise<{ threadId: string }> };
 
 /**
@@ -318,4 +324,107 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   }
 
   return NextResponse.json(updated);
+}
+
+/**
+ * DELETE /api/coaching/threads/[threadId]/messages
+ * Delete a message. If delete_pair is true and the message is a user message,
+ * also delete the AI response that immediately follows it.
+ */
+export async function DELETE(request: NextRequest, context: RouteContext) {
+  const supabase = await createClient();
+  const { threadId } = await context.params;
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const parsed = deleteMessageSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Validation failed", issues: parsed.error.issues },
+      { status: 400 }
+    );
+  }
+
+  // Verify message belongs to this thread and user
+  const { data: msg } = await supabase
+    .from("coaching_conversations")
+    .select("conversation_id, role, created_at")
+    .eq("conversation_id", parsed.data.conversation_id)
+    .eq("thread_id", threadId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!msg) {
+    return NextResponse.json({ error: "Message not found" }, { status: 404 });
+  }
+
+  const deletedIds: string[] = [msg.conversation_id];
+
+  // If deleting a user message with delete_pair, find and delete the next assistant message
+  if (parsed.data.delete_pair && msg.role === "user") {
+    const { data: nextMsg } = await supabase
+      .from("coaching_conversations")
+      .select("conversation_id")
+      .eq("thread_id", threadId)
+      .eq("user_id", user.id)
+      .eq("role", "assistant")
+      .gt("created_at", msg.created_at)
+      .order("created_at", { ascending: true })
+      .limit(1)
+      .maybeSingle();
+
+    if (nextMsg) {
+      deletedIds.push(nextMsg.conversation_id);
+    }
+  }
+
+  // Delete the message(s)
+  const { error } = await supabase
+    .from("coaching_conversations")
+    .delete()
+    .in("conversation_id", deletedIds)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("[api/coaching/threads/messages] DELETE error:", error.message);
+    return NextResponse.json({ error: "Failed to delete message" }, { status: 500 });
+  }
+
+  // Update thread message count and last_message_at
+  const { count: remainingCount } = await supabase
+    .from("coaching_conversations")
+    .select("conversation_id", { count: "exact", head: true })
+    .eq("thread_id", threadId);
+
+  const { data: latestMsg } = await supabase
+    .from("coaching_conversations")
+    .select("created_at")
+    .eq("thread_id", threadId)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  await supabase
+    .from("coaching_threads")
+    .update({
+      message_count: Math.max(0, remainingCount ?? 0),
+      last_message_at: latestMsg?.created_at ?? new Date().toISOString(),
+    })
+    .eq("thread_id", threadId)
+    .eq("user_id", user.id);
+
+  return NextResponse.json({ success: true, deletedIds });
 }
