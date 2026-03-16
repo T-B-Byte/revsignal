@@ -1,7 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect, notFound } from "next/navigation";
 import { MeetingDetail } from "@/components/meetings/meeting-detail";
-import type { MeetingNote, ContactAgendaItem, Deal } from "@/types/database";
+import type { MeetingNote, ContactAgendaItem, Deal, CoachingThread, CoachingMessage } from "@/types/database";
 
 export const metadata = {
   title: "Meeting Prep | RevSignal",
@@ -65,6 +65,26 @@ export default async function MeetingDetailPage({
     .not("stage", "in", "(closed_won,closed_lost)")
     .order("company");
 
+  // Fetch coaching thread linked to this meeting (if any)
+  const { data: meetingThread } = await supabase
+    .from("coaching_threads")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("meeting_note_id", meetingId)
+    .maybeSingle();
+
+  // Fetch messages for the meeting thread
+  let meetingThreadMessages: CoachingMessage[] = [];
+  if (meetingThread) {
+    const { data: msgs } = await supabase
+      .from("coaching_conversations")
+      .select("*")
+      .eq("thread_id", meetingThread.thread_id)
+      .order("created_at", { ascending: true })
+      .limit(200);
+    meetingThreadMessages = (msgs as CoachingMessage[]) ?? [];
+  }
+
   return (
     <MeetingDetail
       meeting={meeting as MeetingNote}
@@ -73,6 +93,8 @@ export default async function MeetingDetailPage({
       activeDeals={
         (deals ?? []) as Pick<Deal, "deal_id" | "company" | "stage">[]
       }
+      thread={(meetingThread as CoachingThread) ?? null}
+      threadMessages={meetingThreadMessages}
     />
   );
 }

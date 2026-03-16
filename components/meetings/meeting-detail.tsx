@@ -2,12 +2,15 @@
 
 import { useState, useCallback, useRef, useEffect } from "react";
 import { formatAgentHtml } from "@/lib/format-agent-html";
+import { ThreadChat } from "@/components/coaching/thread-chat";
 import type {
   MeetingNote,
   MeetingAgendaItem,
   ContactAgendaItem,
   Deal,
   MeetingStatus,
+  CoachingThread,
+  CoachingMessage,
 } from "@/types/database";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -68,6 +71,8 @@ interface MeetingDetailProps {
     company: string;
   }[];
   activeDeals: Pick<Deal, "deal_id" | "company" | "stage">[];
+  thread?: CoachingThread | null;
+  threadMessages?: CoachingMessage[];
 }
 
 export function MeetingDetail({
@@ -75,6 +80,8 @@ export function MeetingDetail({
   contactAgendaItems: initialContactAgendaItems,
   contacts,
   activeDeals,
+  thread,
+  threadMessages = [],
 }: MeetingDetailProps) {
   const router = useRouter();
   const [meeting, setMeeting] = useState<MeetingNote>(initialMeeting);
@@ -110,12 +117,81 @@ export function MeetingDetail({
   const [editStatus, setEditStatus] = useState<MeetingStatus>(meeting.status);
   const [isSavingInfo, setIsSavingInfo] = useState(false);
 
+  // Strategist chat state
+  const [showChat, setShowChat] = useState(false);
+  const [chatThread, setChatThread] = useState<CoachingThread | null>(thread ?? null);
+  const [chatMessages, setChatMessages] = useState<CoachingMessage[]>(threadMessages);
+  const [creatingThread, setCreatingThread] = useState(false);
+
+  // Pinned prep brief excerpts
+  const [pinnedExcerpts, setPinnedExcerpts] = useState<string[]>([]);
+  const prepBriefRef = useRef<HTMLDivElement>(null);
+
   // Saving error
   const [saveError, setSaveError] = useState<string | null>(null);
 
   const contactMap = new Map(
     contacts.map((c) => [c.contact_id, c])
   );
+
+  // ---- Strategist chat ----
+
+  async function handleOpenChat() {
+    if (chatThread) {
+      setShowChat(true);
+      return;
+    }
+
+    setCreatingThread(true);
+    try {
+      const res = await fetch("/api/coaching/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: meeting.title,
+          company: meeting.attendees[0]?.name ?? meeting.title,
+          meeting_note_id: meeting.note_id,
+        }),
+      });
+
+      if (!res.ok) {
+        setSaveError("Failed to start Strategist conversation.");
+        return;
+      }
+
+      const newThread = await res.json();
+      setChatThread(newThread);
+      setChatMessages([]);
+      setShowChat(true);
+    } catch {
+      setSaveError("Failed to start Strategist conversation.");
+    } finally {
+      setCreatingThread(false);
+    }
+  }
+
+  // ---- Pin prep brief excerpt ----
+
+  function handlePinSelection() {
+    const selection = window.getSelection();
+    if (!selection || selection.isCollapsed) return;
+
+    // Only pin from within the prep brief
+    if (
+      prepBriefRef.current &&
+      prepBriefRef.current.contains(selection.anchorNode)
+    ) {
+      const text = selection.toString().trim();
+      if (text && !pinnedExcerpts.includes(text)) {
+        setPinnedExcerpts((prev) => [...prev, text]);
+        selection.removeAllRanges();
+      }
+    }
+  }
+
+  function removePinnedExcerpt(index: number) {
+    setPinnedExcerpts((prev) => prev.filter((_, i) => i !== index));
+  }
 
   // ---- API helpers ----
 
@@ -391,21 +467,71 @@ export function MeetingDetail({
             )}
           </div>
 
+          {/* Pinned Excerpts — stays visible at top during the call */}
+          {pinnedExcerpts.length > 0 && (
+            <section className="rounded-lg border-2 border-accent-primary/40 bg-accent-primary/5 p-4">
+              <div className="mb-2 flex items-center justify-between">
+                <h2 className="text-xs font-semibold uppercase tracking-wider text-accent-primary">
+                  Pinned for Call
+                </h2>
+                <button
+                  onClick={() => setPinnedExcerpts([])}
+                  className="text-xs text-text-muted hover:text-text-secondary"
+                >
+                  Clear all
+                </button>
+              </div>
+              <div className="space-y-2">
+                {pinnedExcerpts.map((excerpt, i) => (
+                  <div
+                    key={i}
+                    className="group relative rounded-md border border-accent-primary/20 bg-surface-primary px-3 py-2"
+                  >
+                    <p className="pr-6 text-sm text-text-primary">{excerpt}</p>
+                    <button
+                      onClick={() => removePinnedExcerpt(i)}
+                      className="absolute right-2 top-2 rounded p-0.5 text-text-muted opacity-0 hover:text-status-red group-hover:opacity-100 transition-opacity"
+                      title="Remove"
+                    >
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M4 4l8 8M12 4l-8 8" />
+                      </svg>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* Prep Brief */}
           <section className="rounded-lg border border-border-primary bg-surface-secondary p-4">
             <div className="mb-3 flex items-center justify-between">
               <h2 className="text-sm font-semibold text-text-primary">
                 Prep Brief
               </h2>
-              {meeting.prep_brief ? (
-                <button
-                  onClick={generatePrepBrief}
-                  disabled={isGeneratingPrep}
-                  className="rounded px-3 py-1 text-xs font-medium text-accent-primary hover:bg-accent-primary/10 transition-colors disabled:opacity-50"
-                >
-                  {isGeneratingPrep ? "Regenerating..." : "Regenerate"}
-                </button>
-              ) : null}
+              <div className="flex items-center gap-2">
+                {meeting.prep_brief && (
+                  <button
+                    onClick={handlePinSelection}
+                    className="rounded px-2.5 py-1 text-xs font-medium text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 transition-colors"
+                    title="Select text in the prep brief, then click to pin"
+                  >
+                    <svg className="mr-1 inline h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M9 2l5 5-6 6-5-5 6-6ZM5 11L2 14" />
+                    </svg>
+                    Pin Selection
+                  </button>
+                )}
+                {meeting.prep_brief ? (
+                  <button
+                    onClick={generatePrepBrief}
+                    disabled={isGeneratingPrep}
+                    className="rounded px-3 py-1 text-xs font-medium text-accent-primary hover:bg-accent-primary/10 transition-colors disabled:opacity-50"
+                  >
+                    {isGeneratingPrep ? "Regenerating..." : "Regenerate"}
+                  </button>
+                ) : null}
+              </div>
             </div>
 
             {isGeneratingPrep && !meeting.prep_brief && (
@@ -439,6 +565,7 @@ export function MeetingDetail({
 
             {meeting.prep_brief ? (
               <div
+                ref={prepBriefRef}
                 className="prose prose-sm max-w-none font-mono text-[13px] leading-relaxed text-text-primary prose-headings:text-text-primary prose-headings:text-sm prose-headings:font-semibold prose-headings:mt-5 prose-headings:mb-2 prose-p:text-text-secondary prose-p:text-[13px] prose-p:my-1.5 prose-li:text-text-secondary prose-li:text-[13px] prose-strong:text-text-primary prose-strong:font-medium prose-ul:my-2 prose-ol:my-2 prose-hr:my-4 prose-hr:border-border-primary"
                 dangerouslySetInnerHTML={{
                   __html: formatAgentHtml(meeting.prep_brief),
@@ -460,6 +587,12 @@ export function MeetingDetail({
                   </button>
                 </div>
               )
+            )}
+
+            {meeting.prep_brief && (
+              <p className="mt-3 text-[10px] text-text-muted">
+                Highlight text above and click &ldquo;Pin Selection&rdquo; to keep key points visible during your call.
+              </p>
             )}
 
             {/* Show spinner overlay when regenerating an existing brief */}
@@ -486,6 +619,51 @@ export function MeetingDetail({
                 </svg>
                 Regenerating...
               </div>
+            )}
+          </section>
+
+          {/* Strategist Chat */}
+          <section className="rounded-lg border border-border-primary bg-surface-secondary p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-text-primary">
+                The Strategist
+              </h2>
+              {!showChat && (
+                <button
+                  onClick={handleOpenChat}
+                  disabled={creatingThread}
+                  className="rounded-lg bg-accent-primary px-3 py-1.5 text-xs font-medium text-white hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+                >
+                  <svg className="mr-1 inline h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M2 3h12v8H5l-3 3V3Z" />
+                  </svg>
+                  {creatingThread ? "Opening..." : "Talk to Strategist"}
+                </button>
+              )}
+            </div>
+
+            {!showChat && !chatThread && (
+              <p className="text-sm text-text-muted">
+                Ask the Strategist for coaching on this meeting — talk tracks, objection handling, next steps.
+              </p>
+            )}
+
+            {!showChat && chatThread && (
+              <button
+                onClick={() => setShowChat(true)}
+                className="text-sm text-accent-primary hover:underline"
+              >
+                Resume conversation ({chatThread.message_count} messages)
+              </button>
+            )}
+
+            {showChat && chatThread && (
+              <ThreadChat
+                thread={chatThread}
+                initialMessages={chatMessages}
+                dealCompany={meeting.title}
+                activeDeals={activeDeals}
+              />
             )}
           </section>
 

@@ -456,6 +456,7 @@ export interface CoachingThread {
   deal_id: string | null;
   ma_entity_id: string | null;
   prospect_id: string | null;
+  meeting_note_id: string | null;
   title: string;
   contact_name: string | null;
   contact_role: string | null;

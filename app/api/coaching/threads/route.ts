@@ -11,6 +11,7 @@ const createThreadSchema = z.object({
   deal_id: z.string().uuid().optional(),
   ma_entity_id: z.string().uuid().optional(),
   prospect_id: z.string().uuid().optional(),
+  meeting_note_id: z.string().uuid().optional(),
 });
 
 /**
@@ -152,6 +153,20 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // If meeting_note_id provided, verify it belongs to the user
+  if (parsed.data.meeting_note_id) {
+    const { data: meeting } = await supabase
+      .from("meeting_notes")
+      .select("note_id")
+      .eq("note_id", parsed.data.meeting_note_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!meeting) {
+      return NextResponse.json({ error: "Meeting not found" }, { status: 404 });
+    }
+  }
+
   // Check for duplicate threads (same contact_name + company, case-insensitive)
   if (parsed.data.contact_name && parsed.data.company) {
     const { data: existing } = await supabase
@@ -187,6 +202,7 @@ export async function POST(request: NextRequest) {
       deal_id: parsed.data.deal_id ?? null,
       ma_entity_id: parsed.data.ma_entity_id ?? null,
       prospect_id: parsed.data.prospect_id ?? null,
+      meeting_note_id: parsed.data.meeting_note_id ?? null,
     })
     .select()
     .single();
