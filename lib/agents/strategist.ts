@@ -136,7 +136,7 @@ export async function generateMorningBriefing(
   const [response, durationGenerate] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: MORNING_BRIEFING_PROMPT,
       messages: [
         {
@@ -218,7 +218,7 @@ export async function generateDealStrategy(
   const [response, durationGenerate] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 1500,
+      max_tokens: 3000,
       system: DEAL_STRATEGY_PROMPT,
       messages: [
         {
@@ -636,7 +636,7 @@ export async function generateWeeklyMemo(
   const [response, durationGenerate] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2500,
+      max_tokens: 5000,
       system: WEEKLY_MEMO_PROMPT,
       messages: [
         {
@@ -779,7 +779,7 @@ export async function generateCeoWeekly(
   const [response, durationGenerate] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 500,
+      max_tokens: 1000,
       system: CEO_WEEKLY_PROMPT,
       messages: [
         {
@@ -993,7 +993,7 @@ export async function generateCoachingResponse(
   const [response, durationGenerate] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: COACHING_PROMPT,
       messages,
     })
@@ -1136,7 +1136,7 @@ export async function generateMeetingPrep(
   const [response, durationGenerate] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: MEETING_PREP_PROMPT,
       messages: [
         {
@@ -1331,7 +1331,7 @@ export async function processMeetingDebrief(
   const [response, durationGenerate] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: MEETING_DEBRIEF_PROMPT,
       messages: [
         {
@@ -2146,7 +2146,7 @@ export async function generateThreadResponse(
   const [response, durationGenerate] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 2000,
+      max_tokens: 4000,
       system: THREAD_COACHING_PROMPT,
       messages,
     })
@@ -2347,7 +2347,7 @@ export async function generateThreadCatchup(
   const anthropic = getAnthropic();
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 600,
+    max_tokens: 1200,
     system: THREAD_CATCHUP_PROMPT,
     messages: [
       {
@@ -2417,7 +2417,7 @@ export async function generateThreadBrief(
   const anthropic = getAnthropic();
   const response = await anthropic.messages.create({
     model: MODEL,
-    max_tokens: 2000,
+    max_tokens: 4000,
     system: THREAD_BRIEF_PROMPT,
     messages: [
       {
