@@ -75,11 +75,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
+  const trimmedDescription = parsed.data.description.trim();
+
+  // Dedup: if an open task with the same description already exists, return it
+  const { data: existing } = await supabase
+    .from("user_tasks")
+    .select("*")
+    .eq("user_id", user.id)
+    .eq("status", "open")
+    .eq("description", trimmedDescription)
+    .maybeSingle();
+
+  if (existing) {
+    return NextResponse.json({ task: existing, duplicate: true }, { status: 200 });
+  }
+
   const { data: task, error } = await supabase
     .from("user_tasks")
     .insert({
       user_id: user.id,
-      description: parsed.data.description.trim(),
+      description: trimmedDescription,
       due_date: parsed.data.due_date || null,
       source_message_id: parsed.data.source_message_id || null,
       source_text: parsed.data.source_text || null,
