@@ -102,6 +102,15 @@ export interface ThreadAlertSummary {
   open_follow_up_count: number;
 }
 
+export interface ThreadBriefSummary {
+  thread_id: string;
+  title: string;
+  deal_company: string | null;
+  contact_name: string | null;
+  thread_brief: string;
+  last_message_at: string;
+}
+
 export interface BriefingContext {
   pipeline: PipelineContext;
   dealBriefs: { deal: Deal; brief: DealBrief }[];
@@ -113,6 +122,7 @@ export interface BriefingContext {
   recentStrategicNotes?: StrategicNote[];
   userTasks?: UserTask[];
   threadAlerts?: ThreadAlertSummary[];
+  threadBriefs?: ThreadBriefSummary[];
 }
 
 /** Strategic context for The Strategist's coaching mode. */
@@ -121,6 +131,7 @@ export interface StrategicContextResult {
   stakeholders: Stakeholder[];
   activeNudges: Nudge[];
   recentCoachingHistory: CoachingMessage[];
+  threadBriefs: ThreadBriefSummary[];
 }
 
 /** Deep context on a specific stakeholder. */
@@ -415,7 +426,7 @@ export async function retrieveBriefingContext(
   const todayStr = new Date().toISOString().slice(0, 10);
   const sevenDaysFromNow = new Date(Date.now() + 7 * 86400000).toISOString().slice(0, 10);
 
-  const [briefsResult, competitiveResult, meetingNotesResult, upcomingMeetingsResult, nudgesResult, strategicNotesResult, userTasksResult] = await Promise.all([
+  const [briefsResult, competitiveResult, meetingNotesResult, upcomingMeetingsResult, nudgesResult, strategicNotesResult, userTasksResult, threadBriefsResult] = await Promise.all([
     activeDealIds.length > 0
       ? supabase
           .from("deal_briefs")
@@ -472,6 +483,18 @@ export async function retrieveBriefingContext(
       .eq("status", "open")
       .order("due_date", { ascending: true, nullsFirst: false })
       .limit(20),
+    // Thread briefs: active threads with a summarized brief (gives Strategist full awareness)
+    supabase
+      .from("coaching_threads")
+      .select(`
+        thread_id, title, contact_name, last_message_at, thread_brief,
+        deals:deal_id (company)
+      `)
+      .eq("user_id", userId)
+      .eq("is_archived", false)
+      .not("thread_brief", "is", null)
+      .order("last_message_at", { ascending: false })
+      .limit(15),
   ]);
 
   // Match briefs to deals (one brief per deal, most recent)
@@ -637,6 +660,21 @@ export async function retrieveBriefingContext(
     console.error("[rag/retriever] Error fetching thread alerts:", err);
   }
 
+  // Map thread briefs for context
+  const threadBriefs: ThreadBriefSummary[] = (threadBriefsResult.data ?? []).map(
+    (t: Record<string, unknown>) => {
+      const dealsArr = t.deals as { company: string }[] | null;
+      return {
+        thread_id: t.thread_id as string,
+        title: t.title as string,
+        contact_name: (t.contact_name as string) || null,
+        deal_company: dealsArr?.[0]?.company ?? null,
+        thread_brief: t.thread_brief as string,
+        last_message_at: t.last_message_at as string,
+      };
+    }
+  );
+
   return {
     pipeline,
     dealBriefs,
@@ -648,6 +686,7 @@ export async function retrieveBriefingContext(
     recentStrategicNotes: (strategicNotesResult.data as StrategicNote[]) || [],
     userTasks: (userTasksResult.data as UserTask[]) || [],
     threadAlerts,
+    threadBriefs,
   };
 }
 
@@ -971,7 +1010,7 @@ export async function retrieveStrategicContext(
     notesQuery = notesQuery.eq("related_deal_id", options.dealId);
   }
 
-  const [notesResult, stakeholdersResult, nudgesResult, coachingResult] =
+  const [notesResult, stakeholdersResult, nudgesResult, coachingResult, threadBriefsResult] =
     await Promise.all([
       notesQuery,
       supabase
@@ -993,6 +1032,18 @@ export async function retrieveStrategicContext(
         .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(10),
+      // Thread briefs: give the Strategist awareness of all coaching conversations
+      supabase
+        .from("coaching_threads")
+        .select(`
+          thread_id, title, contact_name, last_message_at, thread_brief,
+          deals:deal_id (company)
+        `)
+        .eq("user_id", userId)
+        .eq("is_archived", false)
+        .not("thread_brief", "is", null)
+        .order("last_message_at", { ascending: false })
+        .limit(15),
     ]);
 
   let strategicNotes = (notesResult.data as StrategicNote[]) || [];
@@ -1032,6 +1083,21 @@ export async function retrieveStrategicContext(
     }
   }
 
+  // Map thread briefs
+  const threadBriefs: ThreadBriefSummary[] = (threadBriefsResult.data ?? []).map(
+    (t: Record<string, unknown>) => {
+      const dealsArr = t.deals as { company: string }[] | null;
+      return {
+        thread_id: t.thread_id as string,
+        title: t.title as string,
+        contact_name: (t.contact_name as string) || null,
+        deal_company: dealsArr?.[0]?.company ?? null,
+        thread_brief: t.thread_brief as string,
+        last_message_at: t.last_message_at as string,
+      };
+    }
+  );
+
   return {
     strategicNotes,
     stakeholders: (stakeholdersResult.data as Stakeholder[]) || [],
@@ -1039,6 +1105,7 @@ export async function retrieveStrategicContext(
     recentCoachingHistory: (
       (coachingResult.data as CoachingMessage[]) || []
     ).reverse(),
+    threadBriefs,
   };
 }
 

@@ -42,3 +42,10 @@ node_modules
 
 # supabase
 supabase/.temp/
+
+# Business documents — kept local, not in repo
+/public/*.pdf
+/public/*.xlsx
+/public/*.xls
+/public/*.docx
+/public/Contracts/

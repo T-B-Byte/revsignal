@@ -475,6 +475,8 @@ export interface CoachingThread {
   participants: ThreadParticipant[];
   thread_brief: string | null;
   brief_updated_at: string | null;
+  catchup_text: string | null;
+  catchup_generated_at: string | null;
   last_message_at: string;
   message_count: number;
   is_archived: boolean;

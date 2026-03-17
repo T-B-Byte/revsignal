@@ -69,6 +69,18 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       }
     );
 
+    // Cache so it loads instantly on next re-entry
+    if (catchup) {
+      await supabase
+        .from("coaching_threads")
+        .update({
+          catchup_text: catchup,
+          catchup_generated_at: new Date().toISOString(),
+        })
+        .eq("thread_id", threadId)
+        .eq("user_id", user.id);
+    }
+
     return NextResponse.json({ catchup });
   } catch (error) {
     console.error(

@@ -11,9 +11,9 @@ const participantSchema = z.object({
 
 const createThreadSchema = z.object({
   title: z.string().min(1).max(200),
-  contact_name: z.string().min(1).max(200).optional(),
-  contact_role: z.string().max(200).optional(),
-  company: z.string().min(1).max(200).optional(),
+  contact_name: z.string().min(1).max(200).nullable().optional(),
+  contact_role: z.string().max(200).nullable().optional(),
+  company: z.string().min(1).max(200).nullable().optional(),
   contact_id: z.string().uuid().optional(),
   deal_id: z.string().uuid().optional(),
   ma_entity_id: z.string().uuid().optional(),

@@ -181,11 +181,13 @@ function MeetingCard({
   muted,
   onDelete,
   onRename,
+  onArchive,
 }: {
   meeting: MeetingNote;
   muted?: boolean;
   onDelete: (id: string) => void;
   onRename: (id: string, newTitle: string) => void;
+  onArchive?: (id: string) => void;
 }) {
   const [showMenu, setShowMenu] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -251,6 +253,20 @@ function MeetingCard({
             >
               Rename
             </button>
+            {onArchive && (
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setShowMenu(false);
+                  onArchive(meeting.note_id);
+                }}
+                className="w-full text-left px-3 py-2 text-sm text-text-primary hover:bg-surface-tertiary transition-colors"
+              >
+                Archive
+              </button>
+            )}
             {!confirmDelete ? (
               <button
                 type="button"
@@ -713,10 +729,23 @@ export function MeetingsView({ meetings, deals }: MeetingsViewProps) {
     }
   }
 
+  async function handleArchive(meetingId: string) {
+    try {
+      const res = await fetch(`/api/meetings/${meetingId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "completed" }),
+      });
+      if (res.ok) router.refresh();
+    } catch {
+      // Silently fail
+    }
+  }
+
   const upcomingMeetings = useMemo(
     () =>
       meetings
-        .filter((m) => m.status === "upcoming")
+        .filter((m) => !m.status || m.status === "upcoming")
         .sort(
           (a, b) =>
             new Date(a.meeting_date).getTime() -
@@ -789,7 +818,7 @@ export function MeetingsView({ meetings, deals }: MeetingsViewProps) {
         ) : (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {upcomingMeetings.map((m) => (
-              <MeetingCard key={m.note_id} meeting={m} onDelete={handleDelete} onRename={handleRename} />
+              <MeetingCard key={m.note_id} meeting={m} onDelete={handleDelete} onRename={handleRename} onArchive={handleArchive} />
             ))}
           </div>
         )}

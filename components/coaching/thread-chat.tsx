@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { formatAgentHtml, stripFollowUps, extractMeetingDetected } from "@/lib/format-agent-html";
 import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
@@ -14,6 +15,10 @@ interface ThreadChatProps {
   initialMessages: CoachingMessage[];
   dealCompany?: string | null;
   activeDeals?: Pick<Deal, "deal_id" | "company" | "stage">[];
+  /** Pre-fills the input on first load (e.g. studio project kickoff message) */
+  primeMessage?: string;
+  /** Pre-generated "where we left off" catchup — shown immediately without a network fetch. */
+  initialCatchup?: string | null;
 }
 
 /** Labels for interaction type badges on messages */
@@ -40,9 +45,12 @@ export function ThreadChat({
   initialMessages,
   dealCompany,
   activeDeals = [],
+  primeMessage,
+  initialCatchup,
 }: ThreadChatProps) {
+  const router = useRouter();
   const [messages, setMessages] = useState<CoachingMessage[]>(initialMessages);
-  const [input, setInput] = useState("");
+  const [input, setInput] = useState(initialMessages.length === 0 && primeMessage ? primeMessage : "");
   const [interactionType, setInteractionType] = useState<InteractionType>("coaching");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +62,8 @@ export function ThreadChat({
   const [editSaving, setEditSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [pendingImages, setPendingImages] = useState<{ file: File; preview: string }[]>([]);
+  const [pendingDocs, setPendingDocs] = useState<{ file: File; name: string }[]>([]);
+  const docInputRef = useRef<HTMLInputElement>(null);
   const [showCompose, setShowCompose] = useState(false);
   const [composeChannel, setComposeChannel] = useState<MessageChannel>("email");
   const [composeType, setComposeType] = useState<string>("cold_outreach");
@@ -70,6 +80,12 @@ export function ThreadChat({
   const [showDealPicker, setShowDealPicker] = useState(false);
   const [linkedDealId, setLinkedDealId] = useState<string | null>(thread.deal_id);
   const [linkingDeal, setLinkingDeal] = useState(false);
+  const [showPersonPicker, setShowPersonPicker] = useState(false);
+  const [personSearch, setPersonSearch] = useState("");
+  const [personResults, setPersonResults] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role">[]>([]);
+  const [searchingPerson, setSearchingPerson] = useState(false);
+  const [personCandidate, setPersonCandidate] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role"> | null>(null);
+  const [assigningToPerson, setAssigningToPerson] = useState(false);
   const [taskFromId, setTaskFromId] = useState<string | null>(null);
   const [taskDesc, setTaskDesc] = useState("");
   const [taskSourceText, setTaskSourceText] = useState("");  // original selected text for highlighting
@@ -80,6 +96,8 @@ export function ThreadChat({
   const [taskTexts, setTaskTexts] = useState<
     Record<string, { text: string; dueDate: string }[]>
   >({});
+  const [moreToAdd, setMoreToAdd] = useState(false);
+  const [inputChunks, setInputChunks] = useState<string[]>([]);
   const [contextMenu, setContextMenu] = useState<{
     x: number;
     y: number;
@@ -367,10 +385,25 @@ export function ThreadChat({
   async function handleSend() {
     const trimmed = input.trim();
     const hasImages = pendingImages.length > 0;
-    if ((!trimmed && !hasImages) || loading || sendingRef.current) return;
+    const hasDocs = pendingDocs.length > 0;
+    if ((!trimmed && !hasImages && !hasDocs && inputChunks.length === 0) || loading || sendingRef.current) return;
+
+    // If "more to paste" is on, buffer the chunk and wait
+    if (moreToAdd && interactionType === "coaching") {
+      if (trimmed) {
+        setInputChunks((prev) => [...prev, trimmed]);
+        setInput("");
+        if (textareaRef.current) textareaRef.current.style.height = "auto";
+      }
+      return;
+    }
+
     sendingRef.current = true;
 
     setError(null);
+    // Combine any buffered chunks with the current input
+    const combined = [...inputChunks, trimmed].filter(Boolean).join("\n\n");
+    setInputChunks([]);
     setInput("");
     // Reset textarea height after clearing
     if (textareaRef.current) {
@@ -386,7 +419,7 @@ export function ThreadChat({
       user_id: "",
       thread_id: thread.thread_id,
       role: "user",
-      content: trimmed,
+      content: combined,
       interaction_type: interactionType,
       context_used: null,
       sources_cited: [],
@@ -406,16 +439,54 @@ export function ThreadChat({
         setUploadingImages(false);
       }
 
-      // Build message content — append image markdown if text + images
-      const messageContent = imageUrls.length > 0 && trimmed
-        ? trimmed + "\n\n" + imageUrls.map((url) => `![attachment](${url})`).join("\n")
-        : imageUrls.length > 0
-        ? imageUrls.map((url) => `![attachment](${url})`).join("\n")
-        : trimmed;
+      // Upload documents and extract text
+      let docUrls: string[] = [];
+      let docTexts: string[] = [];
+      if (hasDocs) {
+        setUploadingImages(true);
+        const docResults = await uploadDocs();
+        docUrls = docResults.map((d) => d.url).filter(Boolean);
+        docTexts = docResults.map((d) => d.text).filter(Boolean);
+        setUploadingImages(false);
+      }
+
+      const allAttachmentUrls = [...imageUrls, ...docUrls];
+
+      // Build message content
+      let messageContent = combined;
+
+      // Append document text so the Strategist can read it
+      if (docTexts.length > 0) {
+        const docSections = pendingDocs.map((doc, i) => {
+          const text = docTexts[i];
+          if (!text) return null;
+          return `\n\n---\n📄 **${doc.name}**\n\n${text}`;
+        }).filter(Boolean).join("");
+        messageContent = (messageContent || "") + docSections;
+      }
+
+      // Append image markdown
+      if (imageUrls.length > 0) {
+        const imgMarkdown = imageUrls.map((url) => `![attachment](${url})`).join("\n");
+        messageContent = messageContent
+          ? messageContent + "\n\n" + imgMarkdown
+          : imgMarkdown;
+      }
+
+      // Append doc download links
+      if (docUrls.length > 0) {
+        const docLinks = pendingDocs.map((doc, i) => {
+          const url = docUrls[i];
+          return url ? `[📄 ${doc.name}](${url})` : null;
+        }).filter(Boolean).join("\n");
+        messageContent = messageContent
+          ? messageContent + "\n\n" + docLinks
+          : docLinks;
+      }
 
       // If all uploads failed and no text, abort
       if (!messageContent) {
-        setError("Image upload failed.");
+        setError("Upload failed.");
         setMessages((prev) =>
           prev.filter((m) => m.conversation_id !== userMsg.conversation_id)
         );
@@ -430,7 +501,7 @@ export function ThreadChat({
           body: JSON.stringify({
             message: messageContent,
             interaction_type: interactionType,
-            attachments: imageUrls.length > 0 ? imageUrls : undefined,
+            attachments: allAttachmentUrls.length > 0 ? allAttachmentUrls : undefined,
           }),
         }
       );
@@ -710,6 +781,51 @@ export function ThreadChat({
       // Silent fail
     } finally {
       setLinkingDeal(false);
+    }
+  }
+
+  async function searchPerson(query: string) {
+    setPersonSearch(query);
+    if (query.length < 2) {
+      setPersonResults([]);
+      return;
+    }
+    setSearchingPerson(true);
+    try {
+      const res = await fetch(`/api/contacts?search=${encodeURIComponent(query)}&limit=8`);
+      if (res.ok) {
+        const data = await res.json();
+        setPersonResults(data.contacts ?? []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSearchingPerson(false);
+    }
+  }
+
+  async function handleAssignToPerson() {
+    if (!personCandidate || assigningToPerson) return;
+    setAssigningToPerson(true);
+    try {
+      const res = await fetch(
+        `/api/coaching/threads/${thread.thread_id}/assign-to-contact`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ contact_id: personCandidate.contact_id }),
+        }
+      );
+      if (res.ok) {
+        router.push("/coach");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to assign thread.");
+        setAssigningToPerson(false);
+      }
+    } catch {
+      setError("Network error assigning thread.");
+      setAssigningToPerson(false);
     }
   }
 
@@ -1044,6 +1160,44 @@ export function ThreadChat({
     return urls;
   }
 
+  async function uploadDocs(): Promise<{ url: string; text: string }[]> {
+    const results: { url: string; text: string }[] = [];
+    for (const doc of pendingDocs) {
+      const form = new FormData();
+      form.append("file", doc.file);
+      const res = await fetch(
+        `/api/coaching/threads/${thread.thread_id}/attachments`,
+        { method: "POST", body: form }
+      );
+      if (res.ok) {
+        const data = await res.json();
+        results.push({ url: data.url || "", text: data.extracted_text || "" });
+      } else {
+        results.push({ url: "", text: "" });
+      }
+    }
+    setPendingDocs([]);
+    return results;
+  }
+
+  function removePendingDoc(index: number) {
+    setPendingDocs((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function handleDocSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = e.target.files;
+    if (!files) return;
+    for (const file of Array.from(files)) {
+      if (file.size > 10 * 1024 * 1024) {
+        setError("File too large. Maximum 10MB.");
+        continue;
+      }
+      setPendingDocs((prev) => [...prev, { file, name: file.name }]);
+    }
+    // Reset input so same file can be selected again
+    e.target.value = "";
+  }
+
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (interactionType === "coaching") {
       // Chat mode: Enter sends, Shift+Enter newline
@@ -1153,6 +1307,84 @@ export function ThreadChat({
               className="text-[10px] text-text-muted hover:text-accent-primary transition-colors"
             >
               + Link to deal
+            </button>
+          )}
+
+          {/* Person assign */}
+          {personCandidate ? (
+            <div className="flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1">
+              <span className="text-[10px] text-emerald-400">
+                Move to <span className="font-medium">{personCandidate.name}</span> and delete?
+              </span>
+              <button
+                onClick={handleAssignToPerson}
+                disabled={assigningToPerson}
+                className="text-[10px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+              >
+                {assigningToPerson ? "Moving…" : "Confirm"}
+              </button>
+              <button
+                onClick={() => setPersonCandidate(null)}
+                className="text-[10px] text-text-muted hover:text-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : showPersonPicker ? (
+            <div className="relative">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={personSearch}
+                  onChange={(e) => searchPerson(e.target.value)}
+                  placeholder="Search people…"
+                  className="w-36 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    setShowPersonPicker(false);
+                    setPersonSearch("");
+                    setPersonResults([]);
+                  }}
+                  className="text-xs text-text-muted hover:text-text-primary"
+                >
+                  Cancel
+                </button>
+              </div>
+              {personSearch.length >= 2 && (
+                <div className="absolute top-7 left-0 z-20 w-64 rounded-md border border-border-primary bg-surface-primary shadow-lg">
+                  {searchingPerson && (
+                    <p className="px-3 py-2 text-[10px] text-text-muted">Searching…</p>
+                  )}
+                  {personResults.map((c) => (
+                    <button
+                      key={c.contact_id}
+                      onClick={() => {
+                        setPersonCandidate(c);
+                        setShowPersonPicker(false);
+                        setPersonSearch("");
+                        setPersonResults([]);
+                      }}
+                      className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-surface-tertiary transition-colors"
+                    >
+                      {c.name}
+                      {c.role && <span className="text-text-muted"> · {c.role}</span>}
+                      <span className="text-text-muted"> · {c.company}</span>
+                    </button>
+                  ))}
+                  {!searchingPerson && personResults.length === 0 && (
+                    <p className="px-3 py-2 text-[10px] text-text-muted">No contacts found</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowPersonPicker(true)}
+              className="text-[10px] text-text-muted hover:text-emerald-400 transition-colors"
+            >
+              + Link to person
             </button>
           )}
         </div>
@@ -1327,6 +1559,7 @@ export function ThreadChat({
         <ThreadCatchup
           threadId={thread.thread_id}
           messageCount={thread.message_count}
+          initialCatchup={initialCatchup}
         />
 
         {/* Follow-ups panel */}
@@ -1440,15 +1673,35 @@ export function ThreadChat({
                     )}
                     {msg.attachments && msg.attachments.length > 0 && (
                       <div className="mt-2 flex flex-wrap gap-2">
-                        {msg.attachments.map((url, i) => (
-                          <a key={i} href={url} target="_blank" rel="noopener noreferrer">
-                            <img
-                              src={url}
-                              alt="attachment"
-                              className="max-h-48 max-w-xs rounded-md border border-border-primary object-contain"
-                            />
-                          </a>
-                        ))}
+                        {msg.attachments.map((url, i) => {
+                          const isDoc = /\.(pdf|docx?|doc)(\?|$)/i.test(url);
+                          if (isDoc) {
+                            const name = decodeURIComponent(url.split("/").pop()?.split("?")[0] || "Document");
+                            return (
+                              <a
+                                key={i}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="flex items-center gap-1.5 rounded-md border border-border-primary bg-surface-secondary px-3 py-2 text-xs text-text-secondary hover:border-accent-primary hover:text-accent-primary transition-colors"
+                              >
+                                <svg className="h-4 w-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                                </svg>
+                                <span className="max-w-[200px] truncate">{name}</span>
+                              </a>
+                            );
+                          }
+                          return (
+                            <a key={i} href={url} target="_blank" rel="noopener noreferrer">
+                              <img
+                                src={url}
+                                alt="attachment"
+                                className="max-h-48 max-w-xs rounded-md border border-border-primary object-contain"
+                              />
+                            </a>
+                          );
+                        })}
                       </div>
                     )}
                   </div>
@@ -1795,36 +2048,109 @@ export function ThreadChat({
           </div>
         )}
 
-        <div className="flex gap-2">
-          <textarea
-            ref={textareaRef}
-            value={input}
-            onChange={(e) => {
-              setInput(e.target.value);
-              autoResizeTextarea(e.target);
-            }}
-            onKeyDown={handleKeyDown}
-            onPaste={(e) => {
-              handlePaste(e);
-              // Auto-resize after text paste settles
-              setTimeout(() => {
-                if (textareaRef.current) autoResizeTextarea(textareaRef.current);
-              }, 0);
-            }}
-            placeholder={pendingImages.length > 0 ? "Add a caption (optional)..." : placeholder}
-            rows={interactionType === "coaching" ? 4 : 6}
-            maxLength={interactionType === "coaching" ? 5000 : 50000}
-            className="flex-1 resize-y rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none min-h-[88px] max-h-[50vh]"
-            disabled={loading}
-          />
+        {/* Pending document previews */}
+        {pendingDocs.length > 0 && (
+          <div className="mb-2 flex flex-wrap gap-2">
+            {pendingDocs.map((doc, i) => (
+              <div
+                key={i}
+                className="group/doc flex items-center gap-1.5 rounded-md border border-border-primary bg-surface-secondary px-2.5 py-1.5"
+              >
+                <svg className="h-4 w-4 shrink-0 text-text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 0 0-3.375-3.375h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5a3.375 3.375 0 0 0-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 0 0-9-9Z" />
+                </svg>
+                <span className="max-w-[160px] truncate text-xs text-text-secondary">{doc.name}</span>
+                <button
+                  onClick={() => removePendingDoc(i)}
+                  className="ml-1 text-text-muted hover:text-status-red transition-colors opacity-0 group-hover/doc:opacity-100"
+                >
+                  <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Hidden file input for documents */}
+        <input
+          ref={docInputRef}
+          type="file"
+          accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+          multiple
+          className="hidden"
+          onChange={handleDocSelect}
+        />
+        <textarea
+          ref={textareaRef}
+          value={input}
+          onChange={(e) => {
+            setInput(e.target.value);
+            autoResizeTextarea(e.target);
+          }}
+          onKeyDown={handleKeyDown}
+          onPaste={(e) => {
+            handlePaste(e);
+            // Auto-resize after text paste settles
+            setTimeout(() => {
+              if (textareaRef.current) autoResizeTextarea(textareaRef.current);
+            }, 0);
+          }}
+          placeholder={pendingImages.length > 0 || pendingDocs.length > 0 ? "Add a message (optional)..." : placeholder}
+          rows={interactionType === "coaching" ? 4 : 6}
+          maxLength={interactionType === "coaching" ? 5000 : 50000}
+          className="w-full resize-y rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none min-h-[100px] max-h-[40vh]"
+          disabled={loading}
+        />
+        {/* Toolbar row: Attach + Send */}
+        <div className="mt-2 flex items-center justify-between">
           <button
-            onClick={handleSend}
-            disabled={loading || (!input.trim() && pendingImages.length === 0)}
-            title={interactionType === "coaching" ? "Enter to send" : "⌘+Enter to save"}
-            className="self-end rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
+            onClick={() => docInputRef.current?.click()}
+            disabled={loading}
+            title="Attach PDF or Word document"
+            className="flex items-center gap-1.5 rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
           >
-            {uploadingImages ? "Uploading..." : interactionType === "coaching" ? "Send" : "Save ⌘↵"}
+            <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="m18.375 12.739-7.693 7.693a4.5 4.5 0 0 1-6.364-6.364l10.94-10.94A3 3 0 1 1 19.5 7.372L8.552 18.32m.009-.01-.01.01m5.699-9.941-7.81 7.81a1.5 1.5 0 0 0 2.112 2.13" />
+            </svg>
+            Attach PDF / Doc
           </button>
+          <div className="flex items-center gap-3">
+            {interactionType === "coaching" && (
+              <label className="flex cursor-pointer items-center gap-2 select-none">
+                <input
+                  type="checkbox"
+                  checked={moreToAdd}
+                  onChange={(e) => {
+                    setMoreToAdd(e.target.checked);
+                    if (!e.target.checked) setInputChunks([]);
+                  }}
+                  disabled={loading}
+                  className="h-3.5 w-3.5 accent-accent-primary"
+                />
+                <span className="text-xs text-text-muted">
+                  {moreToAdd && inputChunks.length > 0
+                    ? `${inputChunks.length} chunk${inputChunks.length > 1 ? "s" : ""} queued — uncheck when done`
+                    : "More to paste"}
+                </span>
+              </label>
+            )}
+            <button
+              onClick={handleSend}
+              disabled={loading || (!input.trim() && pendingImages.length === 0 && pendingDocs.length === 0)}
+              title={interactionType === "coaching" ? "Enter to send" : "⌘+Enter to save"}
+              className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
+            >
+              {uploadingImages
+                ? "Uploading..."
+                : moreToAdd && interactionType === "coaching"
+                ? "Queue Chunk"
+                : interactionType === "coaching"
+                ? "Send"
+                : "Save ⌘↵"}
+            </button>
+          </div>
         </div>
       </div>
     </div>

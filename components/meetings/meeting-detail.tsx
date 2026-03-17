@@ -439,6 +439,21 @@ export function MeetingDetail({
               >
                 {statusStyle.label}
               </span>
+              {meeting.status === "upcoming" && (
+                <button
+                  type="button"
+                  onClick={async () => {
+                    const updated = await patchMeeting({ status: "completed" });
+                    if (updated) router.push("/meetings");
+                  }}
+                  className="inline-flex items-center gap-1 rounded-full border border-border-primary px-2.5 py-0.5 text-xs text-text-muted hover:border-text-muted hover:text-text-primary transition-colors"
+                >
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 16 16" stroke="currentColor" strokeWidth={1.5}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8h8M11 5l3 3-3 3" />
+                  </svg>
+                  Archive
+                </button>
+              )}
             </div>
 
             {meeting.location && (

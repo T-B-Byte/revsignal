@@ -470,6 +470,21 @@ function buildBriefingContextDoc(ctx: BriefingContext): string {
     );
   }
 
+  // Thread briefs: summaries of coaching conversations (call notes, strategy sessions, etc.)
+  // This gives the Strategist full awareness of what was discussed in StrategyGPT threads.
+  if (ctx.threadBriefs && ctx.threadBriefs.length > 0) {
+    const briefLines = ctx.threadBriefs.map((t) => {
+      const parts: string[] = [];
+      if (t.deal_company) parts.push(`[${t.deal_company}]`);
+      if (t.contact_name) parts.push(`re: ${t.contact_name}`);
+      parts.push(`(last active: ${t.last_message_at.slice(0, 10)})`);
+      return `--- ${t.title} ${parts.join(" ")} ---\n${t.thread_brief}`;
+    });
+    sections.push(
+      `STRATEGYGPT THREAD SUMMARIES (coaching conversations, call notes, strategy sessions):\n${briefLines.join("\n\n")}`
+    );
+  }
+
   return sections.join("\n\n");
 }
 
@@ -1603,6 +1618,21 @@ function buildCoachingContextDoc(
       (n) => `- [${n.priority.toUpperCase()}] ${n.title}: ${n.message}`
     );
     sections.push(`ACTIVE NUDGES:\n${nudgeLines.join("\n")}`);
+  }
+
+  // Thread briefs: summaries of other coaching threads (call notes, strategy sessions)
+  // Gives the Strategist full awareness of all StrategyGPT conversations.
+  if (ctx.threadBriefs && ctx.threadBriefs.length > 0) {
+    const briefLines = ctx.threadBriefs.map((t) => {
+      const parts: string[] = [];
+      if (t.deal_company) parts.push(`[${t.deal_company}]`);
+      if (t.contact_name) parts.push(`re: ${t.contact_name}`);
+      parts.push(`(last active: ${t.last_message_at.slice(0, 10)})`);
+      return `--- ${t.title} ${parts.join(" ")} ---\n${t.thread_brief}`;
+    });
+    sections.push(
+      `STRATEGYGPT THREAD SUMMARIES (call notes, strategy sessions, briefing discussions):\n${briefLines.join("\n\n")}`
+    );
   }
 
   // Deal context (if provided)

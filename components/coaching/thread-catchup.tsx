@@ -6,20 +6,24 @@ import { formatAgentHtml } from "@/lib/format-agent-html";
 interface ThreadCatchupProps {
   threadId: string;
   messageCount: number;
+  /** Pre-loaded catchup from the server — shown immediately without a network round-trip. */
+  initialCatchup?: string | null;
 }
 
-export function ThreadCatchup({ threadId, messageCount }: ThreadCatchupProps) {
-  const [catchup, setCatchup] = useState<string | null>(null);
+export function ThreadCatchup({ threadId, messageCount, initialCatchup }: ThreadCatchupProps) {
+  const [catchup, setCatchup] = useState<string | null>(initialCatchup ?? null);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
   // Reset state when thread changes
   useEffect(() => {
     setDismissed(false);
-    setCatchup(null);
-  }, [threadId]);
+    setCatchup(initialCatchup ?? null);
+  }, [threadId, initialCatchup]);
 
   useEffect(() => {
+    // If we already have a cached catchup, skip the network fetch
+    if (initialCatchup) return;
     // Only fetch catchup for threads with existing history
     if (messageCount < 2) return;
 
@@ -35,7 +39,7 @@ export function ThreadCatchup({ threadId, messageCount }: ThreadCatchupProps) {
         // Silent fail on catchup
       })
       .finally(() => setLoading(false));
-  }, [threadId, messageCount]);
+  }, [threadId, messageCount, initialCatchup]);
 
   if (dismissed || (!loading && !catchup)) return null;
 

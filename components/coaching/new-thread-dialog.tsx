@@ -191,8 +191,8 @@ export function NewThreadDialog({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           title,
-          contact_name: primaryParticipant?.name ?? null,
-          contact_role: primaryParticipant?.role ?? null,
+          contact_name: primaryParticipant?.name || undefined,
+          contact_role: primaryParticipant?.role || undefined,
           company: company.trim() || undefined,
           deal_id: dealId || undefined,
           participants,
