@@ -522,6 +522,42 @@ export interface TalkingPointWithThread extends TalkingPoint {
   coaching_threads?: Pick<CoachingThread, "thread_id" | "title"> | null;
 }
 
+export type PlanPhase = "day_30" | "day_60" | "day_90";
+
+export interface Plan {
+  plan_id: string;
+  user_id: string;
+  title: string;
+  description: string | null;
+  start_date: string;
+  thread_id: string | null;
+  is_archived: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface PlanWithThread extends Plan {
+  coaching_threads?: Pick<CoachingThread, "thread_id" | "title"> | null;
+}
+
+export interface PlanMilestone {
+  milestone_id: string;
+  plan_id: string;
+  user_id: string;
+  phase: PlanPhase;
+  title: string;
+  description: string | null;
+  sort_order: number;
+  is_completed: boolean;
+  completed_at: string | null;
+  thread_id: string | null;
+  created_at: string;
+}
+
+export interface PlanMilestoneWithThread extends PlanMilestone {
+  coaching_threads?: Pick<CoachingThread, "thread_id" | "title"> | null;
+}
+
 export interface Nudge {
   nudge_id: string;
   user_id: string;

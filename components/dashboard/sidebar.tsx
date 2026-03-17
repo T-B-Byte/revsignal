@@ -27,6 +27,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/meetings", label: "Meetings", icon: CalendarIcon, key: "meetings" },
   { href: "/tradeshows", label: "Tradeshows", icon: MapPinIcon, key: "tradeshows" },
   { href: "/flashcards", label: "Flashcards", icon: FlashcardsIcon, key: "flashcards" },
+  { href: "/plan", label: "90-Day Plan", icon: FlagIcon, key: "plan" },
   { href: "/playbook", label: "Playbook", icon: BookIcon, key: "playbook" },
   { href: "/compete", label: "Compete", icon: ShieldIcon, key: "compete" },
   { href: "/ma", label: "M&A", icon: HandshakeIcon, key: "ma" },
@@ -417,6 +418,14 @@ function NetworkIcon({ className }: { className?: string }) {
       <circle cx="4.5" cy="17" r="1.5" />
       <circle cx="19.5" cy="17" r="1.5" />
       <path strokeLinecap="round" d="M9.75 10.75L6 8.25m8.25 2.5L18 8.25m-8.25 3.25L6 15.75m8.25-2.25L18 15.75" />
+    </svg>
+  );
+}
+
+function FlagIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M3 3v1.5M3 21v-6m0 0 2.77-.693a9 9 0 0 1 6.208.682l.108.054a9 9 0 0 0 6.086.71l3.114-.732a48.524 48.524 0 0 1-.005-10.499l-3.11.732a9 9 0 0 1-6.085-.711l-.108-.054a9 9 0 0 0-6.208-.682L3 4.5M3 15V4.5" />
     </svg>
   );
 }
