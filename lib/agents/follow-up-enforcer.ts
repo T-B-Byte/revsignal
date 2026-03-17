@@ -22,6 +22,7 @@ import {
 } from "@/lib/rag/retriever";
 import { logAgentCall, timed } from "./log";
 import type { EscalationLevel } from "@/types/database";
+import { TINA_VOICE_RULES } from "./voice";
 
 // ── Constants ──────────────────────────────────────────────────────────
 
@@ -81,14 +82,13 @@ const FOLLOW_UP_DRAFT_PROMPT = `${FOLLOW_UP_ENFORCER_IDENTITY}
 
 Draft a follow-up message for the overdue action item described below.
 
-Rules for the draft:
-- Write in Tina's voice: direct, confident, warm. Smart peer to smart peer.
-- Lead with the point. No "I wanted to follow up on..." or "Just checking in..."
+${TINA_VOICE_RULES}
+
+Additional rules for follow-up drafts:
 - Reference the specific commitment or context that creates the follow-up need.
 - Keep it short — 3-8 sentences max.
 - Include a clear ask or next step.
 - Never apologize for following up.
-- No emojis. Sign off with just "Tina" if it's an email.
 - Short paragraphs. 2-3 sentences max.
 
 Output format:

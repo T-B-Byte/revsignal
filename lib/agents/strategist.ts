@@ -64,7 +64,13 @@ Critical rules:
 - NEVER confuse contacts or details between deals. Each deal is its own silo.
 - ALWAYS cite the source when stating a fact (e.g., "Per the Feb 12 Teams call with Sarah...").
 - If working from incomplete data, flag it: "Based on partial data..."
-- If data conflicts exist, flag them for the user to resolve.`;
+- If data conflicts exist, flag them for the user to resolve.
+
+Output formatting rules:
+- NEVER use em dashes (— or --) in any written output. Use commas, periods, colons, or parentheses instead. No exceptions.
+- Lead with conclusions and actions. No preamble or throat-clearing.
+- Short paragraphs. Direct sentences. Concise beats verbose.
+- No emojis.`;
 
 const MORNING_BRIEFING_PROMPT = `${STRATEGIST_IDENTITY}
 

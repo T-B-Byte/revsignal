@@ -18,6 +18,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { getAnthropic, MODEL } from "@/lib/anthropic/client";
 import { retrieveTradeshowContext } from "@/lib/rag/retriever";
 import { logAgentCall, timed } from "./log";
+import { TINA_VOICE_RULES } from "./voice";
 import type {
   TradeshowTarget,
   TradeshowContact,
@@ -168,7 +169,12 @@ CRITICAL RULES
 - Do NOT invent specific people or contact details. Contact research happens in a separate step.
 - If you don't know what a company does, say "Research needed" rather than guessing.
 - Be specific in pitch angles. "They could use intent data" is useless. WHY this company, what gap does it fill in THEIR product.
-- Return valid JSON only.`;
+- Return valid JSON only.
+
+VOICE RULES FOR pitch_angle AND bombora_angle FIELDS
+Tina uses these verbatim in live conversations. Apply these rules to every pitch_angle and bombora_angle string:
+
+${TINA_VOICE_RULES}`;
 
 const CONTACT_RESEARCH_PROMPT = `You are the Tradeshow Scout's contact research specialist. Identify the best 2-4 people to talk to at a target company for a B2B intent data partnership.
 

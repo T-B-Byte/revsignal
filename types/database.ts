@@ -1012,6 +1012,7 @@ export interface Project {
   description: string | null;
   status: ProjectStatus;
   color: string;
+  parent_project_id: string | null;
   created_at: string;
   updated_at: string;
 }

@@ -302,6 +302,14 @@ function buildDecks(): DeckSeed[] {
         // === pharosIQ-specific power phrases (from Week 1 meetings) ===
         {
           card_type: 'standard',
+          front_content: 'How do you describe what pharosIQ does in a positioning statement?',
+          back_content: 'pharosIQ is a first-party intelligence & activation company.',
+          back_detail: "We help organizations identify and prioritize actively engaged buyers. We bring clarity to where real and actual demand exists — across accounts, personas, and buying stages. We make it easier to drive measurable pipeline and prove revenue impact.\n\npharosIQ is the combination of two things: the intelligence itself, built on 20 years of expertise, and the ability to build, execute, and manage programs that actually activate that intelligence.",
+          image_url: null,
+          source_attribution: 'pharosIQ positioning',
+        },
+        {
+          card_type: 'standard',
           front_content: 'What does IRIS stand for?',
           back_content: 'Individual-Resolution Intent Signals',
           back_detail: 'Our branded methodology for contact-level, first-party, permission-based B2B intent data. The name positions us as proprietary technology, not a commodity "intent data" vendor.',

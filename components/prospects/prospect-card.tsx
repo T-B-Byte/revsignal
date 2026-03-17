@@ -259,75 +259,91 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
           </div>
         )}
 
-        {/* Clickable header row */}
-        <button
-          type="button"
-          onClick={() => setExpanded(!expanded)}
-          className="w-full text-left"
-        >
-          <div className="flex items-start justify-between gap-3">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <h3 className={`text-sm font-semibold truncate ${isPassed ? "text-text-muted line-through" : "text-text-primary"}`}>
-                  {prospect.company}
-                </h3>
-                {isPassed && (
-                  <span className="shrink-0 rounded-full border border-text-muted/30 bg-text-muted/10 px-2 py-0.5 text-[10px] font-semibold text-text-muted">
-                    Passed
-                  </span>
+        {/* Header row — clickable area + always-visible actions */}
+        <div className="flex items-start gap-2">
+          <button
+            type="button"
+            onClick={() => setExpanded(!expanded)}
+            className="min-w-0 flex-1 text-left"
+          >
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className={`text-sm font-semibold truncate ${isPassed ? "text-text-muted line-through" : "text-text-primary"}`}>
+                    {prospect.company}
+                  </h3>
+                  {isPassed && (
+                    <span className="shrink-0 rounded-full border border-text-muted/30 bg-text-muted/10 px-2 py-0.5 text-[10px] font-semibold text-text-muted">
+                      Passed
+                    </span>
+                  )}
+                  {prospect.fit_score && (
+                    <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${FIT_BADGE_STYLES[prospect.fit_score]}`}>
+                      {FIT_LABELS[prospect.fit_score]}
+                    </span>
+                  )}
+                  {prospect.icp_category && (
+                    <span className="shrink-0 rounded-full bg-accent-primary/10 px-2 py-0.5 text-xs font-medium text-accent-primary">
+                      {prospect.icp_category}
+                    </span>
+                  )}
+                </div>
+
+                {/* Preview line when collapsed — show why they'd buy if available */}
+                {!expanded && (
+                  <p className="mt-1 text-sm text-text-secondary line-clamp-2">
+                    {prospect.why_they_buy || prospect.research_notes?.slice(0, 200) || "No analysis yet"}
+                  </p>
                 )}
-                {prospect.fit_score && (
-                  <span className={`shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${FIT_BADGE_STYLES[prospect.fit_score]}`}>
-                    {FIT_LABELS[prospect.fit_score]}
-                  </span>
-                )}
-                {prospect.icp_category && (
-                  <span className="shrink-0 rounded-full bg-accent-primary/10 px-2 py-0.5 text-xs font-medium text-accent-primary">
-                    {prospect.icp_category}
-                  </span>
-                )}
+
+                <div className="mt-2 flex items-center gap-3 text-xs text-text-muted">
+                  {prospect.estimated_acv != null && (
+                    <span className="font-data">
+                      Est. {acvFormatter.format(prospect.estimated_acv)}
+                    </span>
+                  )}
+                  {prospect.source && <span>{prospect.source}</span>}
+                  {prospect.last_researched_date && (
+                    <span>
+                      Analyzed{" "}
+                      {new Date(prospect.last_researched_date).toLocaleDateString(
+                        "en-US",
+                        { month: "short", day: "numeric" }
+                      )}
+                    </span>
+                  )}
+                </div>
               </div>
 
-              {/* Preview line when collapsed — show why they'd buy if available */}
-              {!expanded && (
-                <p className="mt-1 text-sm text-text-secondary line-clamp-2">
-                  {prospect.why_they_buy || prospect.research_notes?.slice(0, 200) || "No analysis yet"}
-                </p>
-              )}
-
-              <div className="mt-2 flex items-center gap-3 text-xs text-text-muted">
-                {prospect.estimated_acv != null && (
-                  <span className="font-data">
-                    Est. {acvFormatter.format(prospect.estimated_acv)}
-                  </span>
-                )}
-                {prospect.source && <span>{prospect.source}</span>}
-                {prospect.last_researched_date && (
-                  <span>
-                    Analyzed{" "}
-                    {new Date(prospect.last_researched_date).toLocaleDateString(
-                      "en-US",
-                      { month: "short", day: "numeric" }
-                    )}
-                  </span>
-                )}
-              </div>
+              {/* Chevron */}
+              <svg
+                className={`h-4 w-4 shrink-0 mt-0.5 text-text-muted transition-transform ${
+                  expanded ? "rotate-180" : ""
+                }`}
+                viewBox="0 0 16 16"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+              >
+                <path d="M4 6l4 4 4-4" />
+              </svg>
             </div>
+          </button>
 
-            {/* Chevron */}
-            <svg
-              className={`h-4 w-4 shrink-0 text-text-muted transition-transform ${
-                expanded ? "rotate-180" : ""
-              }`}
-              viewBox="0 0 16 16"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
+          {/* Always-visible Start Prospecting button */}
+          {!isPassed && (
+            <Button
+              size="sm"
+              className="shrink-0 mt-0.5"
+              onClick={() => setShowOutreach(true)}
             >
-              <path d="M4 6l4 4 4-4" />
-            </svg>
-          </div>
-        </button>
+              <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M2 4h12v8H2zM2 4l6 5 6-5" />
+              </svg>
+              Start Prospecting
+            </Button>
+          )}
+        </div>
 
         {/* Expanded details */}
         {expanded && (
@@ -416,17 +432,6 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
 
             {/* Action buttons */}
             <div className="flex items-center gap-2 pt-1 flex-wrap">
-              {!isPassed && (
-                <Button
-                  size="sm"
-                  onClick={() => setShowOutreach(true)}
-                >
-                  <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M2 4h12v8H2zM2 4l6 5 6-5" />
-                  </svg>
-                  Start Prospecting
-                </Button>
-              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -523,17 +528,6 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
               )}
             </div>
 
-            {/* Outreach dialog */}
-            {showOutreach && (
-              <ProspectOutreachDialog
-                prospect={prospect}
-                onClose={() => setShowOutreach(false)}
-                onSuccess={() => {
-                  router.refresh();
-                }}
-              />
-            )}
-
             {/* Strategist Chat */}
             {showChat && chatThread && (
               <div className="mt-3 border-t border-border-primary pt-3">
@@ -546,6 +540,17 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
               </div>
             )}
           </div>
+        )}
+
+        {/* Outreach dialog — rendered outside expanded block so header button works */}
+        {showOutreach && (
+          <ProspectOutreachDialog
+            prospect={prospect}
+            onClose={() => setShowOutreach(false)}
+            onSuccess={() => {
+              router.refresh();
+            }}
+          />
         )}
       </CardContent>
     </Card>

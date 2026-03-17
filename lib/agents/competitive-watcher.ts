@@ -17,6 +17,7 @@ import { getAnthropic, MODEL } from "@/lib/anthropic/client";
 import { retrieveCompetitorIntel } from "@/lib/rag/retriever";
 import { logAgentCall, timed } from "./log";
 import type { CompetitiveIntel } from "@/types/database";
+import { TINA_VOICE_RULES } from "./voice";
 
 // ── System Prompts ─────────────────────────────────────────────────────
 
@@ -38,7 +39,11 @@ Critical rules:
 - NEVER invent competitor pricing, revenue, or customer data not in the intel records.
 - Clearly label sources and dates for all data points.
 - Distinguish between CONFIRMED facts and INFERRED assessments.
-- When data is stale (30+ days), flag it as potentially outdated.`;
+- When data is stale (30+ days), flag it as potentially outdated.
+
+${TINA_VOICE_RULES}
+
+Note: Voice rules apply especially to Talking Points and Win Themes — Tina uses these verbatim in sales conversations.`;
 
 const COMPETITIVE_UPDATE_PROMPT = `${COMPETITIVE_WATCHER_IDENTITY}
 

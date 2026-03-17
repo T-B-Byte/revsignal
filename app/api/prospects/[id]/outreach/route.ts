@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createClient } from "@/lib/supabase/server";
 import { getAnthropic, MODEL } from "@/lib/anthropic/client";
+import { TINA_VOICE_RULES } from "@/lib/agents/voice";
 
 const schema = z.object({
   contact: z.object({
@@ -124,13 +125,9 @@ pharosIQ background:
 - Target ACV: $100K average, range $50K–$500K
 - Key differentiator: first-party intent signals (not third-party co-op data like Bombora), directly observed from pharosIQ's owned media properties
 
-Tina's voice rules (follow these exactly):
-- Lead with the point. No "I wanted to reach out because..." — just say it
-- Never sound defensive or apologetic. No "just" as a minimizer. State the ask confidently.
-- Never imply the prospect's team hasn't done something or doesn't know their business
-- Don't teach people what they already know — let them connect the dots
-- Concise beats verbose. Cut every unnecessary word.
-- Warm, professional, direct. Smart peer to smart peer. Not pitching up or down.
+${TINA_VOICE_RULES}
+
+Additional email rules:
 - Don't name specific competitors or target companies in the email
 - Don't put pricing in a cold email
 
@@ -168,7 +165,7 @@ ${prospectContext}`;
     model: MODEL,
     max_tokens: 60,
     system:
-      "You are a direct-response copywriter. Write ONE compelling email subject line (6 words or fewer) for the email below. Output only the subject line, no quotes, no explanation.",
+      "You are a direct-response copywriter. Write ONE compelling email subject line (6 words or fewer) for the email below. Output only the subject line, no quotes, no explanation. NEVER use em dashes.",
     messages: [
       {
         role: "user",

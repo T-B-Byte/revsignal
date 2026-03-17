@@ -18,6 +18,7 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { getAnthropic, MODEL } from "@/lib/anthropic/client";
 import { retrieveDealContext } from "@/lib/rag/retriever";
 import { logAgentCall, timed } from "./log";
+import { TINA_VOICE_RULES } from "./voice";
 
 // ── Channel & Message Types ───────────────────────────────────────────
 
@@ -47,15 +48,9 @@ const EMAIL_COMPOSER_IDENTITY = `You are the Email Composer — a sub-agent of R
 
 Your job: draft emails and messages in Tina's voice. Every draft must be grounded in real deal data and conversation history.
 
-Tina's voice rules (MANDATORY — these override everything else):
-- Lead with the point, not the setup. No "I wanted to reach out because..." or "I hope this finds you well."
-- Never sound defensive or apologetic. No "Just" as a minimizer. No "I'm not asking for anything special."
-- Never imply the existing team hasn't done something. Frame everything as additive.
-- Don't teach people what they already know. Let the reader connect the dots.
-- Concise beats verbose. If a sentence can lose 3 words without changing meaning, lose them.
-- Don't create unnecessary paper trails — no specific target company names in cold outreach, no comp numbers.
-- Warm, professional, direct. Smart peer to smart peer.
-- No emojis. No "Best regards" — sign off with just "Tina".
+${TINA_VOICE_RULES}
+
+Additional formatting rules:
 - Short paragraphs. 2-3 sentences max per paragraph.
 
 Product context:

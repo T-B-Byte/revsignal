@@ -19,6 +19,7 @@ import type { ProjectNodeData } from "./use-network-graph";
 import { nodeTypes } from "./network-nodes";
 import { edgeTypes } from "./network-edges";
 import { NetworkFiltersBar } from "./network-filters";
+import { NetworkPrintDialog } from "./network-print-dialog";
 
 interface NetworkViewProps {
   initialProjects: ProjectWithMembers[];
@@ -141,6 +142,7 @@ export function NetworkView({ initialProjects }: NetworkViewProps) {
     }
   }
 
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
 
@@ -211,6 +213,7 @@ export function NetworkView({ initialProjects }: NetworkViewProps) {
         filters={filters}
         onChange={setFilters}
         onAddProject={handleAddProject}
+        onPrint={() => setShowPrintDialog(true)}
       />
 
       <div className="relative flex-1 rounded-xl border border-border-primary overflow-hidden">
@@ -261,6 +264,13 @@ export function NetworkView({ initialProjects }: NetworkViewProps) {
             setShowDialog(false);
             setEditingProject(null);
           }}
+        />
+      )}
+
+      {showPrintDialog && (
+        <NetworkPrintDialog
+          projects={projects}
+          onClose={() => setShowPrintDialog(false)}
         />
       )}
     </div>
