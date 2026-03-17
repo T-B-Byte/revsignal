@@ -397,6 +397,37 @@ The Strategist should proactively suggest when to use a skill based on pipeline 
 
 ---
 
+## Post-Build Review (Mandatory)
+
+After every successful `npm run build`, immediately review all new or modified code before reporting completion.
+
+### 1. Bug Scan
+- Trace data flow end-to-end: API input → validation → database → response → UI rendering
+- Check for dead code paths (unreachable branches, unused variables)
+- Verify error handling covers all failure modes (network errors, empty data, null/undefined)
+- Confirm optimistic UI updates roll back correctly on failure
+- Check that counts, totals, and displayed state stay in sync after user interactions
+
+### 2. Edge Cases
+- Empty states: What happens with zero records, null fields, empty strings?
+- Boundary values: Max lengths, negative numbers, special characters in user input
+- Race conditions: Rapid clicks, concurrent requests, stale closures in React state
+- Data type mismatches: FormData strings vs expected types, optional vs required fields
+- Navigation: Does the UI update correctly without a full page reload?
+
+### 3. Security Vulnerabilities
+- **Input validation**: All user-controlled values (URL params, request bodies, query strings) validated before use
+- **Path injection**: Dynamic values in URLs/file paths must be encoded (`encodeURIComponent`) or validated (UUID regex, allowlists)
+- **SQL/NoSQL injection**: Parameterized queries only, no string interpolation in database calls
+- **Auth checks**: Every API route verifies the user session and scopes data to `user_id`
+- **Data exposure**: Error responses never leak internal details (stack traces, DB errors, table names)
+- **Unbounded input**: String fields have max length constraints, arrays have max size limits
+- **IDOR**: Verify ownership checks — users cannot access/modify other users' records by guessing IDs
+
+Report all findings and fix them before marking the work done.
+
+---
+
 ## Workflow Process
 
 1. **Think first.** Read relevant files and reason about the problem before changes.
@@ -460,7 +491,12 @@ When drafting emails, outreach, proposals, or any communication on Tina's behalf
 - Tina builds relationships, she doesn't hard-sell
 - Confident without being arrogant
 - Specific without being verbose
-- The tone is a smart peer talking to another smart peer — not pitching up or down
+- The tone is a smart peer talking to another smart peer, not pitching up or down
+
+**NEVER use em dashes in any written output.**
+- Em dashes ( -- or the character itself) are a known AI writing signal. Tina explicitly prohibits them in ALL output: emails, copy, docs, code comments, documentation, everything.
+- Use a comma, period, colon, or parentheses instead.
+- This rule has zero exceptions.
 
 ---
 
