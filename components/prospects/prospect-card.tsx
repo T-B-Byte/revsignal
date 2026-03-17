@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { ThreadChat } from "@/components/coaching/thread-chat";
+import { ProspectOutreachDialog } from "@/components/prospects/prospect-outreach-dialog";
 import { formatAgentHtml } from "@/lib/format-agent-html";
 import { updateProspect, deleteProspect } from "@/app/(dashboard)/prospects/actions";
 import type { Prospect, FitScore, CoachingThread, CoachingMessage, Deal } from "@/types/database";
@@ -52,6 +53,7 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [passing, setPassing] = useState(false);
+  const [showOutreach, setShowOutreach] = useState(false);
   const isPassed = prospect.status === "passed";
 
   async function handleOpenChat() {
@@ -413,7 +415,18 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
             )}
 
             {/* Action buttons */}
-            <div className="flex items-center gap-2 pt-1">
+            <div className="flex items-center gap-2 pt-1 flex-wrap">
+              {!isPassed && (
+                <Button
+                  size="sm"
+                  onClick={() => setShowOutreach(true)}
+                >
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
+                    <path d="M2 4h12v8H2zM2 4l6 5 6-5" />
+                  </svg>
+                  Start Prospecting
+                </Button>
+              )}
               <Button
                 variant="secondary"
                 size="sm"
@@ -509,6 +522,17 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
                 </button>
               )}
             </div>
+
+            {/* Outreach dialog */}
+            {showOutreach && (
+              <ProspectOutreachDialog
+                prospect={prospect}
+                onClose={() => setShowOutreach(false)}
+                onSuccess={() => {
+                  router.refresh();
+                }}
+              />
+            )}
 
             {/* Strategist Chat */}
             {showChat && chatThread && (
