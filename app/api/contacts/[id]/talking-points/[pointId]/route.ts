@@ -42,6 +42,20 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 
+  // If thread_id is being set, verify it belongs to this user
+  if (parsed.data.thread_id) {
+    const { data: thread } = await supabase
+      .from("coaching_threads")
+      .select("thread_id")
+      .eq("thread_id", parsed.data.thread_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!thread) {
+      return NextResponse.json({ error: "Thread not found" }, { status: 404 });
+    }
+  }
+
   // Build update payload
   const updates: Record<string, unknown> = { ...parsed.data };
 

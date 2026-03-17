@@ -7,9 +7,9 @@ const schema = z.object({
   contact: z.object({
     name: z.string().min(1).max(200),
     title: z.string().max(200).optional(),
-    email: z.string().email().optional().or(z.literal("")),
+    email: z.string().email().optional(),
     phone: z.string().max(50).optional(),
-    linkedin: z.string().url().optional().or(z.literal("")),
+    linkedin: z.string().url().optional(),
   }),
 });
 
@@ -152,8 +152,16 @@ ${prospectContext}`;
     messages: [{ role: "user", content: userMessage }],
   });
 
+  const firstContent = response.content?.[0];
   const emailBody =
-    response.content[0].type === "text" ? response.content[0].text.trim() : "";
+    firstContent?.type === "text" ? firstContent.text.trim() : "";
+
+  if (!emailBody) {
+    return NextResponse.json(
+      { error: "Failed to generate email draft. Try again." },
+      { status: 500 }
+    );
+  }
 
   // 4. Draft a subject line
   const subjectResponse = await anthropic.messages.create({
@@ -169,9 +177,10 @@ ${prospectContext}`;
     ],
   });
 
+  const firstSubjectContent = subjectResponse.content?.[0];
   const subject =
-    subjectResponse.content[0].type === "text"
-      ? subjectResponse.content[0].text.trim()
+    firstSubjectContent?.type === "text" && firstSubjectContent.text.trim()
+      ? firstSubjectContent.text.trim().slice(0, 150)
       : `pharosIQ data licensing — ${prospect.company}`;
 
   return NextResponse.json({

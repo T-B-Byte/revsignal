@@ -169,19 +169,41 @@ export function TalkingPointsCard({
         })
       );
 
-      // Persist both priority changes
-      await Promise.all([
-        fetch(`/api/contacts/${contactId}/talking-points/${a.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priority: b.priority }),
-        }),
-        fetch(`/api/contacts/${contactId}/talking-points/${b.id}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ priority: a.priority }),
-        }),
-      ]);
+      // Persist both priority changes — rollback if either fails
+      try {
+        const [resA, resB] = await Promise.all([
+          fetch(`/api/contacts/${contactId}/talking-points/${a.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ priority: b.priority }),
+          }),
+          fetch(`/api/contacts/${contactId}/talking-points/${b.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ priority: a.priority }),
+          }),
+        ]);
+
+        if (!resA.ok || !resB.ok) {
+          // Rollback optimistic update
+          setPoints((prev) =>
+            prev.map((p) => {
+              if (p.id === a.id) return { ...p, priority: a.priority };
+              if (p.id === b.id) return { ...p, priority: b.priority };
+              return p;
+            })
+          );
+        }
+      } catch {
+        // Rollback on network error
+        setPoints((prev) =>
+          prev.map((p) => {
+            if (p.id === a.id) return { ...p, priority: a.priority };
+            if (p.id === b.id) return { ...p, priority: b.priority };
+            return p;
+          })
+        );
+      }
     },
     [contactId, openPoints]
   );
