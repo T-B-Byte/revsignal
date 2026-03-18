@@ -2,19 +2,22 @@
 
 import { useState } from "react";
 import { CompetitorCard } from "./competitor-card";
+import { ComparisonTable } from "./comparison-table";
 import { AddIntelDialog } from "./add-intel-dialog";
 import { Button } from "@/components/ui/button";
-import type { CompetitiveIntel } from "@/types/database";
+import type { CompetitiveIntel, CompetitorComparison } from "@/types/database";
 
 interface CompeteViewProps {
   competitors: [string, CompetitiveIntel[]][];
   competitorNames: string[];
+  comparisons: CompetitorComparison[];
   hasAiAccess: boolean;
 }
 
 export function CompeteView({
   competitors,
   competitorNames,
+  comparisons,
   hasAiAccess,
 }: CompeteViewProps) {
   const [showAddDialog, setShowAddDialog] = useState(false);
@@ -64,6 +67,8 @@ export function CompeteView({
           ))}
         </div>
       )}
+
+      <ComparisonTable comparisons={comparisons} />
 
       <AddIntelDialog
         open={showAddDialog}

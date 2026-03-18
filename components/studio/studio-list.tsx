@@ -305,20 +305,26 @@ export function StudioList({ initialProjects }: StudioListProps) {
 
       {/* New Project Modal */}
       {showNew && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
-          <div className="w-full max-w-lg rounded-xl border border-border-primary bg-surface-primary shadow-2xl">
-            <div className="flex items-center justify-between border-b border-border-primary px-6 py-4">
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4 backdrop-blur-sm"
+          onClick={() => { setShowNew(false); setError(null); }}
+        >
+          <div
+            className="w-full max-w-lg rounded-2xl border border-border-primary bg-surface-secondary shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-6 py-4">
               <h2 className="text-base font-semibold text-text-primary">New Project</h2>
               <button
                 onClick={() => { setShowNew(false); setError(null); }}
-                className="text-text-muted hover:text-text-secondary"
+                className="rounded-lg p-1 text-text-muted transition-colors hover:bg-surface-tertiary hover:text-text-secondary"
               >
                 <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
-            <div className="space-y-4 px-6 py-5">
+            <div className="space-y-4 px-6 pb-5">
               <div>
                 <label className="mb-1.5 block text-sm font-medium text-text-secondary">
                   Project title
@@ -327,7 +333,7 @@ export function StudioList({ initialProjects }: StudioListProps) {
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. pharosIQ vs. Bombora Battlecard"
-                  className="w-full rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+                  className="w-full rounded-lg border border-border-primary bg-surface-tertiary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
                   maxLength={200}
                   autoFocus
                   onKeyDown={(e) => { if (e.key === "Enter" && title.trim()) handleCreate(); }}
@@ -345,7 +351,7 @@ export function StudioList({ initialProjects }: StudioListProps) {
                       onClick={() => setType(pt.value)}
                       className={`flex items-start gap-2 rounded-lg border p-3 text-left transition-colors ${
                         type === pt.value
-                          ? "border-accent-primary bg-accent-primary/10"
+                          ? "border-accent-primary/60 bg-accent-primary/10"
                           : "border-border-primary hover:border-border-hover"
                       }`}
                     >
@@ -369,7 +375,7 @@ export function StudioList({ initialProjects }: StudioListProps) {
                   placeholder="What's this for? Who's the audience? Any key context..."
                   rows={2}
                   maxLength={2000}
-                  className="w-full resize-none rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+                  className="w-full resize-none rounded-lg border border-border-primary bg-surface-tertiary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
                 />
               </div>
 

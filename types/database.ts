@@ -1012,7 +1012,6 @@ export interface Project {
   description: string | null;
   status: ProjectStatus;
   color: string;
-  parent_project_id: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -1041,6 +1040,21 @@ export const PROJECT_COLORS: string[] = [
   "#3b82f6", "#22c55e", "#eab308", "#f97316", "#ef4444",
   "#8b5cf6", "#06b6d4", "#ec4899", "#14b8a6", "#6b7280",
 ];
+
+// --- Competitor Comparisons ---
+
+export interface CompetitorComparison {
+  id: string;
+  user_id: string;
+  competitor: string;
+  pricing: string | null;
+  revenue: string | null;
+  valuation: string | null;
+  weakness: string | null;
+  sort_order: number;
+  created_at: string;
+  updated_at: string;
+}
 
 // --- Revenue Math Constants ---
 

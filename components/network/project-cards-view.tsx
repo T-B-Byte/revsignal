@@ -44,12 +44,11 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
         : projects;
     if (printProjects.length === 0) return;
 
-    const editorWindow = window.open("", "_blank");
-    if (!editorWindow) return;
-    editorWindow.document.write(
-      generatePrintHTML(printProjects, "Projects", "pharosIQ DaaS Partnerships & Initiatives")
-    );
-    editorWindow.document.close();
+    const html = generatePrintHTML(printProjects, "Projects", "pharosIQ DaaS Partnerships & Initiatives");
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);

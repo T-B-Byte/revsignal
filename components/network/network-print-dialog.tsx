@@ -654,13 +654,11 @@ export function NetworkPrintDialog({ projects, onClose }: NetworkPrintDialogProp
     const selectedProjects = projects.filter((p) => selected.has(p.project_id));
     if (selectedProjects.length === 0) return;
 
-    const editorWindow = window.open("", "_blank");
-    if (!editorWindow) return;
-
-    editorWindow.document.write(
-      generatePrintHTML(selectedProjects, title.trim() || "Projects", subtitle.trim())
-    );
-    editorWindow.document.close();
+    const html = generatePrintHTML(selectedProjects, title.trim() || "Projects", subtitle.trim());
+    const blob = new Blob([html], { type: "text/html" });
+    const url = URL.createObjectURL(blob);
+    window.open(url, "_blank");
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
   }
 
   const selectedCount = selected.size;
