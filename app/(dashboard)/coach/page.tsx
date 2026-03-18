@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PLANS } from "@/lib/stripe/config";
 import { CoachShell } from "./coach-shell";
+import { ThreadCards } from "@/components/coaching/thread-cards";
 import type { SubscriptionTier, CoachingThreadWithDeal, Deal } from "@/types/database";
 import { ACTIVE_STAGES } from "@/types/database";
 
@@ -102,19 +103,18 @@ export default async function CoachPage() {
 
   return (
     <CoachShell threads={threads} activeDeals={activeDeals}>
-      {/* Default empty state when no thread is selected */}
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
+      {/* Thread cards view as the default landing state */}
+      <div className="h-full overflow-hidden p-6">
+        <div className="mb-4">
           <h2 className="text-lg font-semibold text-text-primary">
-            StrategyGPT
+            StrategyGPT Threads
           </h2>
-          <p className="mt-1 text-sm text-text-secondary">
-            Select a person or create a new thread.
+          <p className="text-xs text-text-muted">
+            Click any card to pick up where you left off. Each thread is your intelligence hub for one person or topic.
           </p>
-          <p className="mt-3 text-xs text-text-muted max-w-sm">
-            Each thread is your intelligence hub for one person. Paste emails,
-            call transcripts, meeting notes, or ask the Strategist for coaching.
-          </p>
+        </div>
+        <div className="h-[calc(100%-3.5rem)]">
+          <ThreadCards threads={threads} />
         </div>
       </div>
     </CoachShell>

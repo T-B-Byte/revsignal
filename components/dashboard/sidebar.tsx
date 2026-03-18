@@ -21,7 +21,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { href: "/", label: "Dashboard", icon: HomeIcon, key: "dashboard", pinned: true },
   { href: "/deals", label: "Deals", icon: BriefcaseIcon, key: "deals" },
-  { href: "/network", label: "Network", icon: NetworkIcon, key: "network" },
+  { href: "/network", label: "Projects", icon: NetworkIcon, key: "network" },
   { href: "/coach", label: "StrategyGPT", icon: SparklesIcon, key: "coach" },
   { href: "/prospects", label: "Prospects", icon: SearchIcon, key: "prospects" },
   { href: "/meetings", label: "Meetings", icon: CalendarIcon, key: "meetings" },

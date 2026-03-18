@@ -1,0 +1,617 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import type { ProjectWithMembers } from "@/types/database";
+import { PROJECT_COLORS, PHAROSIQ_TEAM } from "@/types/database";
+import type { ProjectStatus } from "@/types/database";
+import { ProjectFiltersBar } from "./project-filters";
+import { NetworkPrintDialog } from "./network-print-dialog";
+
+interface ProjectCardsViewProps {
+  initialProjects: ProjectWithMembers[];
+}
+
+interface MemberInput {
+  name: string;
+  role: string;
+}
+
+const STATUS_COLORS: Record<ProjectStatus, string> = {
+  active: "#22c55e",
+  paused: "#eab308",
+  completed: "#6b7280",
+};
+
+const STATUS_LABELS: Record<ProjectStatus, string> = {
+  active: "ACTIVE",
+  paused: "PAUSED",
+  completed: "COMPLETED",
+};
+
+export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
+  const [projects, setProjects] = useState(initialProjects);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [search, setSearch] = useState("");
+  const [personFilter, setPersonFilter] = useState("");
+  const [statusFilter, setStatusFilter] = useState<ProjectStatus[]>([]);
+  const [showDialog, setShowDialog] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectWithMembers | null>(null);
+  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  const [seeding, setSeeding] = useState(false);
+  const [seedResult, setSeedResult] = useState<string | null>(null);
+
+  // Collect all unique people across projects for the person filter dropdown
+  const allPeople = useMemo(() => {
+    const nameSet = new Set<string>();
+    for (const p of projects) {
+      for (const m of p.project_members ?? []) {
+        nameSet.add(m.name);
+      }
+    }
+    return [...nameSet].sort((a, b) => a.localeCompare(b));
+  }, [projects]);
+
+  // Filter projects
+  const filteredProjects = useMemo(() => {
+    return projects.filter((p) => {
+      // Status filter
+      if (statusFilter.length > 0 && !statusFilter.includes(p.status)) return false;
+
+      // Person filter
+      if (personFilter) {
+        const hasPerson = (p.project_members ?? []).some(
+          (m) => m.name.toLowerCase() === personFilter.toLowerCase()
+        );
+        if (!hasPerson) return false;
+      }
+
+      // Text search
+      if (search) {
+        const q = search.toLowerCase();
+        const nameMatch = p.name.toLowerCase().includes(q);
+        const descMatch = p.description?.toLowerCase().includes(q);
+        const memberMatch = (p.project_members ?? []).some(
+          (m) =>
+            m.name.toLowerCase().includes(q) ||
+            m.role?.toLowerCase().includes(q)
+        );
+        if (!nameMatch && !descMatch && !memberMatch) return false;
+      }
+
+      return true;
+    });
+  }, [projects, statusFilter, personFilter, search]);
+
+  // Selection helpers
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAll() {
+    setSelectedIds(new Set(filteredProjects.map((p) => p.project_id)));
+  }
+
+  function deselectAll() {
+    setSelectedIds(new Set());
+  }
+
+  // CRUD handlers
+  function handleAddProject() {
+    setEditingProject(null);
+    setShowDialog(true);
+  }
+
+  function handleEditProject(project: ProjectWithMembers) {
+    setEditingProject(project);
+    setShowDialog(true);
+  }
+
+  async function handleSave(
+    name: string,
+    description: string,
+    color: string,
+    members: MemberInput[]
+  ) {
+    const memberPayload = members
+      .filter((m) => m.name.trim())
+      .map((m) => ({ name: m.name.trim(), role: m.role.trim() || undefined }));
+
+    if (editingProject) {
+      const res = await fetch("/api/projects", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          project_id: editingProject.project_id,
+          name,
+          description: description || null,
+          color,
+          members: memberPayload,
+        }),
+      });
+      if (res.ok) {
+        const { project } = await res.json();
+        setProjects((prev) =>
+          prev.map((p) => (p.project_id === project.project_id ? project : p))
+        );
+      }
+    } else {
+      const res = await fetch("/api/projects", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          description: description || undefined,
+          color,
+          members: memberPayload,
+        }),
+      });
+      if (res.ok) {
+        const { project } = await res.json();
+        setProjects((prev) => [project, ...prev]);
+      }
+    }
+    setShowDialog(false);
+    setEditingProject(null);
+  }
+
+  async function handleDelete(projectId: string) {
+    const res = await fetch("/api/projects", {
+      method: "DELETE",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectId }),
+    });
+    if (res.ok) {
+      setProjects((prev) => prev.filter((p) => p.project_id !== projectId));
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(projectId);
+        return next;
+      });
+      setShowDialog(false);
+      setEditingProject(null);
+    }
+  }
+
+  async function handleSeed() {
+    setSeeding(true);
+    setSeedResult(null);
+    try {
+      const res = await fetch("/api/projects/seed", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.projectsCreated > 0) {
+        const listRes = await fetch("/api/projects");
+        if (listRes.ok) {
+          const listData = await listRes.json();
+          setProjects(listData.projects ?? []);
+        }
+        setSeedResult(`Found ${data.projectsCreated} projects from your StrategyGPT conversations.`);
+      } else if (res.ok) {
+        setSeedResult("No projects found in your conversations. Try adding one manually.");
+      } else {
+        setSeedResult(data.error ?? "Something went wrong.");
+      }
+    } catch {
+      setSeedResult("Failed to connect. Try again.");
+    }
+    setSeeding(false);
+  }
+
+  // Empty state
+  if (projects.length === 0 && !showDialog) {
+    return (
+      <div className="flex h-full flex-col items-center justify-center gap-6 text-text-muted">
+        <svg
+          className="h-16 w-16 opacity-40"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={1}
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 12.75V12A2.25 2.25 0 014.5 9.75h15A2.25 2.25 0 0121.75 12v.75m-8.69-6.44l-2.12-2.12a1.5 1.5 0 00-1.061-.44H4.5A2.25 2.25 0 002.25 6v12a2.25 2.25 0 002.25 2.25h15A2.25 2.25 0 0021.75 18V9a2.25 2.25 0 00-2.25-2.25h-5.379a1.5 1.5 0 01-1.06-.44z" />
+        </svg>
+        <p className="text-sm">No projects yet. Start building your project map.</p>
+        <div className="flex gap-3">
+          <button
+            onClick={handleSeed}
+            disabled={seeding}
+            className="rounded-lg border border-accent-primary px-4 py-2 text-sm font-medium text-accent-primary hover:bg-accent-primary/10 transition-colors disabled:opacity-50"
+          >
+            {seeding ? "Scanning conversations..." : "Seed from StrategyGPT"}
+          </button>
+          <button
+            onClick={handleAddProject}
+            className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent-primary/90 transition-colors"
+          >
+            Add Manually
+          </button>
+        </div>
+        {seedResult && (
+          <p className="text-xs text-text-secondary">{seedResult}</p>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex h-full flex-col gap-4">
+      <ProjectFiltersBar
+        search={search}
+        onSearchChange={setSearch}
+        statusFilter={statusFilter}
+        onStatusFilterChange={setStatusFilter}
+        personFilter={personFilter}
+        onPersonFilterChange={setPersonFilter}
+        allPeople={allPeople}
+        selectedCount={selectedIds.size}
+        totalCount={filteredProjects.length}
+        onSelectAll={selectAll}
+        onDeselectAll={deselectAll}
+        onAddProject={handleAddProject}
+        onPrint={() => setShowPrintDialog(true)}
+      />
+
+      {/* Project cards grid */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {filteredProjects.map((project) => (
+            <ProjectCard
+              key={project.project_id}
+              project={project}
+              isSelected={selectedIds.has(project.project_id)}
+              onToggleSelect={() => toggleSelect(project.project_id)}
+              onEdit={() => handleEditProject(project)}
+            />
+          ))}
+        </div>
+
+        {filteredProjects.length === 0 && projects.length > 0 && (
+          <div className="py-12 text-center text-sm text-text-muted">
+            No projects match your filters.
+          </div>
+        )}
+      </div>
+
+      {showDialog && (
+        <ProjectDialog
+          project={editingProject}
+          onSave={handleSave}
+          onDelete={editingProject ? () => handleDelete(editingProject.project_id) : undefined}
+          onClose={() => {
+            setShowDialog(false);
+            setEditingProject(null);
+          }}
+        />
+      )}
+
+      {showPrintDialog && (
+        <NetworkPrintDialog
+          projects={selectedIds.size > 0 ? projects.filter((p) => selectedIds.has(p.project_id)) : projects}
+          onClose={() => setShowPrintDialog(false)}
+        />
+      )}
+    </div>
+  );
+}
+
+// --- Project Card ---
+
+function ProjectCard({
+  project,
+  isSelected,
+  onToggleSelect,
+  onEdit,
+}: {
+  project: ProjectWithMembers;
+  isSelected: boolean;
+  onToggleSelect: () => void;
+  onEdit: () => void;
+}) {
+  const members = project.project_members ?? [];
+
+  return (
+    <div
+      className={`group relative rounded-xl border bg-surface-primary transition-all hover:shadow-md ${
+        isSelected
+          ? "border-accent-primary ring-1 ring-accent-primary/30"
+          : "border-border-primary"
+      }`}
+    >
+      {/* Select checkbox */}
+      <button
+        onClick={onToggleSelect}
+        className={`absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded border transition-colors ${
+          isSelected
+            ? "border-accent-primary bg-accent-primary text-white"
+            : "border-border-primary bg-surface-secondary text-transparent hover:border-text-muted"
+        }`}
+      >
+        <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+          <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
+        </svg>
+      </button>
+
+      {/* Card content, click to edit */}
+      <div
+        className="cursor-pointer p-5 pr-10"
+        onClick={onEdit}
+      >
+        {/* Header: project name + status badge */}
+        <div className="flex items-center gap-3 mb-4">
+          <div
+            className="h-full w-1 self-stretch rounded-full shrink-0"
+            style={{ backgroundColor: project.color }}
+          />
+          <h3 className="text-base font-bold text-text-primary leading-tight">
+            {project.name}
+          </h3>
+          <span
+            className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
+            style={{
+              backgroundColor: `${STATUS_COLORS[project.status]}18`,
+              color: STATUS_COLORS[project.status],
+              border: `1px solid ${STATUS_COLORS[project.status]}40`,
+            }}
+          >
+            {STATUS_LABELS[project.status]}
+          </span>
+        </div>
+
+        {project.description && (
+          <p className="mb-3 text-xs text-text-secondary leading-relaxed">
+            {project.description}
+          </p>
+        )}
+
+        {/* Team section */}
+        <div className="border-t border-border-primary pt-3">
+          <p className="text-[9px] font-bold uppercase tracking-widest text-text-muted mb-2">
+            Team
+          </p>
+          {members.length > 0 ? (
+            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+              {members.map((m) => (
+                <div key={m.member_id} className="flex items-baseline gap-1.5">
+                  <span className="text-xs font-semibold text-text-primary">
+                    {m.name}
+                  </span>
+                  {m.role && (
+                    <span className="text-[10px] text-text-muted">
+                      {m.role}
+                    </span>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <p className="text-xs text-text-muted italic">No team members listed</p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+// --- Project Dialog (same as before, extracted) ---
+
+interface ProjectDialogProps {
+  project: ProjectWithMembers | null;
+  onSave: (name: string, description: string, color: string, members: MemberInput[]) => void;
+  onDelete?: () => void;
+  onClose: () => void;
+}
+
+function ProjectDialog({ project, onSave, onDelete, onClose }: ProjectDialogProps) {
+  const [name, setName] = useState(project?.name ?? "");
+  const [description, setDescription] = useState(project?.description ?? "");
+  const [color, setColor] = useState(project?.color ?? PROJECT_COLORS[0]);
+  const [members, setMembers] = useState<MemberInput[]>(
+    project?.project_members?.map((m) => ({ name: m.name, role: m.role ?? "" })) ?? [
+      { name: "", role: "" },
+    ]
+  );
+  const [showSuggestions, setShowSuggestions] = useState<number | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  function addMember() {
+    setMembers((prev) => [...prev, { name: "", role: "" }]);
+  }
+
+  function removeMember(index: number) {
+    setMembers((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  function updateMember(index: number, field: "name" | "role", value: string) {
+    setMembers((prev) =>
+      prev.map((m, i) => (i === index ? { ...m, [field]: value } : m))
+    );
+  }
+
+  function selectSuggestion(index: number, person: { name: string; role?: string }) {
+    updateMember(index, "name", person.name);
+    updateMember(index, "role", person.role ?? "");
+    setShowSuggestions(null);
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    await onSave(name.trim(), description.trim(), color, members);
+    setSaving(false);
+  }
+
+  function getSuggestions(input: string) {
+    if (!input.trim()) return PHAROSIQ_TEAM;
+    const lower = input.toLowerCase();
+    return PHAROSIQ_TEAM.filter(
+      (p) =>
+        p.name.toLowerCase().includes(lower) ||
+        (p.role && p.role.toLowerCase().includes(lower))
+    );
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+      <div className="w-full max-w-lg rounded-2xl border border-border-primary bg-surface-primary p-6 shadow-2xl">
+        <h2 className="text-lg font-bold text-text-primary">
+          {project ? "Edit Project" : "New Project"}
+        </h2>
+
+        <form onSubmit={handleSubmit} className="mt-4 space-y-4">
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1">
+              Project Name
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g., SAP Data Feed via LiveRamp"
+              className="w-full rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+              autoFocus
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1">
+              Description (optional)
+            </label>
+            <input
+              type="text"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Brief description of this project"
+              className="w-full rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+            />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1">
+              Color
+            </label>
+            <div className="flex gap-2">
+              {PROJECT_COLORS.map((c) => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setColor(c)}
+                  className={`h-6 w-6 rounded-full transition-transform ${
+                    color === c ? "ring-2 ring-offset-2 ring-offset-surface-primary scale-110" : "hover:scale-110"
+                  }`}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1">
+              People on this project
+            </label>
+            <div className="space-y-2 max-h-48 overflow-y-auto">
+              {members.map((member, i) => (
+                <div key={i} className="flex gap-2 items-start relative">
+                  <div className="relative flex-1">
+                    <input
+                      type="text"
+                      value={member.name}
+                      onChange={(e) => {
+                        updateMember(i, "name", e.target.value);
+                        setShowSuggestions(i);
+                      }}
+                      onFocus={() => setShowSuggestions(i)}
+                      onBlur={() => setTimeout(() => setShowSuggestions(null), 200)}
+                      placeholder="Name"
+                      className="w-full rounded-lg border border-border-primary bg-surface-secondary px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                    />
+                    {showSuggestions === i && (
+                      <div className="absolute top-full left-0 z-10 mt-1 w-full max-h-32 overflow-y-auto rounded-lg border border-border-primary bg-surface-secondary shadow-lg">
+                        {getSuggestions(member.name).map((person) => (
+                          <button
+                            key={person.name}
+                            type="button"
+                            onMouseDown={() => selectSuggestion(i, person)}
+                            className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-xs hover:bg-surface-tertiary"
+                          >
+                            <span className="font-medium text-text-primary">
+                              {person.name}
+                            </span>
+                            {person.role && (
+                              <span className="text-text-muted">{person.role}</span>
+                            )}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={member.role}
+                    onChange={(e) => updateMember(i, "role", e.target.value)}
+                    placeholder="Role"
+                    className="w-32 rounded-lg border border-border-primary bg-surface-secondary px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => removeMember(i)}
+                    className="shrink-0 p-1.5 text-text-muted hover:text-status-red transition-colors"
+                  >
+                    <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={addMember}
+              className="mt-2 flex items-center gap-1 text-xs text-accent-primary hover:text-accent-primary/80 transition-colors"
+            >
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              Add person
+            </button>
+          </div>
+
+          <div className="flex items-center justify-between pt-2">
+            <div>
+              {onDelete && (
+                <button
+                  type="button"
+                  onClick={onDelete}
+                  className="text-xs text-status-red hover:text-status-red/80 transition-colors"
+                >
+                  Delete project
+                </button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-lg border border-border-primary px-4 py-2 text-sm text-text-secondary hover:bg-surface-tertiary transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!name.trim() || saving}
+                className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white hover:bg-accent-primary/90 transition-colors disabled:opacity-50"
+              >
+                {saving ? "Saving..." : project ? "Save" : "Create"}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}

@@ -1,14 +1,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
-import { NetworkView } from "@/components/network/network-view";
+import { ProjectCardsView } from "@/components/network/project-cards-view";
 import type { ProjectWithMembers } from "@/types/database";
 
 export const metadata = {
-  title: "Network | RevSignal",
-  description: "Visual relationship map of your projects and collaborators.",
+  title: "Projects | RevSignal",
+  description: "Your DaaS partnerships and initiatives at a glance.",
 };
 
-export default async function NetworkPage() {
+export default async function ProjectsPage() {
   const supabase = await createClient();
 
   const {
@@ -32,13 +32,13 @@ export default async function NetworkPage() {
   return (
     <div className="flex h-full flex-col gap-4 p-6">
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">Network</h1>
+        <h1 className="text-2xl font-bold text-text-primary">Projects</h1>
         <p className="text-sm text-text-muted">
-          Who you&apos;re working with and what you&apos;re working on together
+          Your DaaS partnerships and initiatives
         </p>
       </div>
       <div className="flex-1 min-h-0">
-        <NetworkView
+        <ProjectCardsView
           initialProjects={(projects as ProjectWithMembers[]) ?? []}
         />
       </div>
