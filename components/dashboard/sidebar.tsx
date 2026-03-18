@@ -209,7 +209,7 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-border-primary px-3 py-3 space-y-1">
+        <div className="border-t border-border-primary px-3 py-3 space-y-2">
           {/* Organize button */}
           {!isCollapsed && (
             <button
@@ -222,9 +222,15 @@ export function Sidebar() {
           )}
 
           {/* Theme toggle */}
-          <div className={isCollapsed ? "flex justify-center" : "px-3"}>
-            <ThemeToggle collapsed={isCollapsed} />
-          </div>
+          {!isCollapsed ? (
+            <div className="px-2 py-1">
+              <ThemeToggle />
+            </div>
+          ) : (
+            <div className="flex justify-center py-1">
+              <ThemeToggle collapsed />
+            </div>
+          )}
 
           {/* Collapse toggle */}
           <button

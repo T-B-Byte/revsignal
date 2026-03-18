@@ -27,14 +27,14 @@ export function ThemeToggle({ collapsed }: { collapsed?: boolean }) {
   }
 
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-surface-tertiary p-0.5">
+    <div className="flex items-center gap-0.5 rounded-lg border border-border-primary bg-surface-tertiary p-0.5">
       {options.map((opt) => (
         <button
           key={opt.value}
           onClick={() => setTheme(opt.value)}
-          className={`flex items-center gap-1.5 rounded-md px-2 py-1 text-[11px] font-medium transition-colors ${
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-md px-2.5 py-1.5 text-[11px] font-medium transition-colors ${
             theme === opt.value
-              ? "bg-surface-primary text-text-primary shadow-sm"
+              ? "bg-surface-primary text-text-primary shadow-sm border border-border-hover"
               : "text-text-muted hover:text-text-secondary"
           }`}
         >
