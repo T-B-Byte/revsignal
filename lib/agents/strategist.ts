@@ -3095,10 +3095,16 @@ export async function generateBoardReport(
       : "";
 
   // Step 3: Parse response and build sections
+  // Strip markdown code fences if Claude wrapped the JSON
+  const cleanedText = responseText
+    .replace(/^```(?:json)?\s*\n?/i, "")
+    .replace(/\n?```\s*$/i, "")
+    .trim();
+
   const sections: BoardReportSection[] = [];
 
   try {
-    const parsed = JSON.parse(responseText);
+    const parsed = JSON.parse(cleanedText);
 
     if (parsed.opportunity) {
       sections.push({
