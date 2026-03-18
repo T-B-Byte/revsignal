@@ -210,46 +210,53 @@ export function Sidebar() {
         </nav>
 
         {/* Footer */}
-        <div className="border-t border-border-primary px-3 py-3 space-y-2">
-          {/* Organize button */}
-          {!isCollapsed && (
-            <button
-              onClick={() => setShowOrganize(true)}
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-tertiary hover:text-text-primary"
-            >
-              <FolderIcon className="h-4 w-4 shrink-0" />
-              <span>Organize</span>
-            </button>
-          )}
-
-          {/* Theme toggle */}
-          {!isCollapsed ? (
-            <div className="px-2 py-1">
-              <ThemeToggle />
+        <div className="border-t border-border-primary px-3 py-2">
+          {isCollapsed ? (
+            <div className="flex flex-col items-center gap-1">
+              <button
+                onClick={() => setShowOrganize(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-tertiary hover:text-text-primary transition-colors"
+                title="Organize sidebar"
+              >
+                <FolderIcon className="h-4 w-4" />
+              </button>
+              <ThemeToggle collapsed />
+              <button
+                onClick={toggleSidebar}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-tertiary hover:text-text-primary transition-colors"
+                title="Expand sidebar"
+              >
+                <CollapseIcon className="h-4 w-4" collapsed={isCollapsed} />
+              </button>
             </div>
           ) : (
-            <div className="flex justify-center py-1">
-              <ThemeToggle collapsed />
-            </div>
-          )}
-
-          {/* Collapse toggle */}
-          <button
-            onClick={toggleSidebar}
-            className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-sm text-text-muted transition-colors hover:bg-surface-tertiary hover:text-text-primary ${
-              isCollapsed ? "justify-center" : ""
-            }`}
-            title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            <CollapseIcon className="h-4 w-4 shrink-0" collapsed={isCollapsed} />
-            {!isCollapsed && <span>Collapse</span>}
-          </button>
-
-          {/* Version */}
-          {!isCollapsed && (
-            <p className="px-3 font-data text-xs text-text-muted">
-              RevSignal v0.1
-            </p>
+            <>
+              {/* Top row: Organize + Collapse */}
+              <div className="flex items-center justify-between mb-2">
+                <button
+                  onClick={() => setShowOrganize(true)}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:bg-surface-tertiary hover:text-text-primary transition-colors"
+                >
+                  <FolderIcon className="h-3.5 w-3.5 shrink-0" />
+                  <span>Organize</span>
+                </button>
+                <button
+                  onClick={toggleSidebar}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:bg-surface-tertiary hover:text-text-primary transition-colors"
+                  title="Collapse sidebar"
+                >
+                  <CollapseIcon className="h-3.5 w-3.5 shrink-0" collapsed={isCollapsed} />
+                </button>
+              </div>
+              {/* Theme toggle */}
+              <div className="mb-2">
+                <ThemeToggle />
+              </div>
+              {/* Version */}
+              <p className="px-1 font-data text-[10px] text-text-muted/60">
+                RevSignal v0.1
+              </p>
+            </>
           )}
         </div>
       </aside>
