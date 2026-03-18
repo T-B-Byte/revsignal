@@ -5,7 +5,7 @@ import type { ProjectWithMembers } from "@/types/database";
 import { PROJECT_COLORS, PHAROSIQ_TEAM } from "@/types/database";
 import type { ProjectStatus } from "@/types/database";
 import { ProjectFiltersBar } from "./project-filters";
-import { NetworkPrintDialog } from "./network-print-dialog";
+import { generatePrintHTML } from "./network-print-dialog";
 
 interface ProjectCardsViewProps {
   initialProjects: ProjectWithMembers[];
@@ -36,7 +36,21 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
   const [statusFilter, setStatusFilter] = useState<ProjectStatus[]>([]);
   const [showDialog, setShowDialog] = useState(false);
   const [editingProject, setEditingProject] = useState<ProjectWithMembers | null>(null);
-  const [showPrintDialog, setShowPrintDialog] = useState(false);
+  // Direct print: opens editor in new tab with selected (or all) projects
+  function handlePrint() {
+    const printProjects =
+      selectedIds.size > 0
+        ? projects.filter((p) => selectedIds.has(p.project_id))
+        : projects;
+    if (printProjects.length === 0) return;
+
+    const editorWindow = window.open("", "_blank");
+    if (!editorWindow) return;
+    editorWindow.document.write(
+      generatePrintHTML(printProjects, "Projects", "pharosIQ DaaS Partnerships & Initiatives")
+    );
+    editorWindow.document.close();
+  }
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
 
@@ -252,7 +266,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
         onSelectAll={selectAll}
         onDeselectAll={deselectAll}
         onAddProject={handleAddProject}
-        onPrint={() => setShowPrintDialog(true)}
+        onPrint={handlePrint}
       />
 
       {/* Project cards grid */}
@@ -288,12 +302,6 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
         />
       )}
 
-      {showPrintDialog && (
-        <NetworkPrintDialog
-          projects={selectedIds.size > 0 ? projects.filter((p) => selectedIds.has(p.project_id)) : projects}
-          onClose={() => setShowPrintDialog(false)}
-        />
-      )}
     </div>
   );
 }
