@@ -299,6 +299,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
 }
 
 // --- Project Card ---
+// Matches the print view: thick left border, clean document-style layout
 
 function ProjectCard({
   project,
@@ -315,19 +316,22 @@ function ProjectCard({
 
   return (
     <div
-      className={`group relative rounded-xl border bg-surface-primary transition-all hover:shadow-md ${
-        isSelected
-          ? "border-accent-primary ring-1 ring-accent-primary/30"
-          : "border-border-primary"
+      className={`group relative cursor-pointer rounded-none border-l-4 bg-surface-secondary transition-shadow hover:shadow-md ${
+        isSelected ? "ring-2 ring-accent-primary/40" : ""
       }`}
+      style={{ borderLeftColor: project.color }}
+      onClick={onEdit}
     >
-      {/* Select checkbox */}
+      {/* Select checkbox (top-right) */}
       <button
-        onClick={onToggleSelect}
-        className={`absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded border transition-colors ${
+        onClick={(e) => {
+          e.stopPropagation();
+          onToggleSelect();
+        }}
+        className={`absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded border transition-colors z-10 ${
           isSelected
             ? "border-accent-primary bg-accent-primary text-white"
-            : "border-border-primary bg-surface-secondary text-transparent hover:border-text-muted"
+            : "border-border-hover bg-surface-tertiary text-transparent opacity-0 group-hover:opacity-100 hover:border-text-muted"
         }`}
       >
         <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
@@ -335,48 +339,36 @@ function ProjectCard({
         </svg>
       </button>
 
-      {/* Card content, click to edit */}
-      <div
-        className="cursor-pointer p-5 pr-10"
-        onClick={onEdit}
-      >
-        {/* Header: project name + status badge */}
-        <div className="flex items-center gap-3 mb-4">
-          <div
-            className="h-full w-1 self-stretch rounded-full shrink-0"
-            style={{ backgroundColor: project.color }}
-          />
-          <h3 className="text-base font-bold text-text-primary leading-tight">
+      <div className="px-5 py-4">
+        {/* Header row: project name + status badge */}
+        <div className="flex items-center gap-3 mb-3">
+          <h3 className="text-sm font-bold text-text-primary leading-tight tracking-tight">
             {project.name}
           </h3>
           <span
-            className="shrink-0 rounded-full px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider"
-            style={{
-              backgroundColor: `${STATUS_COLORS[project.status]}18`,
-              color: STATUS_COLORS[project.status],
-              border: `1px solid ${STATUS_COLORS[project.status]}40`,
-            }}
+            className="shrink-0 rounded-full px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white"
+            style={{ backgroundColor: STATUS_COLORS[project.status] }}
           >
             {STATUS_LABELS[project.status]}
           </span>
         </div>
 
         {project.description && (
-          <p className="mb-3 text-xs text-text-secondary leading-relaxed">
+          <p className="mb-3 text-[11px] text-text-secondary leading-relaxed">
             {project.description}
           </p>
         )}
 
         {/* Team section */}
         <div className="border-t border-border-primary pt-3">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-text-muted mb-2">
+          <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-text-muted mb-2">
             Team
           </p>
           {members.length > 0 ? (
-            <div className="flex flex-wrap gap-x-4 gap-y-1.5">
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5">
               {members.map((m) => (
-                <div key={m.member_id} className="flex items-baseline gap-1.5">
-                  <span className="text-xs font-semibold text-text-primary">
+                <span key={m.member_id} className="inline-flex items-baseline gap-1.5">
+                  <span className="text-[11px] font-bold text-text-primary">
                     {m.name}
                   </span>
                   {m.role && (
@@ -384,11 +376,11 @@ function ProjectCard({
                       {m.role}
                     </span>
                   )}
-                </div>
+                </span>
               ))}
             </div>
           ) : (
-            <p className="text-xs text-text-muted italic">No team members listed</p>
+            <p className="text-[11px] text-text-muted italic">No team members listed</p>
           )}
         </div>
       </div>
