@@ -346,7 +346,7 @@ export function StudioList({ initialProjects }: StudioListProps) {
                       className={`flex items-start gap-2 rounded-lg border p-3 text-left transition-colors ${
                         type === pt.value
                           ? "border-accent-primary bg-accent-primary/10"
-                          : "border-border-primary hover:border-border-secondary"
+                          : "border-border-primary hover:border-border-hover"
                       }`}
                     >
                       <span className="text-lg">{pt.icon}</span>

@@ -31,7 +31,7 @@ const PLAN = {
     'First 90 days as SVP, Data Monetization & Partnerships. ' +
     'Learn the data asset, build DaaS products, close first deals. ' +
     'Jeff wants revenue in Q2 — speed matters.',
-  start_date: '2026-03-16', // Tina's start date
+  start_date: '2026-03-03', // Tina's start date
 };
 
 // ---------------------------------------------------------------------------

@@ -144,3 +144,70 @@ body {
 input, select, textarea {
   color-scheme: inherit;
 }
+
+/* Print styles for PDF export */
+@media print {
+  body {
+    background: white !important;
+    color: #111 !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Hide sidebar, nav, and interactive elements */
+  aside,
+  nav,
+  .print\:hidden {
+    display: none !important;
+  }
+
+  /* Force the main content area to fill the page */
+  main {
+    margin: 0 !important;
+    padding: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  /* Cards should have visible borders */
+  [class*="border-border-primary"] {
+    border-color: #d1d5db !important;
+  }
+
+  /* Ensure grid columns print side by side */
+  .lg\:grid-cols-3 {
+    grid-template-columns: repeat(3, 1fr) !important;
+  }
+
+  /* Avoid page breaks inside cards */
+  [class*="Card"],
+  [class*="rounded-xl"],
+  [class*="rounded-lg"] {
+    break-inside: avoid;
+  }
+
+  /* Clean backgrounds */
+  [class*="bg-surface"] {
+    background: white !important;
+  }
+
+  /* Readable text */
+  [class*="text-text-primary"] {
+    color: #111827 !important;
+  }
+  [class*="text-text-secondary"],
+  [class*="text-text-muted"] {
+    color: #6b7280 !important;
+  }
+
+  /* Progress bars */
+  [class*="bg-surface-tertiary"] {
+    background: #e5e7eb !important;
+  }
+  [class*="bg-accent-primary"] {
+    background: #3b82f6 !important;
+  }
+  [class*="bg-emerald"] {
+    background: #22c55e !important;
+  }
+}
