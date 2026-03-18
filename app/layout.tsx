@@ -20,6 +20,7 @@ export const metadata: Metadata = {
 };
 
 // Inline script to apply theme before React hydrates (prevents flash)
+// Dark is default (no class needed). Light adds .light class.
 const themeScript = `
 (function(){
   try {
@@ -27,11 +28,9 @@ const themeScript = `
     var d = t === 'system'
       ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
       : t;
-    if (d === 'dark') document.documentElement.classList.add('dark');
-    else document.documentElement.classList.remove('dark');
-  } catch(e) {
-    document.documentElement.classList.add('dark');
-  }
+    document.documentElement.classList.remove('light','dark');
+    if (d === 'light') document.documentElement.classList.add('light');
+  } catch(e) {}
 })();
 `;
 

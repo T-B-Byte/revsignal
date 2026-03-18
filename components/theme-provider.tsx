@@ -17,7 +17,7 @@ interface ThemeContextValue {
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: "system",
+  theme: "dark",
   resolvedTheme: "dark",
   setTheme: () => {},
 });
@@ -29,10 +29,9 @@ export function useTheme() {
 const STORAGE_KEY = "revsignal-theme";
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
+  const [theme, setThemeState] = useState<Theme>("dark");
   const [resolvedTheme, setResolvedTheme] = useState<"light" | "dark">("dark");
 
-  // Resolve the effective theme based on preference + system
   const resolve = useCallback((preference: Theme): "light" | "dark" => {
     if (preference === "system") {
       if (typeof window !== "undefined") {
@@ -45,18 +44,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     return preference;
   }, []);
 
-  // Apply theme class to <html>
+  // Apply: dark = no class (default CSS), light = .light class
   const apply = useCallback((resolved: "light" | "dark") => {
     const root = document.documentElement;
-    if (resolved === "dark") {
-      root.classList.add("dark");
-    } else {
-      root.classList.remove("dark");
+    root.classList.remove("light", "dark");
+    if (resolved === "light") {
+      root.classList.add("light");
     }
     setResolvedTheme(resolved);
   }, []);
 
-  // Initialize from localStorage
   useEffect(() => {
     const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
     const preference = stored ?? "dark";
@@ -64,7 +61,6 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     apply(resolve(preference));
   }, [apply, resolve]);
 
-  // Listen for system theme changes when in "system" mode
   useEffect(() => {
     if (theme !== "system") return;
     const mq = window.matchMedia("(prefers-color-scheme: dark)");
