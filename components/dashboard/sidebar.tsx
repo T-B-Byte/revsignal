@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/components/dashboard/sidebar-context";
 import { OrganizeSidebarDialog } from "@/components/dashboard/organize-sidebar-dialog";
+import { ThemeToggle } from "@/components/theme-toggle";
 import {
   getSidebarOrganization,
   toggleFolderOpen,
@@ -219,6 +220,11 @@ export function Sidebar() {
               <span>Organize</span>
             </button>
           )}
+
+          {/* Theme toggle */}
+          <div className={isCollapsed ? "flex justify-center" : "px-3"}>
+            <ThemeToggle collapsed={isCollapsed} />
+          </div>
 
           {/* Collapse toggle */}
           <button
