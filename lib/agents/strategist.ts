@@ -2299,6 +2299,308 @@ export async function generateThreadResponse(
   };
 }
 
+export interface StreamThreadEvent {
+  type: "delta";
+  text: string;
+}
+
+export interface StreamThreadDoneEvent {
+  type: "done";
+  conversationId: string;
+  tokensUsed: number;
+  followUpsExtracted: ThreadResponseResult["followUpsExtracted"];
+  meetingDetected: MeetingDetectedData | null;
+}
+
+export interface StreamThreadErrorEvent {
+  type: "error";
+  error: string;
+}
+
+export type StreamThreadChunk = StreamThreadEvent | StreamThreadDoneEvent | StreamThreadErrorEvent;
+
+/**
+ * Streaming version of generateThreadResponse.
+ *
+ * Saves the user message to the DB immediately (before calling Claude), then
+ * streams Claude's response as SSE-compatible chunks. On completion, saves the
+ * assistant message, extracts follow-ups / meetings / projects, and emits a
+ * "done" event with the saved conversation_id.
+ *
+ * Returns a ReadableStream<Uint8Array> of newline-delimited JSON lines.
+ * Each line is: `data: <JSON>\n\n` (SSE format).
+ */
+export function streamThreadResponse(
+  supabase: SupabaseClient,
+  userId: string,
+  threadId: string,
+  userMessage: string,
+  options?: {
+    dealId?: string;
+    maEntityId?: string;
+    threadBrief?: string;
+    messageCount?: number;
+    userConversationId?: string; // pre-saved user message ID (optional)
+  }
+): ReadableStream<Uint8Array> {
+  const encoder = new TextEncoder();
+
+  function emit(controller: ReadableStreamDefaultController<Uint8Array>, chunk: StreamThreadChunk) {
+    controller.enqueue(encoder.encode(`data: ${JSON.stringify(chunk)}\n\n`));
+  }
+
+  return new ReadableStream<Uint8Array>({
+    async start(controller) {
+      try {
+        // ── Step 1: RAG retrieval ──────────────────────────────────────
+        const [strategicCtx] = await timed(() =>
+          retrieveStrategicContext(supabase, userId, { dealId: options?.dealId })
+        );
+
+        let dealContext: DealContext | null = null;
+        if (options?.dealId) {
+          dealContext = await retrieveDealContext(supabase, userId, options.dealId);
+        }
+
+        // M&A entity context (same logic as generateThreadResponse)
+        let maEntityContext: string | null = null;
+        if (options?.maEntityId) {
+          const [entityRes, contactsRes, notesRes, docsRes] = await Promise.all([
+            supabase.from("ma_entities").select("*").eq("entity_id", options.maEntityId).eq("user_id", userId).maybeSingle(),
+            supabase.from("ma_contacts").select("name, title, role_in_process, email").eq("entity_id", options.maEntityId).eq("user_id", userId).order("sort_order", { ascending: true }),
+            supabase.from("ma_notes").select("note_type, content, created_at").eq("entity_id", options.maEntityId).eq("user_id", userId).order("created_at", { ascending: false }).limit(20),
+            supabase.from("ma_documents").select("filename, mime_type, analysis_status, created_at").eq("entity_id", options.maEntityId).eq("user_id", userId).order("created_at", { ascending: false }),
+          ]);
+
+          if (entityRes.data) {
+            const e = entityRes.data;
+            const sections: string[] = [
+              `M&A ENTITY: ${e.company}`,
+              `Type: ${e.entity_type === "acquirer" ? "Potential Acquirer" : "Acquisition Target"}`,
+              `Stage: ${e.stage}`,
+            ];
+            if (e.strategic_rationale) sections.push(`Strategic Rationale: ${e.strategic_rationale}`);
+            if (e.website) sections.push(`Website: ${e.website}`);
+            if (e.notes) sections.push(`Notes: ${e.notes}`);
+            if (e.source) sections.push(`Source: ${e.source}`);
+            if (contactsRes.data?.length) {
+              sections.push(`Key Contacts:\n${contactsRes.data.map(c => `- ${c.name}${c.title ? ` (${c.title})` : ""}${c.role_in_process ? ` — ${c.role_in_process}` : ""}`).join("\n")}`);
+            }
+            if (notesRes.data?.length) {
+              sections.push(`Recent Notes:\n${notesRes.data.slice(0, 10).map(n => `[${n.created_at.split("T")[0]}] (${n.note_type}) ${n.content.length > 300 ? n.content.slice(0, 300) + " [...]" : n.content}`).join("\n")}`);
+            }
+            if (docsRes.data?.length) {
+              sections.push(`Documents:\n${docsRes.data.map(d => `- ${d.filename} (${d.analysis_status})`).join("\n")}`);
+            }
+            maEntityContext = sections.join("\n");
+          }
+        }
+
+        // ── Step 2: Fetch open follow-ups ─────────────────────────────
+        const { data: openFollowUps } = await supabase
+          .from("thread_follow_ups")
+          .select("description, due_date, status")
+          .eq("thread_id", threadId)
+          .eq("status", "open")
+          .order("due_date", { ascending: true, nullsFirst: false });
+
+        // ── Step 3: Build context document ────────────────────────────
+        const contextSections: string[] = [];
+        if (options?.threadBrief) contextSections.push(`THREAD HISTORY BRIEF:\n${options.threadBrief}`);
+        if (openFollowUps?.length) {
+          const today = new Date().toISOString().split("T")[0];
+          const fuLines = openFollowUps.map(fu => {
+            const overdue = fu.due_date && fu.due_date < today ? " [OVERDUE]" : "";
+            const dueStr = fu.due_date ? ` (due: ${fu.due_date})` : "";
+            return `- ${fu.description}${dueStr}${overdue}`;
+          });
+          contextSections.push(`OPEN FOLLOW-UPS:\n${fuLines.join("\n")}`);
+        }
+        if (maEntityContext) contextSections.push(maEntityContext);
+        const coachingCtx = buildCoachingContextDoc(strategicCtx, dealContext, null);
+        if (coachingCtx) contextSections.push(coachingCtx);
+
+        // ── Step 4: Build messages array ──────────────────────────────
+        const { data: recentMessages } = await supabase
+          .from("coaching_conversations")
+          .select("role, content, created_at, interaction_type")
+          .eq("thread_id", threadId)
+          .order("created_at", { ascending: false })
+          .limit(30);
+
+        const messages: { role: "user" | "assistant"; content: string }[] = [];
+        const intelDigestLines: string[] = [];
+
+        if (recentMessages?.length) {
+          const intelTypes = new Set(["email", "conversation", "call_transcript", "web_meeting", "in_person_meeting"]);
+          const allChronological = [...recentMessages].reverse();
+          const intelMsgs = allChronological.filter(m => m.role === "user" && intelTypes.has(m.interaction_type ?? "coaching"));
+          const coachingMsgs = allChronological.filter(m => !intelTypes.has(m.interaction_type ?? "coaching"));
+          const selectedIntel = intelMsgs.slice(-5);
+          const selectedCoaching = coachingMsgs.slice(-10);
+          const merged = [...selectedIntel, ...selectedCoaching]
+            .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+            .slice(-10);
+
+          const mergedIds = new Set(merged.map(m => m.created_at));
+          for (const note of intelMsgs) {
+            if (!mergedIds.has(note.created_at)) {
+              const typeLabel = (note.interaction_type ?? "note").replace(/_/g, " ");
+              const date = note.created_at.split("T")[0];
+              const preview = note.content.length > 300 ? note.content.slice(0, 300) + " [...]" : note.content;
+              intelDigestLines.push(`[${date}] (${typeLabel}) ${preview}`);
+            }
+          }
+
+          let lastRole: string | null = null;
+          let charBudget = 12000;
+          for (const msg of merged) {
+            const role = msg.role === "user" ? "user" as const : "assistant" as const;
+            if (role === lastRole) messages.pop();
+            let content = msg.content.replace(/<!-- FOLLOW_UPS\n[\s\S]*?(?:-->|$)/g, "").trim();
+            const iType = msg.interaction_type ?? "coaching";
+            if (role === "user" && intelTypes.has(iType)) {
+              content = `[PASTED ${iType.replace(/_/g, " ").toUpperCase()}]\n${content}`;
+            }
+            if (content.length > 2000) content = content.slice(0, 2000) + " [...]";
+            if (charBudget - content.length < 0) break;
+            charBudget -= content.length;
+            messages.push({ role, content });
+            lastRole = role;
+          }
+          if (messages.length > 0 && messages[messages.length - 1].role === "user") messages.pop();
+        }
+
+        if (intelDigestLines.length > 0) {
+          contextSections.push(`OLDER INTEL NOTES (not in recent messages):\n${intelDigestLines.join("\n")}`);
+        }
+
+        const contextDoc = contextSections.join("\n\n");
+        messages.push({
+          role: "user",
+          content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${userMessage}`,
+        });
+
+        // ── Step 5: Stream from Claude ────────────────────────────────
+        const anthropic = getAnthropic();
+        const streamStart = Date.now();
+        let accumulated = "";
+
+        const anthropicStream = anthropic.messages.stream({
+          model: MODEL,
+          max_tokens: 4000,
+          system: THREAD_COACHING_PROMPT,
+          messages,
+        });
+
+        for await (const event of anthropicStream) {
+          if (event.type === "content_block_delta" && event.delta.type === "text_delta") {
+            accumulated += event.delta.text;
+            emit(controller, { type: "delta", text: event.delta.text });
+          }
+        }
+
+        const finalMessage = await anthropicStream.finalMessage();
+        const tokensUsed = (finalMessage.usage?.input_tokens ?? 0) + (finalMessage.usage?.output_tokens ?? 0);
+        const durationGenerate = Date.now() - streamStart;
+
+        // ── Step 6: Extract hidden blocks, clean response ─────────────
+        const followUpsExtracted = extractFollowUps(accumulated);
+        const meetingDetected = extractMeetingDetected(accumulated);
+        const projectsDetected = extractProjectDetected(accumulated);
+        const cleanResponse = accumulated
+          .replace(/<!-- FOLLOW_UPS\n[\s\S]*?(?:-->|$)/g, "")
+          .replace(/<!-- MEETING_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
+          .replace(/<!-- PROJECT_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
+          .trim();
+
+        // ── Step 7: Save assistant message to DB ─────────────────────
+        const sourcesCited = collectCoachingSources(strategicCtx, null);
+        const { data: savedMsg } = await supabase
+          .from("coaching_conversations")
+          .insert({
+            user_id: userId,
+            thread_id: threadId,
+            role: "assistant",
+            content: cleanResponse,
+            interaction_type: "coaching",
+            context_used: {
+              dealId: options?.dealId ?? null,
+              threadBrief: !!options?.threadBrief,
+              followUpsExtracted: followUpsExtracted.length,
+            },
+            sources_cited: sourcesCited,
+            tokens_used: tokensUsed,
+          })
+          .select("conversation_id")
+          .single();
+
+        // ── Step 8: Save follow-ups ───────────────────────────────────
+        if (followUpsExtracted.length > 0) {
+          await supabase.from("thread_follow_ups").insert(
+            followUpsExtracted.map(fu => ({
+              thread_id: threadId,
+              user_id: userId,
+              description: fu.description,
+              due_date: fu.due_date,
+            }))
+          );
+        }
+
+        // ── Step 9: Detected projects (fire-and-forget) ───────────────
+        if (projectsDetected.length > 0) {
+          upsertDetectedProjects(supabase, userId, projectsDetected).catch(err =>
+            console.error("[strategist/stream] Project upsert failed:", err)
+          );
+        }
+
+        // ── Step 10: Thread brief + thread metadata (fire-and-forget) ─
+        const currentMessageCount = (options?.messageCount ?? 0) + 2;
+        if (currentMessageCount >= THREAD_BRIEF_THRESHOLD && currentMessageCount % THREAD_BRIEF_THRESHOLD < 2) {
+          generateThreadBrief(supabase, userId, threadId).catch(err =>
+            console.error("[strategist/stream] Thread brief generation failed:", err)
+          );
+        }
+
+        // ── Step 11: Agent log (fire-and-forget) ──────────────────────
+        logAgentCall({
+          supabase,
+          userId,
+          agentName: "strategist",
+          action: "thread-coaching-stream",
+          inputContext: {
+            threadId,
+            dealId: options?.dealId ?? null,
+            hasThreadBrief: !!options?.threadBrief,
+            messageCount: currentMessageCount,
+            followUpsExtracted: followUpsExtracted.length,
+            projectsDetected: projectsDetected.length,
+          },
+          output: cleanResponse.slice(0, 500),
+          sourcesCited,
+          tokensUsed,
+          durationMs: durationGenerate,
+        }).catch(() => {});
+
+        // ── Step 12: Emit done event ──────────────────────────────────
+        emit(controller, {
+          type: "done",
+          conversationId: savedMsg?.conversation_id ?? crypto.randomUUID(),
+          tokensUsed,
+          followUpsExtracted,
+          meetingDetected,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : "Generation failed";
+        console.error("[strategist/stream] Error:", msg);
+        emit(controller, { type: "error", error: msg });
+      } finally {
+        controller.close();
+      }
+    },
+  });
+}
+
 /**
  * Generate a "here's where we left off" catchup for thread re-entry.
  */
@@ -2685,4 +2987,235 @@ export async function upsertDetectedProjects(
       }
     }
   }
+}
+
+// ── Board Report ──────────────────────────────────────────────────────
+
+const BOARD_REPORT_PROMPT = `${STRATEGIST_IDENTITY}
+
+You are generating content for a Board Meeting one-pager. This is a high-stakes document for the pharosIQ CEO and board.
+
+CRITICAL RULES:
+- Write in the voice described in your identity. Direct, confident, concise.
+- NEVER use em-dashes. Use commas, periods, colons, or parentheses instead.
+- NEVER fabricate metrics, dates, deal names, or commitments. Use only data provided.
+- Frame everything as ADDITIVE to pharosIQ. DaaS revenue diversifies the mix and lifts the company.
+- No defensive language. No "just" or "only" or apologetic framing.
+- Concise. Every sentence earns its place.
+
+You will receive the current pipeline data, deal briefs, playbook progress, and competitive intel. Generate content for each section of the board report.
+
+Output format (JSON):
+{
+  "opportunity": "1-2 paragraph summary of the DaaS opportunity. Include the Year 1 target and why this is additive revenue.",
+  "differentiator": "1-2 paragraphs on IRIS methodology and what makes pharosIQ's data different from Bombora, G2, TechTarget.",
+  "targetCategories": [
+    { "category": "Category name", "whyTheyBuy": "Why this segment buys", "exampleUseCase": "Concrete use case" }
+  ],
+  "momentum": [
+    "Bullet point about recent progress or milestone"
+  ],
+  "pricingFramework": {
+    "summary": "1-2 sentences on pricing approach",
+    "bullets": ["Key pricing point"]
+  },
+  "businessImpact": [
+    { "title": "Impact title", "description": "1-2 sentences on the impact" }
+  ],
+  "milestones": [
+    { "timeframe": "Days X-Y or date range", "goal": "What should be accomplished" }
+  ]
+}
+
+Only output valid JSON. No markdown, no commentary.`;
+
+export interface BoardReportSection {
+  id: string;
+  title: string;
+  content: string;
+  enabled: boolean;
+}
+
+export interface BoardReportData {
+  sections: BoardReportSection[];
+  generatedAt: string;
+  weekNumber: number;
+  tokensUsed: number;
+}
+
+/**
+ * Generate board report content using pipeline data and the Strategist.
+ * Returns structured sections that the user can toggle on/off and edit before printing.
+ */
+export async function generateBoardReport(
+  supabase: SupabaseClient,
+  userId: string
+): Promise<BoardReportData> {
+  // Step 1: RAG retrieval
+  const [ctx, durationRetrieve] = await timed(() =>
+    retrieveBriefingContext(supabase, userId)
+  );
+
+  const contextDoc = buildBriefingContextDoc(ctx);
+
+  // Calculate week number since Tina's start date (March 2, 2026)
+  const startDate = new Date("2026-03-02");
+  const now = new Date();
+  const weekNumber = Math.max(
+    1,
+    Math.ceil(
+      (now.getTime() - startDate.getTime()) / (7 * 24 * 60 * 60 * 1000)
+    )
+  );
+
+  // Step 2: Generate board report content
+  const anthropic = getAnthropic();
+
+  const [response, durationGenerate] = await timed(() =>
+    anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 4000,
+      system: BOARD_REPORT_PROMPT,
+      messages: [
+        {
+          role: "user",
+          content: `Today is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. This is Week ${weekNumber} of the DaaS initiative.\n\n${contextDoc}`,
+        },
+      ],
+    })
+  );
+
+  const tokensUsed =
+    (response.usage?.input_tokens ?? 0) +
+    (response.usage?.output_tokens ?? 0);
+
+  const responseText =
+    response.content.length > 0 && response.content[0].type === "text"
+      ? response.content[0].text
+      : "";
+
+  // Step 3: Parse response and build sections
+  const sections: BoardReportSection[] = [];
+
+  try {
+    const parsed = JSON.parse(responseText);
+
+    if (parsed.opportunity) {
+      sections.push({
+        id: "opportunity",
+        title: "The Opportunity",
+        content: parsed.opportunity,
+        enabled: true,
+      });
+    }
+
+    if (parsed.differentiator) {
+      sections.push({
+        id: "differentiator",
+        title: "What Makes Our Data Different",
+        content: parsed.differentiator,
+        enabled: true,
+      });
+    }
+
+    if (Array.isArray(parsed.targetCategories) && parsed.targetCategories.length > 0) {
+      const tableRows = parsed.targetCategories
+        .map(
+          (tc: { category: string; whyTheyBuy: string; exampleUseCase: string }) =>
+            `| ${tc.category} | ${tc.whyTheyBuy} | ${tc.exampleUseCase} |`
+        )
+        .join("\n");
+      sections.push({
+        id: "targetCategories",
+        title: "Target Customer Categories",
+        content: `| Category | Why They Buy | Example Use Case |\n|----------|-------------|------------------|\n${tableRows}`,
+        enabled: true,
+      });
+    }
+
+    if (Array.isArray(parsed.momentum) && parsed.momentum.length > 0) {
+      sections.push({
+        id: "momentum",
+        title: `Early Momentum`,
+        content: parsed.momentum.map((m: string) => `- ${m}`).join("\n"),
+        enabled: true,
+      });
+    }
+
+    if (parsed.pricingFramework) {
+      const pf = parsed.pricingFramework;
+      const bullets = Array.isArray(pf.bullets)
+        ? pf.bullets.map((b: string) => `- ${b}`).join("\n")
+        : "";
+      sections.push({
+        id: "pricing",
+        title: "Pricing Framework (Directional)",
+        content: `${pf.summary || ""}\n\n${bullets}`,
+        enabled: true,
+      });
+    }
+
+    if (Array.isArray(parsed.businessImpact) && parsed.businessImpact.length > 0) {
+      const impacts = parsed.businessImpact
+        .map(
+          (bi: { title: string; description: string }, i: number) =>
+            `${i + 1}. **${bi.title}.** ${bi.description}`
+        )
+        .join("\n");
+      sections.push({
+        id: "businessImpact",
+        title: "What This Means for the Business",
+        content: impacts,
+        enabled: true,
+      });
+    }
+
+    if (Array.isArray(parsed.milestones) && parsed.milestones.length > 0) {
+      const milestoneRows = parsed.milestones
+        .map(
+          (m: { timeframe: string; goal: string }) =>
+            `| ${m.timeframe} | ${m.goal} |`
+        )
+        .join("\n");
+      sections.push({
+        id: "milestones",
+        title: "90-Day Milestones",
+        content: `| Timeframe | Goal |\n|-----------|------|\n${milestoneRows}`,
+        enabled: true,
+      });
+    }
+  } catch {
+    // If JSON parsing fails, create a single "Report" section with raw text
+    sections.push({
+      id: "report",
+      title: "Board Report",
+      content: responseText || "Unable to generate report content. Please try again.",
+      enabled: true,
+    });
+  }
+
+  // Step 4: Log
+  await logAgentCall({
+    supabase,
+    userId,
+    agentName: "strategist",
+    action: "board-report",
+    inputContext: {
+      weekNumber,
+      activeDeals: ctx.pipeline.activeDeals.length,
+      closedRevenue: ctx.pipeline.totalClosedRevenue,
+      retrieveDurationMs: durationRetrieve,
+    },
+    output: `Generated ${sections.length} sections for Week ${weekNumber} board report`,
+    sourcesCited: [],
+    tokensUsed,
+    durationMs: durationRetrieve + durationGenerate,
+  });
+
+  return {
+    sections,
+    generatedAt: new Date().toISOString(),
+    weekNumber,
+    tokensUsed,
+  };
 }
