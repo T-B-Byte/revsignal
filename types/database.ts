@@ -467,6 +467,7 @@ export interface CoachingThread {
   ma_entity_id: string | null;
   prospect_id: string | null;
   meeting_note_id: string | null;
+  project_id: string | null;
   title: string;
   contact_name: string | null;
   contact_role: string | null;
@@ -500,6 +501,7 @@ export interface ThreadFollowUp {
 export interface CoachingThreadWithDeal extends CoachingThread {
   deals?: Pick<Deal, "deal_id" | "company" | "stage"> | null;
   ma_entities?: Pick<MaEntity, "entity_id" | "company" | "entity_type" | "stage"> | null;
+  projects?: Pick<Project, "project_id" | "name" | "status" | "category"> | null;
   open_follow_up_count?: number;
   has_overdue?: boolean;
   open_task_count?: number;
@@ -1012,6 +1014,7 @@ export interface Project {
   description: string | null;
   status: ProjectStatus;
   color: string;
+  category: string | null;
   created_at: string;
   updated_at: string;
 }
