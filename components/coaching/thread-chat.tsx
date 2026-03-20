@@ -86,6 +86,18 @@ export function ThreadChat({
   const [searchingPerson, setSearchingPerson] = useState(false);
   const [personCandidate, setPersonCandidate] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role"> | null>(null);
   const [assigningToPerson, setAssigningToPerson] = useState(false);
+  const [showTopicPicker, setShowTopicPicker] = useState(false);
+  const [topicSearch, setTopicSearch] = useState("");
+  const [topicResults, setTopicResults] = useState<{ id: string; type: string; title: string; subtitle?: string }[]>([]);
+  const [searchingTopics, setSearchingTopics] = useState(false);
+  const [linkedTopic, setLinkedTopic] = useState<{ id: string; type: string; title: string; subtitle?: string } | null>(() => {
+    // Initialize from thread's existing entity links (excluding deal, which has its own picker)
+    if (thread.project_id) return { id: thread.project_id, type: "project", title: "" };
+    if (thread.prospect_id) return { id: thread.prospect_id, type: "prospect", title: "" };
+    if (thread.ma_entity_id) return { id: thread.ma_entity_id, type: "ma_entity", title: "" };
+    return null;
+  });
+  const [linkingTopic, setLinkingTopic] = useState(false);
   const [taskFromId, setTaskFromId] = useState<string | null>(null);
   const [taskDesc, setTaskDesc] = useState("");
   const [taskSourceText, setTaskSourceText] = useState("");  // original selected text for highlighting
@@ -138,6 +150,14 @@ export function ThreadChat({
     setInput("");
     setLinkedDealId(thread.deal_id);
     setShowDealPicker(false);
+    setShowTopicPicker(false);
+    setTopicSearch("");
+    setTopicResults([]);
+    // Initialize linked topic from thread entity links
+    if (thread.project_id) setLinkedTopic({ id: thread.project_id, type: "project", title: "" });
+    else if (thread.prospect_id) setLinkedTopic({ id: thread.prospect_id, type: "prospect", title: "" });
+    else if (thread.ma_entity_id) setLinkedTopic({ id: thread.ma_entity_id, type: "ma_entity", title: "" });
+    else setLinkedTopic(null);
 
     const controller = new AbortController();
     const messageIds = initialMessages.map((m) => m.conversation_id);
@@ -177,6 +197,51 @@ export function ThreadChat({
 
     return () => controller.abort();
   }, [thread.thread_id, thread.deal_id, initialMessages]);
+
+  // Resolve initial topic title when thread has an existing link
+  useEffect(() => {
+    if (!linkedTopic || linkedTopic.title) return;
+    // Search for the linked entity to get its title
+    const type = linkedTopic.type;
+    const id = linkedTopic.id;
+    const controller = new AbortController();
+
+    (async () => {
+      try {
+        // Use the topic search with a broad query, or fetch directly
+        let title = "";
+        let subtitle = "";
+        if (type === "project") {
+          const res = await fetch("/api/projects", { signal: controller.signal });
+          if (res.ok) {
+            const data = await res.json();
+            const p = data.projects?.find((pr: { project_id: string }) => pr.project_id === id);
+            if (p) { title = p.name; subtitle = p.category ?? p.status; }
+          }
+        } else if (type === "prospect") {
+          const res = await fetch(`/api/prospects/${id}`, { signal: controller.signal });
+          if (res.ok) {
+            const data = await res.json();
+            if (data.prospect) { title = data.prospect.company; subtitle = data.prospect.icp_category ?? "Prospect"; }
+          }
+        } else if (type === "ma_entity") {
+          const res = await fetch("/api/ma", { signal: controller.signal });
+          if (res.ok) {
+            const data = await res.json();
+            const m = data.entities?.find((e: { entity_id: string }) => e.entity_id === id);
+            if (m) { title = m.company; subtitle = `${m.entity_type} · ${m.stage.replace(/_/g, " ")}`; }
+          }
+        }
+        if (title) {
+          setLinkedTopic({ id, type, title, subtitle });
+        }
+      } catch {
+        // ignore abort / network errors
+      }
+    })();
+
+    return () => controller.abort();
+  }, [linkedTopic]);
 
   // Close context menu on click anywhere
   useEffect(() => {
@@ -382,14 +447,14 @@ export function ThreadChat({
   const currentType = INTERACTION_TYPES.find((t) => t.value === interactionType);
   const placeholder = currentType?.placeholder ?? "Type a message...";
 
-  async function handleSend() {
+  async function handleSend(options?: { flushQueue?: boolean }) {
     const trimmed = input.trim();
     const hasImages = pendingImages.length > 0;
     const hasDocs = pendingDocs.length > 0;
     if ((!trimmed && !hasImages && !hasDocs && inputChunks.length === 0) || loading || sendingRef.current) return;
 
-    // If "more to paste" is on, buffer the chunk and wait
-    if (moreToAdd && interactionType === "coaching") {
+    // If "more to paste" is on (and not flushing), buffer the chunk and wait
+    if (moreToAdd && !options?.flushQueue && interactionType === "coaching") {
       if (trimmed) {
         setInputChunks((prev) => [...prev, trimmed]);
         setInput("");
@@ -826,6 +891,84 @@ export function ThreadChat({
     } catch {
       setError("Network error assigning thread.");
       setAssigningToPerson(false);
+    }
+  }
+
+  async function searchTopics(query: string) {
+    setTopicSearch(query);
+    if (query.length < 2) {
+      setTopicResults([]);
+      return;
+    }
+    setSearchingTopics(true);
+    try {
+      const res = await fetch(`/api/coaching/threads/topic-search?q=${encodeURIComponent(query)}`);
+      if (res.ok) {
+        const data = await res.json();
+        setTopicResults(data.topics ?? []);
+      }
+    } catch {
+      // ignore
+    } finally {
+      setSearchingTopics(false);
+    }
+  }
+
+  async function handleLinkTopic(topic: { id: string; type: string; title: string; subtitle?: string }) {
+    setLinkingTopic(true);
+    // Build the update payload: set the matching FK, clear the others
+    const payload: Record<string, string | null> = {
+      deal_id: null,
+      prospect_id: null,
+      project_id: null,
+      ma_entity_id: null,
+    };
+    if (topic.type === "deal") payload.deal_id = topic.id;
+    else if (topic.type === "prospect") payload.prospect_id = topic.id;
+    else if (topic.type === "project") payload.project_id = topic.id;
+    else if (topic.type === "ma_entity") payload.ma_entity_id = topic.id;
+
+    try {
+      const res = await fetch(`/api/coaching/threads/${thread.thread_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        setLinkedTopic(topic);
+        // Also update the deal picker state if a deal was selected
+        if (topic.type === "deal") {
+          setLinkedDealId(topic.id);
+        } else {
+          setLinkedDealId(null);
+        }
+        setShowTopicPicker(false);
+        setTopicSearch("");
+        setTopicResults([]);
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setLinkingTopic(false);
+    }
+  }
+
+  async function handleUnlinkTopic() {
+    setLinkingTopic(true);
+    try {
+      const res = await fetch(`/api/coaching/threads/${thread.thread_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ deal_id: null, prospect_id: null, project_id: null, ma_entity_id: null }),
+      });
+      if (res.ok) {
+        setLinkedTopic(null);
+        setLinkedDealId(null);
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setLinkingTopic(false);
     }
   }
 
@@ -1385,6 +1528,92 @@ export function ThreadChat({
               className="text-[10px] text-text-muted hover:text-emerald-400 transition-colors"
             >
               + Link to person
+            </button>
+          )}
+
+          {/* Topic link */}
+          {showTopicPicker ? (
+            <div className="relative">
+              <div className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={topicSearch}
+                  onChange={(e) => searchTopics(e.target.value)}
+                  placeholder="Search deals, projects, prospects…"
+                  className="w-52 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+                  autoFocus
+                />
+                <button
+                  onClick={() => {
+                    setShowTopicPicker(false);
+                    setTopicSearch("");
+                    setTopicResults([]);
+                  }}
+                  className="text-xs text-text-muted hover:text-text-primary"
+                >
+                  Cancel
+                </button>
+              </div>
+              {topicSearch.length >= 2 && (
+                <div className="absolute top-7 left-0 z-20 w-72 rounded-md border border-border-primary bg-surface-primary shadow-lg max-h-60 overflow-y-auto">
+                  {searchingTopics && (
+                    <p className="px-3 py-2 text-[10px] text-text-muted">Searching…</p>
+                  )}
+                  {topicResults.map((t) => (
+                    <button
+                      key={`${t.type}-${t.id}`}
+                      onClick={() => handleLinkTopic(t)}
+                      disabled={linkingTopic}
+                      className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-surface-tertiary transition-colors flex items-center gap-2"
+                    >
+                      <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider ${
+                        t.type === "deal" ? "bg-accent-primary/15 text-accent-primary"
+                        : t.type === "prospect" ? "bg-blue-500/15 text-blue-400"
+                        : t.type === "project" ? "bg-violet-500/15 text-violet-400"
+                        : "bg-amber-500/15 text-amber-400"
+                      }`}>
+                        {t.type === "ma_entity" ? "M&A" : t.type}
+                      </span>
+                      <span className="truncate">{t.title}</span>
+                      {t.subtitle && <span className="text-text-muted shrink-0">· {t.subtitle}</span>}
+                    </button>
+                  ))}
+                  {!searchingTopics && topicResults.length === 0 && (
+                    <p className="px-3 py-2 text-[10px] text-text-muted">No results found</p>
+                  )}
+                </div>
+              )}
+            </div>
+          ) : linkedTopic && linkedTopic.title ? (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setShowTopicPicker(true)}
+                className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
+                  linkedTopic.type === "deal" ? "bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20"
+                  : linkedTopic.type === "prospect" ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                  : linkedTopic.type === "project" ? "bg-violet-500/10 text-violet-400 hover:bg-violet-500/20"
+                  : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
+                }`}
+                title="Change linked topic"
+              >
+                {linkedTopic.title}
+                {linkedTopic.subtitle && ` · ${linkedTopic.subtitle}`}
+              </button>
+              <button
+                onClick={handleUnlinkTopic}
+                disabled={linkingTopic}
+                className="text-[10px] text-text-muted hover:text-red-400 transition-colors"
+                title="Remove topic link"
+              >
+                ×
+              </button>
+            </div>
+          ) : (
+            <button
+              onClick={() => setShowTopicPicker(true)}
+              className="text-[10px] text-text-muted hover:text-violet-400 transition-colors"
+            >
+              + Link to topic
             </button>
           )}
         </div>
@@ -2124,20 +2353,23 @@ export function ThreadChat({
                   checked={moreToAdd}
                   onChange={(e) => {
                     setMoreToAdd(e.target.checked);
-                    if (!e.target.checked) setInputChunks([]);
+                    // When unchecking with queued chunks, auto-send
+                    if (!e.target.checked && inputChunks.length > 0) {
+                      handleSend({ flushQueue: true });
+                    }
                   }}
                   disabled={loading}
                   className="h-3.5 w-3.5 accent-accent-primary"
                 />
                 <span className="text-xs text-text-muted">
                   {moreToAdd && inputChunks.length > 0
-                    ? `${inputChunks.length} chunk${inputChunks.length > 1 ? "s" : ""} queued — uncheck when done`
+                    ? `${inputChunks.length} chunk${inputChunks.length > 1 ? "s" : ""} queued — uncheck to send`
                     : "More to paste"}
                 </span>
               </label>
             )}
             <button
-              onClick={handleSend}
+              onClick={() => handleSend()}
               disabled={loading || (!input.trim() && pendingImages.length === 0 && pendingDocs.length === 0)}
               title={interactionType === "coaching" ? "Enter to send" : "⌘+Enter to save"}
               className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
