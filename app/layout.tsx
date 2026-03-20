@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
-import { ThemeProvider } from "@/components/theme-provider";
 import "./globals.css";
 
 const inter = Inter({
@@ -19,35 +18,17 @@ export const metadata: Metadata = {
     "DaaS sales command center for building and closing data licensing revenue.",
 };
 
-// Inline script to apply theme before React hydrates (prevents flash)
-// Dark is default (no class needed). Light adds .light class.
-const themeScript = `
-(function(){
-  try {
-    var t = localStorage.getItem('revsignal-theme') || 'dark';
-    var d = t === 'system'
-      ? (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-      : t;
-    document.documentElement.classList.remove('light','dark');
-    if (d === 'light') document.documentElement.classList.add('light');
-  } catch(e) {}
-})();
-`;
-
 export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <head>
-        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-      </head>
+    <html lang="en" className="dark">
       <body
         className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
       >
-        <ThemeProvider>{children}</ThemeProvider>
+        {children}
       </body>
     </html>
   );

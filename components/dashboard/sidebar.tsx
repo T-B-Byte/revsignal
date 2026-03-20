@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useSidebar } from "@/components/dashboard/sidebar-context";
 import { OrganizeSidebarDialog } from "@/components/dashboard/organize-sidebar-dialog";
-import { ThemeToggle } from "@/components/theme-toggle";
 import {
   getSidebarOrganization,
   toggleFolderOpen,
@@ -30,7 +29,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/flashcards", label: "Flashcards", icon: FlashcardsIcon, key: "flashcards" },
   { href: "/plan", label: "90-Day Plan", icon: FlagIcon, key: "plan" },
   { href: "/playbook", label: "Playbook", icon: BookIcon, key: "playbook" },
-  { href: "/compete", label: "Compete", icon: ShieldIcon, key: "compete" },
+  { href: "/compete", label: "Competition", icon: ShieldIcon, key: "compete" },
   { href: "/ma", label: "M&A", icon: HandshakeIcon, key: "ma" },
   { href: "/marketing", label: "Marketing", icon: MegaphoneIcon, key: "marketing" },
   { href: "/studio", label: "Studio", icon: StudioIcon, key: "studio" },
@@ -220,7 +219,6 @@ export function Sidebar() {
               >
                 <FolderIcon className="h-4 w-4" />
               </button>
-              <ThemeToggle collapsed />
               <button
                 onClick={toggleSidebar}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-tertiary hover:text-text-primary transition-colors"
@@ -247,10 +245,6 @@ export function Sidebar() {
                 >
                   <CollapseIcon className="h-3.5 w-3.5 shrink-0" collapsed={isCollapsed} />
                 </button>
-              </div>
-              {/* Theme toggle */}
-              <div className="mb-2">
-                <ThemeToggle />
               </div>
               {/* Version */}
               <p className="px-1 font-data text-[10px] text-text-muted/60">

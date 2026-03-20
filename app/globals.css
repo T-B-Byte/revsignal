@@ -1,8 +1,7 @@
 @import "tailwindcss";
 
 @theme {
-  /* Colors — Mission Control palette (dark mode defaults)
-     Light mode overrides are in .light below. */
+  /* Colors — Mission Control palette */
   --color-surface-primary: #0a0e1a;
   --color-surface-secondary: #111827;
   --color-surface-tertiary: #1f2937;
@@ -38,38 +37,6 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
-}
-
-/* Dark mode color-scheme */
-:root {
-  color-scheme: dark;
-}
-
-/* ========================================
-   Light Mode
-   ======================================== */
-.light {
-  --color-surface-primary: #f8f9fb;
-  --color-surface-secondary: #ffffff;
-  --color-surface-tertiary: #eef0f4;
-  --color-surface-elevated: rgba(255, 255, 255, 0.95);
-  --color-surface-card: rgba(255, 255, 255, 0.85);
-
-  --color-accent-glow: rgba(59, 130, 246, 0.08);
-
-  --color-status-green-bg: rgba(34, 197, 94, 0.08);
-  --color-status-yellow-bg: rgba(234, 179, 8, 0.08);
-  --color-status-red-bg: rgba(239, 68, 68, 0.08);
-
-  --color-text-primary: #1a1a2e;
-  --color-text-secondary: #4b5563;
-  --color-text-muted: #9ca3af;
-  --color-text-inverse: #f9fafb;
-
-  --color-border-primary: rgba(0, 0, 0, 0.1);
-  --color-border-hover: rgba(0, 0, 0, 0.2);
-
-  color-scheme: light;
 }
 
 /* Base styles */
@@ -118,11 +85,6 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
-/* Ensure form elements inherit theme colors in light mode */
-input, select, textarea {
-  color-scheme: inherit;
-}
-
 /* Print styles for PDF export */
 @media print {
   @page {
@@ -148,9 +110,7 @@ input, select, textarea {
     overflow: hidden !important;
   }
 
-  /* Break out of the flex h-screen overflow-hidden layout shell.
-     The dashboard layout nests: body > #root > SidebarProvider > flex-wrapper > sidebar + main-column.
-     We need every ancestor to stop clipping and fill width. */
+  /* Break out of the flex h-screen overflow-hidden layout shell. */
   html, body {
     height: auto !important;
     overflow: visible !important;
@@ -187,7 +147,7 @@ input, select, textarea {
     gap: 0.75rem !important;
   }
 
-  /* Cards should have visible borders */
+  /* Cards should have visible borders in print */
   [class*="border-border-primary"] {
     border-color: #d1d5db !important;
   }
