@@ -2232,15 +2232,20 @@ export async function generateThreadResponse(
       if (!mergedIds.has(note.created_at)) {
         const typeLabel = (note.interaction_type ?? "note").replace(/_/g, " ");
         const date = note.created_at.split("T")[0];
-        const preview = note.content.length > 300
-          ? note.content.slice(0, 300) + " [...]"
+        const preview = note.content.length > 800
+          ? note.content.slice(0, 800) + " [...]"
           : note.content;
         intelDigestLines.push(`[${date}] (${typeLabel}) ${preview}`);
       }
     }
 
     let lastRole: string | null = null;
-    let charBudget = 12000;
+    let charBudget = 24000;
+
+    // Per-message limits: user messages (source material, pasted chunks) get
+    // more room; assistant messages (AI analysis) can be shorter.
+    const USER_MSG_LIMIT = 6000;
+    const ASSISTANT_MSG_LIMIT = 2000;
 
     for (const msg of merged) {
       const role = msg.role === "user" ? "user" as const : "assistant" as const;
@@ -2258,8 +2263,9 @@ export async function generateThreadResponse(
         content = `[PASTED ${typeLabel}]\n${content}`;
       }
 
-      if (content.length > 2000) {
-        content = content.slice(0, 2000) + " [...]";
+      const msgLimit = role === "user" ? USER_MSG_LIMIT : ASSISTANT_MSG_LIMIT;
+      if (content.length > msgLimit) {
+        content = content.slice(0, msgLimit) + " [...]";
       }
       if (charBudget - content.length < 0) break;
       charBudget -= content.length;
@@ -2391,14 +2397,18 @@ export async function generateThreadResponse(
   // Step 9: Check if thread brief needs generation or regeneration
   // Generate first brief early (after 3 messages) so the thread becomes
   // visible to other threads via global briefs. Regenerate periodically.
+  // Also regenerate whenever a large user message is pasted (chunks, emails,
+  // transcripts) so the substance is captured in the brief before it falls
+  // outside the history window.
   const currentMessageCount = (options?.messageCount ?? 0) + 2; // +2 for user + assistant
   const needsFirstBrief =
     currentMessageCount >= FIRST_BRIEF_THRESHOLD && !options?.threadBrief;
   const needsRegeneration =
     currentMessageCount >= THREAD_BRIEF_REGENERATE_INTERVAL &&
     currentMessageCount % THREAD_BRIEF_REGENERATE_INTERVAL < 2;
+  const largeContentPasted = userMessage.length > 3000 && options?.threadBrief;
 
-  if (needsFirstBrief || needsRegeneration) {
+  if (needsFirstBrief || needsRegeneration || largeContentPasted) {
     // Fire and forget (don't block the response)
     generateThreadBrief(supabase, userId, threadId).catch((err) =>
       console.error("[strategist] Thread brief generation failed:", err)
