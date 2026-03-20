@@ -7,6 +7,7 @@ const createProjectSchema = z.object({
   description: z.string().max(2000).optional(),
   status: z.enum(["active", "paused", "completed"] as const).optional(),
   color: z.string().max(20).optional(),
+  category: z.string().max(100).nullable().optional(),
   members: z
     .array(
       z.object({
@@ -25,6 +26,7 @@ const updateProjectSchema = z.object({
   description: z.string().max(2000).nullable().optional(),
   status: z.enum(["active", "paused", "completed"] as const).optional(),
   color: z.string().max(20).optional(),
+  category: z.string().max(100).nullable().optional(),
   members: z
     .array(
       z.object({
@@ -58,6 +60,7 @@ export async function GET(request: NextRequest) {
 
   const { searchParams } = request.nextUrl;
   const status = searchParams.get("status");
+  const category = searchParams.get("category");
 
   if (status && !["active", "paused", "completed"].includes(status)) {
     return NextResponse.json({ error: "Invalid status" }, { status: 400 });
@@ -71,6 +74,10 @@ export async function GET(request: NextRequest) {
 
   if (status) {
     query = query.eq("status", status);
+  }
+
+  if (category) {
+    query = query.eq("category", category);
   }
 
   const { data, error } = await query;
@@ -121,6 +128,7 @@ export async function POST(request: NextRequest) {
       description: parsed.data.description ?? null,
       status: parsed.data.status ?? "active",
       color: parsed.data.color ?? "#3b82f6",
+      category: parsed.data.category ?? null,
     })
     .select()
     .single();

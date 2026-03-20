@@ -1369,3 +1369,50 @@ export async function retrieveTradeshowContext(
     competitiveIntel: (intelResult.data as CompetitiveIntel[]) || [],
   };
 }
+
+// ---------------------------------------------------------------------------
+// Global Thread Briefs — cross-thread memory for the Strategist
+// ---------------------------------------------------------------------------
+
+export interface GlobalThreadBrief {
+  thread_id: string;
+  title: string;
+  company: string | null;
+  contact_name: string | null;
+  thread_brief: string | null;
+  last_message_at: string;
+}
+
+/**
+ * Retrieves thread briefs from ALL non-archived threads for a user,
+ * excluding a specific thread (the current one). This gives the Strategist
+ * global awareness across all conversations.
+ *
+ * Returns threads sorted by recency, limited to 50 most recent.
+ */
+export async function retrieveGlobalThreadBriefs(
+  supabase: SupabaseClient,
+  userId: string,
+  excludeThreadId?: string
+): Promise<GlobalThreadBrief[]> {
+  let query = supabase
+    .from("coaching_threads")
+    .select("thread_id, title, company, contact_name, thread_brief, last_message_at")
+    .eq("user_id", userId)
+    .eq("is_archived", false)
+    .order("last_message_at", { ascending: false })
+    .limit(50);
+
+  if (excludeThreadId) {
+    query = query.neq("thread_id", excludeThreadId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("[rag/retriever] Error fetching global thread briefs:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as GlobalThreadBrief[];
+}

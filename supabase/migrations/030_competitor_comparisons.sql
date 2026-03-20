@@ -29,7 +29,7 @@ CREATE UNIQUE INDEX idx_competitor_comparisons_unique
 CREATE TRIGGER set_competitor_comparisons_updated_at
   BEFORE UPDATE ON competitor_comparisons
   FOR EACH ROW
-  EXECUTE FUNCTION update_updated_at_column();
+  EXECUTE FUNCTION update_updated_at();
 
 -- RLS
 ALTER TABLE competitor_comparisons ENABLE ROW LEVEL SECURITY;

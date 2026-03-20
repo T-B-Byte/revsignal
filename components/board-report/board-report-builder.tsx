@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import type { BoardReportSection } from "@/lib/agents/strategist";
 
 interface BoardReportBuilderProps {
@@ -13,12 +13,282 @@ interface ReportState {
   generatedAt: string;
 }
 
+interface ChatMessage {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+}
+
+interface ArchiveEntry {
+  id: string;
+  week_number: number;
+  title: string;
+  subtitle: string;
+  sections: BoardReportSection[];
+  tokens_used: number;
+  generated_at: string;
+  created_at: string;
+}
+
 export function BoardReportBuilder({ initialWeekNumber }: BoardReportBuilderProps) {
   const [report, setReport] = useState<ReportState | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [title, setTitle] = useState("DaaS Revenue Initiative");
   const [subtitle, setSubtitle] = useState("");
+
+  // Archive state
+  const [archives, setArchives] = useState<ArchiveEntry[]>([]);
+  const [archivesLoaded, setArchivesLoaded] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+
+  // Load archives on mount and auto-display the most recent one
+  useEffect(() => {
+    async function loadArchives() {
+      try {
+        const res = await fetch("/api/agents/board-report/archives");
+        if (res.ok) {
+          const data: ArchiveEntry[] = await res.json();
+          setArchives(data);
+          // Auto-load the most recent archived report (already sorted newest-first by API)
+          if (data.length > 0) {
+            const latest = data[0];
+            setReport({
+              sections: latest.sections,
+              weekNumber: latest.week_number,
+              generatedAt: latest.generated_at,
+            });
+            setTitle(latest.title);
+            setSubtitle(latest.subtitle);
+          }
+        }
+      } catch {
+        // Silently fail; archives are supplementary
+      } finally {
+        setArchivesLoaded(true);
+      }
+    }
+    loadArchives();
+  }, []);
+
+  const saveToArchive = useCallback(async () => {
+    if (!report || saving) return;
+    setSaving(true);
+    setSaveSuccess(false);
+    try {
+      const res = await fetch("/api/agents/board-report/archives", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          week_number: report.weekNumber,
+          title,
+          subtitle,
+          sections: report.sections,
+          tokens_used: 0,
+          generated_at: report.generatedAt,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to save");
+      }
+      const saved = await res.json();
+      // Update archives list
+      setArchives((prev) => {
+        const filtered = prev.filter((a) => a.week_number !== report.weekNumber);
+        return [saved, ...filtered].sort((a, b) => b.week_number - a.week_number);
+      });
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to save archive");
+    } finally {
+      setSaving(false);
+    }
+  }, [report, saving, title, subtitle]);
+
+  const loadArchive = useCallback((archive: ArchiveEntry) => {
+    setReport({
+      sections: archive.sections,
+      weekNumber: archive.week_number,
+      generatedAt: archive.generated_at,
+    });
+    setTitle(archive.title);
+    setSubtitle(archive.subtitle);
+  }, []);
+
+  // Strategist chat state
+  const [chatOpen, setChatOpen] = useState(false);
+  const [chatThreadId, setChatThreadId] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [chatInput, setChatInput] = useState("");
+  const [chatSending, setChatSending] = useState(false);
+  const [chatError, setChatError] = useState<string | null>(null);
+  const [chatLoading, setChatLoading] = useState(false);
+  const chatEndRef = useRef<HTMLDivElement>(null);
+
+  // Scroll chat to bottom when new messages arrive
+  useEffect(() => {
+    if (chatEndRef.current) {
+      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [chatMessages]);
+
+  // Load messages for a thread and set state
+  const loadThreadMessages = useCallback(async (threadId: string) => {
+    const msgRes = await fetch(
+      `/api/coaching/threads/${threadId}/messages?limit=50`
+    );
+    if (msgRes.ok) {
+      const msgs = await msgRes.json();
+      setChatMessages(
+        msgs.map((m: Record<string, unknown>) => ({
+          id: m.conversation_id as string,
+          role: m.role as "user" | "assistant",
+          content: m.content as string,
+          created_at: m.created_at as string,
+        }))
+      );
+    }
+  }, []);
+
+  // Find or create a coaching thread for "Board Report"
+  const ensureThread = useCallback(async (): Promise<string | null> => {
+    if (chatThreadId) return chatThreadId;
+
+    setChatLoading(true);
+    try {
+      // Search for existing "Board Report" thread first
+      const listRes = await fetch("/api/coaching/threads");
+      if (listRes.ok) {
+        const threads = await listRes.json();
+        const existing = threads.find(
+          (t: { title: string }) =>
+            t.title.toLowerCase() === "board report"
+        );
+        if (existing) {
+          setChatThreadId(existing.thread_id);
+          await loadThreadMessages(existing.thread_id);
+          return existing.thread_id;
+        }
+      }
+
+      // No existing thread, create one
+      const res = await fetch("/api/coaching/threads", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ title: "Board Report" }),
+      });
+
+      if (!res.ok) {
+        throw new Error("Failed to create coaching thread");
+      }
+
+      const thread = await res.json();
+      setChatThreadId(thread.thread_id);
+      return thread.thread_id;
+    } catch (err) {
+      setChatError(
+        err instanceof Error ? err.message : "Failed to open chat"
+      );
+      return null;
+    } finally {
+      setChatLoading(false);
+    }
+  }, [chatThreadId, loadThreadMessages]);
+
+  const openChat = useCallback(async () => {
+    setChatOpen(true);
+    if (!chatThreadId) {
+      await ensureThread();
+    }
+  }, [chatThreadId, ensureThread]);
+
+  // Build context string from current report sections
+  const buildReportContext = useCallback(() => {
+    if (!report) return "";
+    const enabled = report.sections.filter((s) => s.enabled);
+    if (enabled.length === 0) return "";
+    const sectionText = enabled
+      .map((s) => `## ${s.title}\n${s.content}`)
+      .join("\n\n");
+    return `[Current board report sections for context]\n\n${sectionText}\n\n---\n\n`;
+  }, [report]);
+
+  const sendChatMessage = useCallback(async () => {
+    const msg = chatInput.trim();
+    if (!msg || chatSending) return;
+
+    const threadId = await ensureThread();
+    if (!threadId) return;
+
+    setChatSending(true);
+    setChatError(null);
+
+    // Prepend report context to the message sent to the API,
+    // but display only the user's typed message in the UI
+    const contextPrefix = buildReportContext();
+    const fullMessage = contextPrefix + msg;
+
+    // Optimistic user message
+    const tempId = `temp-${Date.now()}`;
+    setChatMessages((prev) => [
+      ...prev,
+      { id: tempId, role: "user", content: msg, created_at: new Date().toISOString() },
+    ]);
+    setChatInput("");
+
+    try {
+      const res = await fetch(
+        `/api/coaching/threads/${threadId}/messages`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            message: fullMessage,
+            interaction_type: "coaching",
+          }),
+        }
+      );
+
+      if (!res.ok) {
+        const data = await res.json();
+        throw new Error(data.error || "Failed to send message");
+      }
+
+      const data = await res.json();
+
+      // Replace temp message with real one and add assistant response
+      setChatMessages((prev) => {
+        const updated = prev.filter((m) => m.id !== tempId);
+        return [
+          ...updated,
+          {
+            id: data.user_message_id || tempId,
+            role: "user" as const,
+            content: msg,
+            created_at: new Date().toISOString(),
+          },
+          {
+            id: data.assistant_message_id || `ast-${Date.now()}`,
+            role: "assistant" as const,
+            content: data.response,
+            created_at: data.generatedAt || new Date().toISOString(),
+          },
+        ];
+      });
+    } catch (err) {
+      setChatError(
+        err instanceof Error ? err.message : "Failed to send message"
+      );
+      // Remove optimistic message on error
+      setChatMessages((prev) => prev.filter((m) => m.id !== tempId));
+    } finally {
+      setChatSending(false);
+    }
+  }, [chatInput, chatSending, ensureThread, buildReportContext]);
 
   const generateReport = useCallback(async () => {
     setLoading(true);
@@ -30,18 +300,44 @@ export function BoardReportBuilder({ initialWeekNumber }: BoardReportBuilderProp
         throw new Error(data.error || "Failed to generate report");
       }
       const data = await res.json();
+      const newSubtitle = `Week ${data.weekNumber} Update`;
       setReport({
         sections: data.sections,
         weekNumber: data.weekNumber,
         generatedAt: data.generatedAt,
       });
-      setSubtitle(`Week ${data.weekNumber} Update`);
+      setSubtitle(newSubtitle);
+
+      // Auto-save to archive so it persists across page visits
+      try {
+        const archiveRes = await fetch("/api/agents/board-report/archives", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            week_number: data.weekNumber,
+            title,
+            subtitle: newSubtitle,
+            sections: data.sections,
+            tokens_used: data.tokensUsed || 0,
+            generated_at: data.generatedAt,
+          }),
+        });
+        if (archiveRes.ok) {
+          const saved = await archiveRes.json();
+          setArchives((prev) => {
+            const filtered = prev.filter((a) => a.week_number !== data.weekNumber);
+            return [saved, ...filtered].sort((a, b) => b.week_number - a.week_number);
+          });
+        }
+      } catch {
+        // Archive save is best-effort; report is still displayed
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to generate report");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [title]);
 
   const toggleSection = useCallback((sectionId: string) => {
     setReport((prev) => {
@@ -110,14 +406,45 @@ export function BoardReportBuilder({ initialWeekNumber }: BoardReportBuilderProp
         </div>
         <div className="flex items-center gap-3">
           {report && (
-            <button
-              onClick={openPrintEditor}
-              disabled={enabledCount === 0}
-              className="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              <PrintIcon className="h-4 w-4" />
-              Open Editor
-            </button>
+            <>
+              <button
+                onClick={openChat}
+                className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                  chatOpen
+                    ? "border-accent-primary bg-accent-glow text-accent-primary"
+                    : "border-border-primary text-text-secondary hover:bg-surface-secondary"
+                }`}
+              >
+                <ChatIcon className="h-4 w-4" />
+                {chatOpen ? "Strategist" : "Ask Strategist"}
+              </button>
+              <button
+                onClick={saveToArchive}
+                disabled={saving}
+                className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-colors ${
+                  saveSuccess
+                    ? "border-status-green/30 bg-status-green-bg text-status-green"
+                    : "border-border-primary text-text-secondary hover:bg-surface-secondary"
+                } disabled:opacity-50`}
+              >
+                {saving ? (
+                  <SpinnerIcon className="h-4 w-4 animate-spin" />
+                ) : saveSuccess ? (
+                  <CheckIcon className="h-4 w-4" />
+                ) : (
+                  <ArchiveIcon className="h-4 w-4" />
+                )}
+                {saveSuccess ? "Saved" : "Save"}
+              </button>
+              <button
+                onClick={openPrintEditor}
+                disabled={enabledCount === 0}
+                className="flex items-center gap-2 rounded-lg border border-border-primary px-4 py-2 text-sm font-medium text-text-secondary hover:bg-surface-secondary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <PrintIcon className="h-4 w-4" />
+                Open Editor
+              </button>
+            </>
           )}
           <button
             onClick={generateReport}
@@ -173,6 +500,31 @@ export function BoardReportBuilder({ initialWeekNumber }: BoardReportBuilderProp
               <SparklesIcon className="h-4 w-4" />
               Generate Report
             </button>
+
+            {archivesLoaded && archives.length > 0 && (
+              <div className="mt-6 pt-4 border-t border-border-primary w-full">
+                <p className="text-xs font-semibold uppercase tracking-wider text-text-muted mb-2 text-center">
+                  Or load a past report
+                </p>
+                <div className="space-y-1 max-h-48 overflow-y-auto">
+                  {archives.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => loadArchive(a)}
+                      className="w-full text-left rounded-lg px-3 py-2 text-xs hover:bg-surface-secondary transition-colors text-text-secondary"
+                    >
+                      <span className="font-medium">Week {a.week_number}</span>
+                      <span className="text-text-muted ml-2">
+                        {new Date(a.generated_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -255,6 +607,37 @@ export function BoardReportBuilder({ initialWeekNumber }: BoardReportBuilderProp
                 Generated {new Date(report.generatedAt).toLocaleString()}
               </p>
             </div>
+
+            {/* Archive browser */}
+            {archivesLoaded && archives.length > 0 && (
+              <div className="pt-3 border-t border-border-primary mt-3">
+                <span className="text-xs font-semibold uppercase tracking-wider text-text-muted">
+                  Past Reports
+                </span>
+                <div className="mt-2 space-y-1 max-h-48 overflow-y-auto">
+                  {archives.map((a) => (
+                    <button
+                      key={a.id}
+                      onClick={() => loadArchive(a)}
+                      className={`w-full text-left rounded-lg px-2.5 py-2 text-xs transition-colors ${
+                        report.weekNumber === a.week_number
+                          ? "bg-accent-glow border border-accent-primary/30 text-accent-primary font-medium"
+                          : "hover:bg-surface-tertiary text-text-secondary"
+                      }`}
+                    >
+                      <div className="font-medium">Week {a.week_number}</div>
+                      <div className="text-[10px] text-text-muted mt-0.5">
+                        {new Date(a.generated_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                          year: "numeric",
+                        })}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Main: section preview/edit */}
@@ -282,6 +665,117 @@ export function BoardReportBuilder({ initialWeekNumber }: BoardReportBuilderProp
               </div>
             )}
           </div>
+
+          {/* Strategist chat panel */}
+          {chatOpen && (
+            <div className="w-96 shrink-0 flex flex-col min-h-0 rounded-xl border border-border-primary bg-surface-secondary overflow-hidden">
+              {/* Chat header */}
+              <div className="flex items-center justify-between px-4 py-3 border-b border-border-primary bg-surface-tertiary/50">
+                <div className="flex items-center gap-2">
+                  <SparklesIcon className="h-4 w-4 text-accent-primary" />
+                  <span className="text-sm font-semibold text-text-primary">
+                    The Strategist
+                  </span>
+                </div>
+                <button
+                  onClick={() => setChatOpen(false)}
+                  className="text-text-muted hover:text-text-primary transition-colors p-1"
+                  title="Close chat"
+                >
+                  <CloseIcon className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Chat messages */}
+              <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
+                {chatLoading && (
+                  <div className="flex items-center justify-center py-8">
+                    <SpinnerIcon className="h-5 w-5 animate-spin text-accent-primary" />
+                  </div>
+                )}
+
+                {!chatLoading && chatMessages.length === 0 && (
+                  <div className="text-center py-8 px-4">
+                    <SparklesIcon className="mx-auto mb-2 h-6 w-6 text-text-muted" />
+                    <p className="text-xs text-text-muted">
+                      Ask the Strategist about your board report. It can see
+                      your current sections and help refine messaging, suggest
+                      edits, or talk through strategy.
+                    </p>
+                  </div>
+                )}
+
+                {chatMessages.map((msg) => (
+                  <div
+                    key={msg.id}
+                    className={`flex ${
+                      msg.role === "user" ? "justify-end" : "justify-start"
+                    }`}
+                  >
+                    <div
+                      className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
+                        msg.role === "user"
+                          ? "bg-accent-primary text-white"
+                          : "bg-surface-primary border border-border-primary text-text-primary"
+                      }`}
+                    >
+                      <div className="whitespace-pre-wrap">{msg.content}</div>
+                    </div>
+                  </div>
+                ))}
+
+                {chatSending && (
+                  <div className="flex justify-start">
+                    <div className="bg-surface-primary border border-border-primary rounded-xl px-3 py-2">
+                      <div className="flex items-center gap-2 text-xs text-text-muted">
+                        <SpinnerIcon className="h-3 w-3 animate-spin" />
+                        Thinking...
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div ref={chatEndRef} />
+              </div>
+
+              {/* Chat error */}
+              {chatError && (
+                <div className="mx-3 mb-2 rounded-lg border border-status-red/20 bg-status-red-bg px-3 py-2 text-xs text-status-red">
+                  {chatError}
+                </div>
+              )}
+
+              {/* Chat input */}
+              <div className="border-t border-border-primary p-3">
+                <div className="flex gap-2">
+                  <textarea
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                        e.preventDefault();
+                        sendChatMessage();
+                      }
+                    }}
+                    placeholder="Ask about your board report..."
+                    rows={2}
+                    className="flex-1 resize-none rounded-lg border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+                  />
+                  <button
+                    onClick={sendChatMessage}
+                    disabled={chatSending || !chatInput.trim()}
+                    className="self-end rounded-lg bg-accent-primary p-2 text-white hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    title="Send (Cmd+Enter)"
+                  >
+                    <SendIcon className="h-4 w-4" />
+                  </button>
+                </div>
+                <p className="mt-1.5 text-[10px] text-text-muted">
+                  Cmd+Enter to send. The Strategist sees your current report sections.
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
@@ -730,6 +1224,46 @@ function EyeOffIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88" />
+    </svg>
+  );
+}
+
+function ChatIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 01.865-.501 48.172 48.172 0 003.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0012 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018z" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+    </svg>
+  );
+}
+
+function SendIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M6 12L3.269 3.126A59.768 59.768 0 0121.485 12 59.77 59.77 0 013.27 20.876L5.999 12zm0 0h7.5" />
+    </svg>
+  );
+}
+
+function ArchiveIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M4.5 12.75l6 6 9-13.5" />
     </svg>
   );
 }

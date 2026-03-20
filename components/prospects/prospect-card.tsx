@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -542,15 +543,16 @@ export function ProspectCard({ prospect, icpCategories, thread, threadMessages =
           </div>
         )}
 
-        {/* Outreach dialog — rendered outside expanded block so header button works */}
-        {showOutreach && (
+        {/* Outreach dialog — portaled to body to escape Card's backdrop-blur stacking context */}
+        {showOutreach && createPortal(
           <ProspectOutreachDialog
             prospect={prospect}
             onClose={() => setShowOutreach(false)}
             onSuccess={() => {
               router.refresh();
             }}
-          />
+          />,
+          document.body
         )}
       </CardContent>
     </Card>

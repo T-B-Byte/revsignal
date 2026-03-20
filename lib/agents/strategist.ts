@@ -18,6 +18,7 @@
  */
 
 import { SupabaseClient } from "@supabase/supabase-js";
+import Anthropic from "@anthropic-ai/sdk";
 import { getAnthropic, MODEL } from "@/lib/anthropic/client";
 import {
   retrieveBriefingContext,
@@ -25,6 +26,7 @@ import {
   retrieveStrategicContext,
   retrieveStakeholderContext,
   retrieveMeetingPrepContext,
+  retrieveGlobalThreadBriefs,
   type BriefingContext,
   type DealContext,
   type StrategicContextResult,
@@ -1138,7 +1140,7 @@ export async function generateMeetingPrep(
     dealId?: string;
   }
 ): Promise<MeetingPrepResult> {
-  // Step 1: RAG retrieval
+  // Step 1: RAG retrieval (meeting-specific context + global thread briefs)
   const [prepCtx, durationRetrieve] = await timed(() =>
     retrieveMeetingPrepContext(
       supabase,
@@ -1148,8 +1150,30 @@ export async function generateMeetingPrep(
     )
   );
 
+  // Fetch global thread briefs for cross-thread awareness
+  const globalBriefs = await retrieveGlobalThreadBriefs(supabase, userId);
+
   // Step 2: Build context doc
-  const contextDoc = buildMeetingPrepContextDoc(prepCtx, params);
+  let contextDoc = buildMeetingPrepContextDoc(prepCtx, params);
+
+  // Append global thread briefs so the Strategist can reference
+  // information discussed in other threads
+  if (globalBriefs.length > 0) {
+    const briefLines = globalBriefs
+      .filter((t) => t.thread_brief)
+      .map((t) => {
+        const label = t.company
+          ? `${t.title} (${t.company})`
+          : t.contact_name
+          ? `${t.title} (${t.contact_name})`
+          : t.title;
+        return `- [${label}]: ${t.thread_brief}`;
+      });
+
+    if (briefLines.length > 0) {
+      contextDoc += `\n\nOTHER CONVERSATION SUMMARIES (cross-reference for relevant context):\n${briefLines.join("\n")}`;
+    }
+  }
 
   // Step 3: Generate prep
   const anthropic = getAnthropic();
@@ -1919,8 +1943,64 @@ function coachingToneRules(): string {
 - Reference specific dates, contacts, and sources when stating facts.`;
 }
 
-/** Threshold: regenerate thread brief after this many messages */
-const THREAD_BRIEF_THRESHOLD = 20;
+// ── Image Vision Support ──────────────────────────────────────────────
+
+/** Supported image MIME types for Claude vision */
+const VISION_MIME_TYPES = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
+
+type VisionMediaType = "image/jpeg" | "image/png" | "image/webp" | "image/gif";
+
+interface FetchedImage {
+  media_type: VisionMediaType;
+  base64: string;
+}
+
+/**
+ * Fetch image URLs and convert to base64 for Claude vision.
+ * Skips any that fail or aren't valid image types.
+ */
+async function fetchImagesForVision(urls: string[]): Promise<FetchedImage[]> {
+  const results = await Promise.allSettled(
+    urls.map(async (url) => {
+      const res = await fetch(url);
+      if (!res.ok) return null;
+
+      const contentType = res.headers.get("content-type")?.split(";")[0]?.trim();
+      if (!contentType || !VISION_MIME_TYPES.has(contentType)) return null;
+
+      const buffer = await res.arrayBuffer();
+      // Skip images larger than 5MB (Claude limit)
+      if (buffer.byteLength > 5 * 1024 * 1024) return null;
+
+      return {
+        media_type: contentType as VisionMediaType,
+        base64: Buffer.from(buffer).toString("base64"),
+      };
+    })
+  );
+
+  return results
+    .filter(
+      (r): r is PromiseFulfilledResult<FetchedImage | null> =>
+        r.status === "fulfilled"
+    )
+    .map((r) => r.value)
+    .filter((v): v is FetchedImage => v !== null);
+}
+
+/**
+ * Thread brief generation thresholds.
+ * FIRST_BRIEF_THRESHOLD: generate the initial brief early so the thread
+ * is visible to other threads via global briefs (cross-thread awareness).
+ * REGENERATE_INTERVAL: regenerate the brief periodically to keep it fresh.
+ */
+const FIRST_BRIEF_THRESHOLD = 3;
+const THREAD_BRIEF_REGENERATE_INTERVAL = 20;
 
 export interface MeetingDetectedData {
   title: string;
@@ -1952,19 +2032,23 @@ export async function generateThreadResponse(
     maEntityId?: string;
     threadBrief?: string;
     messageCount?: number;
+    imageUrls?: string[];
   }
 ): Promise<ThreadResponseResult> {
-  // Step 1: RAG retrieval (strategic context + optional deal context)
+  // Step 1: RAG retrieval (strategic context + optional deal context + global thread briefs)
   const [strategicCtx, durationRetrieve] = await timed(() =>
     retrieveStrategicContext(supabase, userId, {
       dealId: options?.dealId,
     })
   );
 
-  let dealContext: DealContext | null = null;
-  if (options?.dealId) {
-    dealContext = await retrieveDealContext(supabase, userId, options.dealId);
-  }
+  // Fetch global thread briefs in parallel with deal context
+  const [dealContext, globalBriefs] = await Promise.all([
+    options?.dealId
+      ? retrieveDealContext(supabase, userId, options.dealId)
+      : Promise.resolve(null),
+    retrieveGlobalThreadBriefs(supabase, userId, threadId),
+  ]);
 
   // M&A entity context: fetch entity details, contacts, notes, and documents
   let maEntityContext: string | null = null;
@@ -2053,6 +2137,32 @@ export async function generateThreadResponse(
     contextSections.push(`THREAD HISTORY BRIEF:\n${options.threadBrief}`);
   }
 
+  // Global thread briefs — cross-thread memory so the Strategist knows
+  // what was discussed in other conversations.
+  // Include ALL threads: those with briefs get their full summary,
+  // those without get a lightweight label so they're never invisible.
+  if (globalBriefs.length > 0) {
+    const briefLines = globalBriefs.map((t) => {
+      const label = t.company
+        ? `${t.title} (${t.company})`
+        : t.contact_name
+        ? `${t.title} (${t.contact_name})`
+        : t.title;
+      if (t.thread_brief) {
+        return `- [${label}]: ${t.thread_brief}`;
+      }
+      // Fallback for threads without a generated brief yet
+      const recency = t.last_message_at?.split("T")[0] ?? "unknown";
+      return `- [${label}]: (new thread, last active ${recency}, brief not yet generated)`;
+    });
+
+    if (briefLines.length > 0) {
+      contextSections.push(
+        `OTHER THREAD SUMMARIES (your prior conversations with this user, for cross-reference. Proactively flag connections between threads when relevant.):\n${briefLines.join("\n")}`
+      );
+    }
+  }
+
   // Open follow-ups for this thread
   if (openFollowUps && openFollowUps.length > 0) {
     const today = new Date().toISOString().split("T")[0];
@@ -2086,7 +2196,7 @@ export async function generateThreadResponse(
     .order("created_at", { ascending: false })
     .limit(30);
 
-  const messages: { role: "user" | "assistant"; content: string }[] = [];
+  const messages: Anthropic.MessageParam[] = [];
 
   // Also build a separate intel digest for non-coaching notes that fall outside
   // the recent message window, so the Strategist always has full awareness
@@ -2170,11 +2280,34 @@ export async function generateThreadResponse(
     );
   }
 
-  // Add the current user message with context
-  messages.push({
-    role: "user",
-    content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${userMessage}`,
-  });
+  // Add the current user message with context (multimodal if images attached)
+  const userTextContent = `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${userMessage}`;
+
+  // Fetch images for vision if any were attached
+  const imageUrls = options?.imageUrls?.filter((u) =>
+    /\.(jpe?g|png|webp|gif)(\?|$)/i.test(u)
+  ) ?? [];
+  const fetchedImages = imageUrls.length > 0
+    ? await fetchImagesForVision(imageUrls)
+    : [];
+
+  if (fetchedImages.length > 0) {
+    // Build multimodal content: text + image blocks
+    const contentBlocks: Anthropic.ContentBlockParam[] = [
+      { type: "text", text: userTextContent },
+      ...fetchedImages.map((img) => ({
+        type: "image" as const,
+        source: {
+          type: "base64" as const,
+          media_type: img.media_type,
+          data: img.base64,
+        },
+      })),
+    ];
+    messages.push({ role: "user", content: contentBlocks });
+  } else {
+    messages.push({ role: "user", content: userTextContent });
+  }
 
   // Step 5: Generate response
   const anthropic = getAnthropic();
@@ -2255,12 +2388,17 @@ export async function generateThreadResponse(
     );
   }
 
-  // Step 9: Check if thread brief needs regeneration
+  // Step 9: Check if thread brief needs generation or regeneration
+  // Generate first brief early (after 3 messages) so the thread becomes
+  // visible to other threads via global briefs. Regenerate periodically.
   const currentMessageCount = (options?.messageCount ?? 0) + 2; // +2 for user + assistant
-  if (
-    currentMessageCount >= THREAD_BRIEF_THRESHOLD &&
-    currentMessageCount % THREAD_BRIEF_THRESHOLD < 2
-  ) {
+  const needsFirstBrief =
+    currentMessageCount >= FIRST_BRIEF_THRESHOLD && !options?.threadBrief;
+  const needsRegeneration =
+    currentMessageCount >= THREAD_BRIEF_REGENERATE_INTERVAL &&
+    currentMessageCount % THREAD_BRIEF_REGENERATE_INTERVAL < 2;
+
+  if (needsFirstBrief || needsRegeneration) {
     // Fire and forget (don't block the response)
     generateThreadBrief(supabase, userId, threadId).catch((err) =>
       console.error("[strategist] Thread brief generation failed:", err)
@@ -2341,6 +2479,7 @@ export function streamThreadResponse(
     threadBrief?: string;
     messageCount?: number;
     userConversationId?: string; // pre-saved user message ID (optional)
+    imageUrls?: string[];
   }
 ): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -2357,10 +2496,12 @@ export function streamThreadResponse(
           retrieveStrategicContext(supabase, userId, { dealId: options?.dealId })
         );
 
-        let dealContext: DealContext | null = null;
-        if (options?.dealId) {
-          dealContext = await retrieveDealContext(supabase, userId, options.dealId);
-        }
+        const [dealContext, globalBriefs] = await Promise.all([
+          options?.dealId
+            ? retrieveDealContext(supabase, userId, options.dealId)
+            : Promise.resolve(null),
+          retrieveGlobalThreadBriefs(supabase, userId, threadId),
+        ]);
 
         // M&A entity context (same logic as generateThreadResponse)
         let maEntityContext: string | null = null;
@@ -2407,6 +2548,28 @@ export function streamThreadResponse(
         // ── Step 3: Build context document ────────────────────────────
         const contextSections: string[] = [];
         if (options?.threadBrief) contextSections.push(`THREAD HISTORY BRIEF:\n${options.threadBrief}`);
+
+        // Global thread briefs — cross-thread awareness
+        if (globalBriefs.length > 0) {
+          const briefLines = globalBriefs.map((t) => {
+            const label = t.company
+              ? `${t.title} (${t.company})`
+              : t.contact_name
+              ? `${t.title} (${t.contact_name})`
+              : t.title;
+            if (t.thread_brief) {
+              return `- [${label}]: ${t.thread_brief}`;
+            }
+            const recency = t.last_message_at?.split("T")[0] ?? "unknown";
+            return `- [${label}]: (new thread, last active ${recency}, brief not yet generated)`;
+          });
+          if (briefLines.length > 0) {
+            contextSections.push(
+              `OTHER THREAD SUMMARIES (your prior conversations with this user, for cross-reference. Proactively flag connections between threads when relevant.):\n${briefLines.join("\n")}`
+            );
+          }
+        }
+
         if (openFollowUps?.length) {
           const today = new Date().toISOString().split("T")[0];
           const fuLines = openFollowUps.map(fu => {
@@ -2428,7 +2591,7 @@ export function streamThreadResponse(
           .order("created_at", { ascending: false })
           .limit(30);
 
-        const messages: { role: "user" | "assistant"; content: string }[] = [];
+        const messages: Anthropic.MessageParam[] = [];
         const intelDigestLines: string[] = [];
 
         if (recentMessages?.length) {
@@ -2476,10 +2639,32 @@ export function streamThreadResponse(
         }
 
         const contextDoc = contextSections.join("\n\n");
-        messages.push({
-          role: "user",
-          content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${userMessage}`,
-        });
+        const streamUserText = `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${userMessage}`;
+
+        // Fetch images for vision if any were attached
+        const streamImageUrls = options?.imageUrls?.filter((u) =>
+          /\.(jpe?g|png|webp|gif)(\?|$)/i.test(u)
+        ) ?? [];
+        const streamFetchedImages = streamImageUrls.length > 0
+          ? await fetchImagesForVision(streamImageUrls)
+          : [];
+
+        if (streamFetchedImages.length > 0) {
+          const contentBlocks: Anthropic.ContentBlockParam[] = [
+            { type: "text", text: streamUserText },
+            ...streamFetchedImages.map((img) => ({
+              type: "image" as const,
+              source: {
+                type: "base64" as const,
+                media_type: img.media_type,
+                data: img.base64,
+              },
+            })),
+          ];
+          messages.push({ role: "user", content: contentBlocks });
+        } else {
+          messages.push({ role: "user", content: streamUserText });
+        }
 
         // ── Step 5: Stream from Claude ────────────────────────────────
         const anthropic = getAnthropic();
@@ -2556,7 +2741,12 @@ export function streamThreadResponse(
 
         // ── Step 10: Thread brief + thread metadata (fire-and-forget) ─
         const currentMessageCount = (options?.messageCount ?? 0) + 2;
-        if (currentMessageCount >= THREAD_BRIEF_THRESHOLD && currentMessageCount % THREAD_BRIEF_THRESHOLD < 2) {
+        const needsFirstBrief =
+          currentMessageCount >= FIRST_BRIEF_THRESHOLD && !options?.threadBrief;
+        const needsRegeneration =
+          currentMessageCount >= THREAD_BRIEF_REGENERATE_INTERVAL &&
+          currentMessageCount % THREAD_BRIEF_REGENERATE_INTERVAL < 2;
+        if (needsFirstBrief || needsRegeneration) {
           generateThreadBrief(supabase, userId, threadId).catch(err =>
             console.error("[strategist/stream] Thread brief generation failed:", err)
           );
@@ -2716,7 +2906,7 @@ export async function generateThreadBrief(
     .eq("thread_id", threadId)
     .order("created_at", { ascending: true });
 
-  if (!allMessages || allMessages.length < THREAD_BRIEF_THRESHOLD) return;
+  if (!allMessages || allMessages.length < FIRST_BRIEF_THRESHOLD) return;
 
   // Build the full thread text with interaction type labels
   // Intel notes (emails, transcripts, etc.) are labeled differently from coaching
@@ -3005,6 +3195,15 @@ CRITICAL RULES:
 
 You will receive the current pipeline data, deal briefs, playbook progress, and competitive intel. Generate content for each section of the board report.
 
+WEEK-OVER-WEEK CONTINUITY:
+If a previous week's board report is provided, you MUST:
+- Reference it to show progress. What moved forward since last week? What milestones were hit?
+- Flag open items from the prior report that are still unresolved. Call out stalled items explicitly.
+- Note NEW developments that were not in the prior report.
+- In the "momentum" section, lead with what changed since last week before listing ongoing items.
+- In "milestones", update status of prior milestones (completed, in progress, at risk) and add new ones.
+- Do NOT simply repeat the prior report. Show movement. The board reads these sequentially and expects a progress narrative.
+
 Output format (JSON):
 {
   "opportunity": "1-2 paragraph summary of the DaaS opportunity. Include the Year 1 target and why this is additive revenue.",
@@ -3013,7 +3212,7 @@ Output format (JSON):
     { "category": "Category name", "whyTheyBuy": "Why this segment buys", "exampleUseCase": "Concrete use case" }
   ],
   "momentum": [
-    "Bullet point about recent progress or milestone"
+    "Bullet point about recent progress or milestone. Lead with CHANGES since last week."
   ],
   "pricingFramework": {
     "summary": "1-2 sentences on pricing approach",
@@ -3023,7 +3222,7 @@ Output format (JSON):
     { "title": "Impact title", "description": "1-2 sentences on the impact" }
   ],
   "milestones": [
-    { "timeframe": "Days X-Y or date range", "goal": "What should be accomplished" }
+    { "timeframe": "Days X-Y or date range", "goal": "What should be accomplished", "status": "completed | in_progress | at_risk | upcoming" }
   ]
 }
 
@@ -3068,6 +3267,40 @@ export async function generateBoardReport(
     )
   );
 
+  // Step 1b: Retrieve the most recent prior archived report for continuity
+  let priorReportContext = "";
+  try {
+    const { data: priorArchive } = await supabase
+      .from("board_report_archives")
+      .select("week_number, sections, generated_at")
+      .eq("user_id", userId)
+      .lt("week_number", weekNumber)
+      .order("week_number", { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (priorArchive && Array.isArray(priorArchive.sections)) {
+      const priorSections = (
+        priorArchive.sections as Array<{
+          title: string;
+          content: string;
+          enabled: boolean;
+        }>
+      )
+        .filter((s) => s.enabled)
+        .map((s) => `### ${s.title}\n${s.content}`)
+        .join("\n\n");
+
+      priorReportContext = `\n\n--- PREVIOUS BOARD REPORT (Week ${priorArchive.week_number}, generated ${new Date(priorArchive.generated_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" })}) ---\n\n${priorSections}\n\n--- END PREVIOUS REPORT ---\n\nUse this prior report to show week-over-week progress. Call out what advanced, what stalled, and what is new.`;
+    }
+  } catch (err) {
+    // Prior report retrieval is best-effort; proceed without it
+    console.warn(
+      "[generateBoardReport] Could not retrieve prior archive:",
+      err instanceof Error ? err.message : err
+    );
+  }
+
   // Step 2: Generate board report content
   const anthropic = getAnthropic();
 
@@ -3079,7 +3312,7 @@ export async function generateBoardReport(
       messages: [
         {
           role: "user",
-          content: `Today is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. This is Week ${weekNumber} of the DaaS initiative.\n\n${contextDoc}`,
+          content: `Today is ${now.toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}. This is Week ${weekNumber} of the DaaS initiative.\n\n${contextDoc}${priorReportContext}`,
         },
       ],
     })
@@ -3177,16 +3410,25 @@ export async function generateBoardReport(
     }
 
     if (Array.isArray(parsed.milestones) && parsed.milestones.length > 0) {
+      // Support both old format (no status) and new format (with status)
+      const hasStatus = parsed.milestones.some(
+        (m: { status?: string }) => m.status
+      );
       const milestoneRows = parsed.milestones
         .map(
-          (m: { timeframe: string; goal: string }) =>
-            `| ${m.timeframe} | ${m.goal} |`
+          (m: { timeframe: string; goal: string; status?: string }) =>
+            hasStatus
+              ? `| ${m.timeframe} | ${m.goal} | ${m.status || "upcoming"} |`
+              : `| ${m.timeframe} | ${m.goal} |`
         )
         .join("\n");
+      const header = hasStatus
+        ? `| Timeframe | Goal | Status |\n|-----------|------|--------|\n`
+        : `| Timeframe | Goal |\n|-----------|------|\n`;
       sections.push({
         id: "milestones",
         title: "90-Day Milestones",
-        content: `| Timeframe | Goal |\n|-----------|------|\n${milestoneRows}`,
+        content: `${header}${milestoneRows}`,
         enabled: true,
       });
     }

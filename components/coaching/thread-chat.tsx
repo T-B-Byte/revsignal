@@ -103,6 +103,8 @@ export function ThreadChat({
   const [taskSourceText, setTaskSourceText] = useState("");  // original selected text for highlighting
   const [taskDueDate, setTaskDueDate] = useState("");
   const [taskSaving, setTaskSaving] = useState(false);
+  const [taskError, setTaskError] = useState<string | null>(null);
+  const [taskSavedFlash, setTaskSavedFlash] = useState<string | null>(null);
   const [taskCreatedIds, setTaskCreatedIds] = useState<Set<string>>(new Set());
   // Track exact text snippets turned into tasks, keyed by message ID
   const [taskTexts, setTaskTexts] = useState<
@@ -991,6 +993,7 @@ export function ThreadChat({
   async function saveTask() {
     if (!taskDesc.trim()) return;
     setTaskSaving(true);
+    setTaskError(null);
 
     try {
       // Create one task per line (each bullet becomes its own task)
@@ -1009,10 +1012,14 @@ export function ThreadChat({
             source_text: highlightText ?? desc,
           }),
         });
-        if (!res.ok) throw new Error("Failed to save task");
+        if (!res.ok) {
+          const errBody = await res.json().catch(() => null);
+          throw new Error(errBody?.error ?? `Failed to save task (${res.status})`);
+        }
       }
-      if (taskFromId) {
-        setTaskCreatedIds((prev) => new Set(prev).add(taskFromId));
+      const savedMsgId = taskFromId;
+      if (savedMsgId) {
+        setTaskCreatedIds((prev) => new Set(prev).add(savedMsgId));
         // Store highlight text for immediate rendering
         const savedDueDate = taskDueDate;
         const textForHighlight = highlightText
@@ -1020,18 +1027,22 @@ export function ThreadChat({
           : descriptions.map((d) => ({ text: d, dueDate: savedDueDate }));
         setTaskTexts((prev) => ({
           ...prev,
-          [taskFromId]: [
-            ...(prev[taskFromId] ?? []),
+          [savedMsgId]: [
+            ...(prev[savedMsgId] ?? []),
             ...textForHighlight,
           ],
         }));
       }
+      // Show brief "Saved" confirmation, then close
+      setTaskSavedFlash(savedMsgId);
       setTaskFromId(null);
       setTaskDesc("");
       setTaskSourceText("");
       setTaskDueDate("");
-    } catch {
-      // Keep form open on failure
+      setTimeout(() => setTaskSavedFlash(null), 2000);
+    } catch (err) {
+      console.error("Task save failed:", err);
+      setTaskError(err instanceof Error ? err.message : "Failed to save task");
     } finally {
       setTaskSaving(false);
     }
@@ -1042,6 +1053,7 @@ export function ThreadChat({
     setTaskDesc("");
     setTaskSourceText("");
     setTaskDueDate("");
+    setTaskError(null);
   }
 
   async function handleCreateMeeting() {
@@ -1941,7 +1953,7 @@ export function ThreadChat({
                     <p className="text-[10px] font-medium text-accent-primary uppercase tracking-wide">Create Tasks</p>
                     <textarea
                       value={taskDesc}
-                      onChange={(e) => setTaskDesc(e.target.value)}
+                      onChange={(e) => { setTaskDesc(e.target.value); setTaskError(null); }}
                       onKeyDown={(e) => {
                         if (e.key === "Escape") cancelTask();
                       }}
@@ -1950,6 +1962,9 @@ export function ThreadChat({
                       placeholder="One task per line..."
                       className="w-full resize-none rounded border border-border-primary bg-surface-primary px-2 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
                     />
+                    {taskError && (
+                      <p className="text-[10px] text-red-400">{taskError}</p>
+                    )}
                     <div className="flex items-center gap-2">
                       <label className="text-[10px] text-text-secondary">Due:</label>
                       <DatePicker
@@ -1975,6 +1990,16 @@ export function ThreadChat({
                         </button>
                       </div>
                     </div>
+                  </div>
+                )}
+                {/* Task saved confirmation flash */}
+                {taskSavedFlash === msg.conversation_id && (
+                  <div className="mt-2 flex items-center gap-1.5 text-emerald-400 animate-in fade-in duration-200">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M9 12l2 2 4-4" />
+                      <circle cx="12" cy="12" r="10" />
+                    </svg>
+                    <span className="text-[10px] font-medium">Task saved</span>
                   </div>
                 )}
 

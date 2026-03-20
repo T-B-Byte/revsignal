@@ -8,6 +8,9 @@ interface ProjectFiltersBarProps {
   onSearchChange: (value: string) => void;
   statusFilter: ProjectStatus[];
   onStatusFilterChange: (statuses: ProjectStatus[]) => void;
+  categoryFilter: string;
+  onCategoryFilterChange: (category: string) => void;
+  allCategories: string[];
   personFilter: string;
   onPersonFilterChange: (person: string) => void;
   allPeople: string[];
@@ -30,6 +33,9 @@ export function ProjectFiltersBar({
   onSearchChange,
   statusFilter,
   onStatusFilterChange,
+  categoryFilter,
+  onCategoryFilterChange,
+  allCategories,
   personFilter,
   onPersonFilterChange,
   allPeople,
@@ -47,7 +53,7 @@ export function ProjectFiltersBar({
     onStatusFilterChange(next);
   }
 
-  const hasFilters = statusFilter.length > 0 || personFilter || search;
+  const hasFilters = statusFilter.length > 0 || categoryFilter || personFilter || search;
 
   return (
     <div className="flex flex-wrap items-center gap-3 rounded-xl border border-border-primary bg-surface-secondary px-4 py-3">
@@ -78,6 +84,33 @@ export function ProjectFiltersBar({
 
       {/* Divider */}
       <div className="h-6 w-px bg-border-primary" />
+
+      {/* Category filter */}
+      {allCategories.length > 0 && (
+        <>
+          <div className="flex items-center gap-1.5">
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+              Category
+            </span>
+            <select
+              value={categoryFilter}
+              onChange={(e) => onCategoryFilterChange(e.target.value)}
+              className="rounded-lg border border-border-primary bg-surface-primary px-2 py-1 text-xs text-text-primary focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+            >
+              <option value="">All categories</option>
+              {allCategories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+              <option value="__uncategorized__">Uncategorized</option>
+            </select>
+          </div>
+
+          {/* Divider */}
+          <div className="h-6 w-px bg-border-primary" />
+        </>
+      )}
 
       {/* Person filter */}
       <div className="flex items-center gap-1.5">
@@ -165,6 +198,7 @@ export function ProjectFiltersBar({
         <button
           onClick={() => {
             onStatusFilterChange([]);
+            onCategoryFilterChange("");
             onPersonFilterChange("");
             onSearchChange("");
           }}

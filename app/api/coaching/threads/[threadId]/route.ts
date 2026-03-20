@@ -15,6 +15,9 @@ const updateThreadSchema = z.object({
   contact_role: z.string().max(200).nullable().optional(),
   company: z.string().min(1).max(200).nullable().optional(),
   deal_id: z.string().uuid().nullable().optional(),
+  prospect_id: z.string().uuid().nullable().optional(),
+  project_id: z.string().uuid().nullable().optional(),
+  ma_entity_id: z.string().uuid().nullable().optional(),
   is_archived: z.boolean().optional(),
   participants: z.array(participantSchema).max(20).optional(),
 });
@@ -52,7 +55,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     );
   }
 
-  // If linking to a new deal, verify ownership
+  // Verify ownership for any linked entities
   if (parsed.data.deal_id) {
     const { data: deal } = await supabase
       .from("deals")
@@ -63,6 +66,45 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
     if (!deal) {
       return NextResponse.json({ error: "Deal not found" }, { status: 404 });
+    }
+  }
+
+  if (parsed.data.prospect_id) {
+    const { data: prospect } = await supabase
+      .from("prospects")
+      .select("id")
+      .eq("id", parsed.data.prospect_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!prospect) {
+      return NextResponse.json({ error: "Prospect not found" }, { status: 404 });
+    }
+  }
+
+  if (parsed.data.project_id) {
+    const { data: project } = await supabase
+      .from("projects")
+      .select("project_id")
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+  }
+
+  if (parsed.data.ma_entity_id) {
+    const { data: entity } = await supabase
+      .from("ma_entities")
+      .select("entity_id")
+      .eq("entity_id", parsed.data.ma_entity_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!entity) {
+      return NextResponse.json({ error: "M&A entity not found" }, { status: 404 });
     }
   }
 

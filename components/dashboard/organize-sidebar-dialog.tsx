@@ -31,7 +31,7 @@ const ORGANIZABLE_ITEMS = [
   { key: "tradeshows", label: "Tradeshows" },
   { key: "flashcards", label: "Flashcards" },
   { key: "playbook", label: "Playbook" },
-  { key: "compete", label: "Compete" },
+  { key: "compete", label: "Competition" },
   { key: "ma", label: "M&A" },
   { key: "marketing", label: "Marketing" },
 ];

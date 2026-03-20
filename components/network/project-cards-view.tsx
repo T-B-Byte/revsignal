@@ -53,6 +53,8 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
 
+  const [categoryFilter, setCategoryFilter] = useState("");
+
   // Collect all unique people across projects for the person filter dropdown
   const allPeople = useMemo(() => {
     const nameSet = new Set<string>();
@@ -64,11 +66,29 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
     return [...nameSet].sort((a, b) => a.localeCompare(b));
   }, [projects]);
 
+  // Collect all unique categories
+  const allCategories = useMemo(() => {
+    const catSet = new Set<string>();
+    for (const p of projects) {
+      if (p.category) catSet.add(p.category);
+    }
+    return [...catSet].sort((a, b) => a.localeCompare(b));
+  }, [projects]);
+
   // Filter projects
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
       // Status filter
       if (statusFilter.length > 0 && !statusFilter.includes(p.status)) return false;
+
+      // Category filter
+      if (categoryFilter) {
+        if (categoryFilter === "__uncategorized__") {
+          if (p.category) return false;
+        } else if (p.category !== categoryFilter) {
+          return false;
+        }
+      }
 
       // Person filter
       if (personFilter) {
@@ -83,17 +103,45 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
         const q = search.toLowerCase();
         const nameMatch = p.name.toLowerCase().includes(q);
         const descMatch = p.description?.toLowerCase().includes(q);
+        const catMatch = p.category?.toLowerCase().includes(q);
         const memberMatch = (p.project_members ?? []).some(
           (m) =>
             m.name.toLowerCase().includes(q) ||
             m.role?.toLowerCase().includes(q)
         );
-        if (!nameMatch && !descMatch && !memberMatch) return false;
+        if (!nameMatch && !descMatch && !catMatch && !memberMatch) return false;
       }
 
       return true;
     });
-  }, [projects, statusFilter, personFilter, search]);
+  }, [projects, statusFilter, categoryFilter, personFilter, search]);
+
+  // Group filtered projects by category
+  const groupedProjects = useMemo(() => {
+    const groups: { category: string | null; projects: ProjectWithMembers[] }[] = [];
+    const categoryMap = new Map<string | null, ProjectWithMembers[]>();
+
+    for (const p of filteredProjects) {
+      const key = p.category || null;
+      if (!categoryMap.has(key)) categoryMap.set(key, []);
+      categoryMap.get(key)!.push(p);
+    }
+
+    // Named categories first (sorted), then uncategorized at the end
+    const sortedKeys = [...categoryMap.keys()].sort((a, b) => {
+      if (a === null) return 1;
+      if (b === null) return -1;
+      return a.localeCompare(b);
+    });
+
+    for (const key of sortedKeys) {
+      groups.push({ category: key, projects: categoryMap.get(key)! });
+    }
+
+    return groups;
+  }, [filteredProjects]);
+
+  const hasMultipleGroups = groupedProjects.length > 1 || (groupedProjects.length === 1 && groupedProjects[0].category !== null);
 
   // Selection helpers
   function toggleSelect(id: string) {
@@ -128,6 +176,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
     name: string,
     description: string,
     color: string,
+    category: string,
     members: MemberInput[]
   ) {
     const memberPayload = members
@@ -143,6 +192,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
           name,
           description: description || null,
           color,
+          category: category.trim() || null,
           members: memberPayload,
         }),
       });
@@ -160,6 +210,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
           name,
           description: description || undefined,
           color,
+          category: category.trim() || null,
           members: memberPayload,
         }),
       });
@@ -257,6 +308,9 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
         onSearchChange={setSearch}
         statusFilter={statusFilter}
         onStatusFilterChange={setStatusFilter}
+        categoryFilter={categoryFilter}
+        onCategoryFilterChange={setCategoryFilter}
+        allCategories={allCategories}
         personFilter={personFilter}
         onPersonFilterChange={setPersonFilter}
         allPeople={allPeople}
@@ -268,19 +322,43 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
         onPrint={handlePrint}
       />
 
-      {/* Project cards grid */}
+      {/* Project cards grouped by category */}
       <div className="flex-1 overflow-y-auto">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-          {filteredProjects.map((project) => (
-            <ProjectCard
-              key={project.project_id}
-              project={project}
-              isSelected={selectedIds.has(project.project_id)}
-              onToggleSelect={() => toggleSelect(project.project_id)}
-              onEdit={() => handleEditProject(project)}
-            />
-          ))}
-        </div>
+        {hasMultipleGroups ? (
+          <div className="space-y-6">
+            {groupedProjects.map((group) => (
+              <div key={group.category ?? "__uncategorized__"}>
+                <h3 className="mb-3 text-[11px] font-bold uppercase tracking-[0.08em] text-text-muted">
+                  {group.category ?? "Uncategorized"}
+                  <span className="ml-2 font-normal">({group.projects.length})</span>
+                </h3>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  {group.projects.map((project) => (
+                    <ProjectCard
+                      key={project.project_id}
+                      project={project}
+                      isSelected={selectedIds.has(project.project_id)}
+                      onToggleSelect={() => toggleSelect(project.project_id)}
+                      onEdit={() => handleEditProject(project)}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+            {filteredProjects.map((project) => (
+              <ProjectCard
+                key={project.project_id}
+                project={project}
+                isSelected={selectedIds.has(project.project_id)}
+                onToggleSelect={() => toggleSelect(project.project_id)}
+                onEdit={() => handleEditProject(project)}
+              />
+            ))}
+          </div>
+        )}
 
         {filteredProjects.length === 0 && projects.length > 0 && (
           <div className="py-12 text-center text-sm text-text-muted">
@@ -292,6 +370,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
       {showDialog && (
         <ProjectDialog
           project={editingProject}
+          allCategories={allCategories}
           onSave={handleSave}
           onDelete={editingProject ? () => handleDelete(editingProject.project_id) : undefined}
           onClose={() => {
@@ -360,6 +439,12 @@ function ProjectCard({
           </span>
         </div>
 
+        {project.category && (
+          <span className="mb-2 inline-block rounded bg-surface-tertiary px-2 py-0.5 text-[10px] font-medium text-text-secondary">
+            {project.category}
+          </span>
+        )}
+
         {project.description && (
           <p className="mb-3 text-[11px] text-text-secondary leading-relaxed">
             {project.description}
@@ -400,15 +485,18 @@ function ProjectCard({
 
 interface ProjectDialogProps {
   project: ProjectWithMembers | null;
-  onSave: (name: string, description: string, color: string, members: MemberInput[]) => void;
+  allCategories: string[];
+  onSave: (name: string, description: string, color: string, category: string, members: MemberInput[]) => void;
   onDelete?: () => void;
   onClose: () => void;
 }
 
-function ProjectDialog({ project, onSave, onDelete, onClose }: ProjectDialogProps) {
+function ProjectDialog({ project, allCategories, onSave, onDelete, onClose }: ProjectDialogProps) {
   const [name, setName] = useState(project?.name ?? "");
   const [description, setDescription] = useState(project?.description ?? "");
   const [color, setColor] = useState(project?.color ?? PROJECT_COLORS[0]);
+  const [category, setCategory] = useState(project?.category ?? "");
+  const [showCategorySuggestions, setShowCategorySuggestions] = useState(false);
   const [members, setMembers] = useState<MemberInput[]>(
     project?.project_members?.map((m) => ({ name: m.name, role: m.role ?? "" })) ?? [
       { name: "", role: "" },
@@ -441,7 +529,7 @@ function ProjectDialog({ project, onSave, onDelete, onClose }: ProjectDialogProp
     e.preventDefault();
     if (!name.trim()) return;
     setSaving(true);
-    await onSave(name.trim(), description.trim(), color, members);
+    await onSave(name.trim(), description.trim(), color, category.trim(), members);
     setSaving(false);
   }
 
@@ -488,6 +576,45 @@ function ProjectDialog({ project, onSave, onDelete, onClose }: ProjectDialogProp
               placeholder="Brief description of this project"
               className="w-full rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
             />
+          </div>
+
+          <div>
+            <label className="block text-xs font-medium text-text-secondary mb-1">
+              Category (optional)
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                value={category}
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setShowCategorySuggestions(true);
+                }}
+                onFocus={() => setShowCategorySuggestions(true)}
+                onBlur={() => setTimeout(() => setShowCategorySuggestions(false), 200)}
+                placeholder="e.g., Partnerships, Platform Integrations"
+                className="w-full rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+              />
+              {showCategorySuggestions && allCategories.length > 0 && (
+                <div className="absolute top-full left-0 z-10 mt-1 w-full max-h-32 overflow-y-auto rounded-lg border border-border-primary bg-surface-secondary shadow-lg">
+                  {allCategories
+                    .filter((c) => !category || c.toLowerCase().includes(category.toLowerCase()))
+                    .map((c) => (
+                      <button
+                        key={c}
+                        type="button"
+                        onMouseDown={() => {
+                          setCategory(c);
+                          setShowCategorySuggestions(false);
+                        }}
+                        className="flex w-full items-center px-3 py-1.5 text-left text-xs hover:bg-surface-tertiary"
+                      >
+                        <span className="font-medium text-text-primary">{c}</span>
+                      </button>
+                    ))}
+                </div>
+              )}
+            </div>
           </div>
 
           <div>

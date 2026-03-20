@@ -74,7 +74,8 @@ export default async function ThreadPage({
         .select(`
           *,
           deals:deal_id (deal_id, company, stage),
-          ma_entities:ma_entity_id (entity_id, company, entity_type, stage)
+          ma_entities:ma_entity_id (entity_id, company, entity_type, stage),
+          projects:project_id (project_id, name, status, category)
         `)
         .eq("thread_id", threadId)
         .eq("user_id", user.id)
@@ -84,7 +85,8 @@ export default async function ThreadPage({
         .select(`
           *,
           deals:deal_id (deal_id, company, stage),
-          ma_entities:ma_entity_id (entity_id, company, entity_type, stage)
+          ma_entities:ma_entity_id (entity_id, company, entity_type, stage),
+          projects:project_id (project_id, name, status, category)
         `)
         .eq("user_id", user.id)
         .order("last_message_at", { ascending: false }),

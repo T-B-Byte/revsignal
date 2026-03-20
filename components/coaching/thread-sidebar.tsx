@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
-import { formatDistanceToNow } from "date-fns";
+import { format, isToday, isYesterday, isThisYear } from "date-fns";
 import type { CoachingThreadWithDeal } from "@/types/database";
 
 interface ThreadSidebarProps {
@@ -373,9 +373,7 @@ function ThreadItem({
             </p>
           )}
           <p className="mt-0.5 text-[10px] text-text-muted">
-            {formatDistanceToNow(new Date(thread.last_message_at), {
-              addSuffix: true,
-            })}
+            {formatThreadDate(thread.last_message_at)}
           </p>
           {contentSnippet && (
             <p className="mt-1 line-clamp-2 text-[10px] italic text-text-muted/70 leading-relaxed">
@@ -437,6 +435,14 @@ function groupByCompany(
     .map(([company, threads]) => ({ company, threads }));
 
   return groups;
+}
+
+function formatThreadDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  if (isToday(date)) return format(date, "h:mm a");
+  if (isYesterday(date)) return "Yesterday, " + format(date, "h:mm a");
+  if (isThisYear(date)) return format(date, "MMM d, h:mm a");
+  return format(date, "MMM d, yyyy, h:mm a");
 }
 
 function daysSince(dateStr: string): number {

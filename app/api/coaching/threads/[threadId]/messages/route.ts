@@ -224,6 +224,7 @@ export async function POST(request: NextRequest, context: RouteContext) {
           maEntityId: thread.ma_entity_id ?? undefined,
           threadBrief: thread.thread_brief ?? undefined,
           messageCount: thread.message_count,
+          imageUrls: parsed.data.attachments,
         }
       );
 
