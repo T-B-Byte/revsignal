@@ -103,6 +103,9 @@ export interface CalendarEvent {
   body: string | null;
   isOnlineMeeting: boolean;
   onlineMeetingUrl: string | null;
+  isCancelled: boolean;
+  showAs: string | null;
+  isAllDay: boolean;
 }
 
 /** Discriminated union for graceful degradation */
@@ -683,7 +686,7 @@ export async function getCalendarEvents(
       new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
     const top = options.top ?? 25;
 
-    const endpoint = `/me/calendarview?startDateTime=${startDate}&endDateTime=${endDate}&$top=${top}&$orderby=start/dateTime&$select=id,subject,start,end,organizer,attendees,location,body,isOnlineMeeting,onlineMeeting`;
+    const endpoint = `/me/calendarview?startDateTime=${startDate}&endDateTime=${endDate}&$top=${top}&$orderby=start/dateTime&$select=id,subject,start,end,organizer,attendees,location,body,isOnlineMeeting,onlineMeeting,isCancelled,showAs,isAllDay`;
 
     const result = await graphFetch<{
       value: Array<{
@@ -699,6 +702,9 @@ export async function getCalendarEvents(
         body?: { content: string };
         isOnlineMeeting: boolean;
         onlineMeeting?: { joinUrl: string };
+        isCancelled?: boolean;
+        showAs?: string;
+        isAllDay?: boolean;
       }>;
     }>(token, endpoint);
 
@@ -714,6 +720,9 @@ export async function getCalendarEvents(
       body: e.body ? stripHtmlTags(e.body.content) : null,
       isOnlineMeeting: e.isOnlineMeeting ?? false,
       onlineMeetingUrl: e.onlineMeeting?.joinUrl ?? null,
+      isCancelled: e.isCancelled ?? false,
+      showAs: e.showAs ?? null,
+      isAllDay: e.isAllDay ?? false,
     }));
 
     return { source: "graph", data: events };

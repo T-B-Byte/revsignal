@@ -292,6 +292,245 @@ export async function ingestCalendarEvents(
   return result;
 }
 
+// ── Calendar → Meeting Notes Sync ────────────────────────────────────
+
+export interface CalendarSyncResult {
+  created: number;
+  updated: number;
+  cancelled: number;
+  skipped: number;
+  errors: string[];
+}
+
+/**
+ * Sync Outlook calendar events into meeting_notes records.
+ *
+ * For each calendar event:
+ *  - Existing record (by external_event_id): update title/date/attendees/location if changed
+ *  - Manual match (same title within 30 min, no external_event_id): adopt it
+ *  - New event: create meeting_notes record with contact/deal matching
+ *  - Cancelled in Outlook: mark cancelled in RevSignal
+ *  - All-day events: skip (holidays, OOO, not real meetings)
+ *
+ * Events that disappeared from the Graph response (within the sync window)
+ * are marked cancelled via absence detection.
+ */
+export async function syncCalendarToMeetingNotes(
+  supabase: SupabaseClient,
+  userId: string,
+  options: { startDate?: string; endDate?: string } = {}
+): Promise<CalendarSyncResult> {
+  const result: CalendarSyncResult = {
+    created: 0,
+    updated: 0,
+    cancelled: 0,
+    skipped: 0,
+    errors: [],
+  };
+
+  const now = new Date();
+  const startDate = options.startDate ?? now.toISOString();
+  const endDate =
+    options.endDate ??
+    new Date(now.getTime() + 14 * 24 * 60 * 60 * 1000).toISOString();
+
+  const eventsResult = await getCalendarEvents(supabase, userId, {
+    startDate,
+    endDate,
+    top: 50,
+  });
+
+  if (eventsResult.source === "manual") {
+    result.errors.push(eventsResult.error ?? "Outlook not connected");
+    return result;
+  }
+
+  // Filter out all-day events (holidays, OOO markers)
+  const events = eventsResult.data.filter((e) => !e.isAllDay);
+
+  // Load contacts for attendee matching
+  const { data: contacts } = await supabase
+    .from("contacts")
+    .select("contact_id, name, company")
+    .eq("user_id", userId)
+    .eq("is_internal", false);
+
+  const contactsByName = new Map(
+    (contacts ?? []).map((c) => [c.name.toLowerCase(), c])
+  );
+
+  // Track which external_event_ids we saw from Graph (for absence detection)
+  const seenEventIds = new Set<string>();
+
+  for (const event of events) {
+    seenEventIds.add(event.id);
+
+    try {
+      // Check for existing meeting_notes with this external_event_id
+      const { data: existingByEvent } = await supabase
+        .from("meeting_notes")
+        .select("note_id, title, meeting_date, attendees, location, status")
+        .eq("user_id", userId)
+        .eq("external_event_id", event.id)
+        .maybeSingle();
+
+      if (existingByEvent) {
+        // Update existing record if Outlook data changed
+        const updates: Record<string, unknown> = {};
+
+        if (event.isCancelled && existingByEvent.status !== "cancelled") {
+          updates.status = "cancelled";
+        }
+        if (event.subject !== existingByEvent.title) {
+          updates.title = event.subject;
+        }
+        if (event.start !== existingByEvent.meeting_date) {
+          updates.meeting_date = event.start;
+        }
+        if (event.location !== existingByEvent.location) {
+          updates.location = event.location;
+        }
+        // Update attendees list (don't overwrite roles the user may have added)
+        const newAttendeeNames = event.attendees.map((a) => a.toLowerCase()).sort();
+        const existingAttendeeNames = (
+          (existingByEvent.attendees as { name: string }[]) ?? []
+        )
+          .map((a) => a.name.toLowerCase())
+          .sort();
+        if (JSON.stringify(newAttendeeNames) !== JSON.stringify(existingAttendeeNames)) {
+          updates.attendees = event.attendees.map((name) => ({ name }));
+        }
+
+        if (Object.keys(updates).length > 0) {
+          updates.updated_at = new Date().toISOString();
+          await supabase
+            .from("meeting_notes")
+            .update(updates)
+            .eq("note_id", existingByEvent.note_id);
+          if (updates.status === "cancelled") result.cancelled++;
+          else result.updated++;
+        } else {
+          result.skipped++;
+        }
+        continue;
+      }
+
+      // No existing record by external_event_id. Check for manual match:
+      // same title (case-insensitive) within 30 minutes, no external_event_id.
+      const eventTime = new Date(event.start).getTime();
+      const windowStart = new Date(eventTime - 30 * 60 * 1000).toISOString();
+      const windowEnd = new Date(eventTime + 30 * 60 * 1000).toISOString();
+
+      const { data: manualMatch } = await supabase
+        .from("meeting_notes")
+        .select("note_id")
+        .eq("user_id", userId)
+        .is("external_event_id", null)
+        .ilike("title", escapeIlike(event.subject))
+        .gte("meeting_date", windowStart)
+        .lte("meeting_date", windowEnd)
+        .limit(1)
+        .maybeSingle();
+
+      if (manualMatch) {
+        // Adopt the manually-created record
+        await supabase
+          .from("meeting_notes")
+          .update({
+            external_event_id: event.id,
+            location: event.location,
+            updated_at: new Date().toISOString(),
+          })
+          .eq("note_id", manualMatch.note_id);
+        result.updated++;
+        continue;
+      }
+
+      // New event: match attendees to contacts and deals
+      let matchedContactIds: string[] = [];
+      let matchedDealId: string | null = null;
+
+      for (const attendee of event.attendees) {
+        const match = contactsByName.get(attendee.toLowerCase());
+        if (match) {
+          matchedContactIds.push(match.contact_id);
+          // Use first matched contact's company for deal matching
+          if (!matchedDealId) {
+            const { data: deal } = await supabase
+              .from("deals")
+              .select("deal_id")
+              .eq("user_id", userId)
+              .ilike("company", escapeIlike(match.company))
+              .limit(1)
+              .maybeSingle();
+            matchedDealId = deal?.deal_id ?? null;
+          }
+        }
+      }
+
+      // Create the meeting_notes record
+      const { error: insertError } = await supabase.from("meeting_notes").insert({
+        user_id: userId,
+        external_event_id: event.id,
+        title: event.subject,
+        meeting_date: event.start,
+        meeting_type: "other",
+        attendees: event.attendees.map((name) => ({ name })),
+        content: "",
+        status: event.isCancelled ? "cancelled" : "upcoming",
+        contact_ids: matchedContactIds,
+        deal_id: matchedDealId,
+        location: event.location,
+      });
+
+      if (insertError) {
+        // Unique constraint violation (race condition): skip
+        if (insertError.code === "23505") {
+          result.skipped++;
+        } else {
+          result.errors.push(`Event ${event.id}: ${insertError.message}`);
+        }
+      } else {
+        if (event.isCancelled) result.cancelled++;
+        else result.created++;
+      }
+    } catch (error) {
+      result.errors.push(
+        `Event ${event.id}: ${error instanceof Error ? error.message : "Unknown error"}`
+      );
+    }
+  }
+
+  // Absence detection: upcoming meetings with external_event_id that weren't
+  // in the Graph response are likely cancelled/deleted in Outlook.
+  try {
+    const { data: trackedMeetings } = await supabase
+      .from("meeting_notes")
+      .select("note_id, external_event_id")
+      .eq("user_id", userId)
+      .eq("status", "upcoming")
+      .not("external_event_id", "is", null)
+      .gte("meeting_date", startDate)
+      .lte("meeting_date", endDate);
+
+    for (const meeting of trackedMeetings ?? []) {
+      if (!seenEventIds.has(meeting.external_event_id)) {
+        await supabase
+          .from("meeting_notes")
+          .update({ status: "cancelled", updated_at: new Date().toISOString() })
+          .eq("note_id", meeting.note_id);
+        result.cancelled++;
+      }
+    }
+  } catch (error) {
+    result.errors.push(
+      `Absence detection: ${error instanceof Error ? error.message : "Unknown error"}`
+    );
+  }
+
+  return result;
+}
+
 // ── Utility ──────────────────────────────────────────────────────────
 
 /** Extract email address from "Name <email@domain.com>" format */

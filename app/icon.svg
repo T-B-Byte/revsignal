@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#0a0e1a"/>
+    </linearGradient>
+    <linearGradient id="signal" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#3b82f6"/>
+      <stop offset="100%" stop-color="#06b6d4"/>
+    </linearGradient>
+  </defs>
+  <!-- Rounded square background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- "R" letterform in white -->
+  <path d="M128 400V112h104c52 0 84 30 84 76 0 36-20 62-52 72l64 140h-56l-58-130h-36v130h-50zm50-172h50c24 0 38-14 38-36s-14-36-38-36h-50v72z" fill="#f9fafb"/>
+  <!-- Signal pulse: three arc lines radiating from top-right of the R -->
+  <g stroke="url(#signal)" fill="none" stroke-linecap="round" stroke-width="18">
+    <path d="M310 170c20-20 20-52 0-72" opacity="0.5"/>
+    <path d="M338 198c40-40 40-108 0-148" opacity="0.75"/>
+    <path d="M366 226c60-60 60-164 0-224"/>
+  </g>
+</svg>

@@ -1719,18 +1719,40 @@ function buildMeetingPrepContextDoc(
     sections.push(parts.filter(Boolean).join("\n"));
   }
 
-  // Flag attendees without stakeholder records
+  // Thread-sourced context for attendees not in the stakeholders table
+  // (information discussed in StrategyGPT threads about this person)
+  if (ctx.threadSourcedContexts.length > 0) {
+    for (const tsc of ctx.threadSourcedContexts) {
+      const parts = [
+        `--- ${tsc.name} (from StrategyGPT: "${tsc.threadTitle}"${tsc.threadCompany ? `, ${tsc.threadCompany}` : ""}) ---`,
+        `No formal stakeholder profile exists, but the following was discussed in prior coaching threads:`,
+      ];
+
+      for (const excerpt of tsc.excerpts.slice(0, 5)) {
+        parts.push(`  [${excerpt.date}] ${excerpt.content}`);
+      }
+
+      sections.push(parts.join("\n"));
+    }
+  }
+
+  // Flag attendees with truly no context at all
   const knownNames = new Set(
     ctx.stakeholderContexts.map((sc) =>
       sc.stakeholder.name.toLowerCase()
     )
   );
+  const threadSourcedNames = new Set(
+    ctx.threadSourcedContexts.map((tsc) => tsc.name.toLowerCase())
+  );
   const unknownAttendees = params.attendeeNames.filter(
-    (name) => !knownNames.has(name.toLowerCase())
+    (name) =>
+      !knownNames.has(name.toLowerCase()) &&
+      !threadSourcedNames.has(name.toLowerCase())
   );
   if (unknownAttendees.length > 0) {
     sections.push(
-      `ATTENDEES WITHOUT PROFILES: ${unknownAttendees.join(", ")} (no stakeholder context available)`
+      `ATTENDEES WITHOUT ANY CONTEXT: ${unknownAttendees.join(", ")} (no stakeholder profile or thread history found)`
     );
   }
 

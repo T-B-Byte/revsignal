@@ -29,6 +29,7 @@ import type {
   CoachingMessage,
   Nudge,
   NoteCategory,
+  ContactAgendaItem,
 } from "@/types/database";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -142,12 +143,25 @@ export interface StakeholderContextResult {
   relatedConversations: ConversationSummary[];
 }
 
+/** Thread-sourced context for an attendee not in the stakeholders table. */
+export interface ThreadSourcedAttendeeContext {
+  name: string;
+  threadTitle: string;
+  threadCompany: string | null;
+  /** Relevant message excerpts mentioning this person */
+  excerpts: { date: string; content: string }[];
+}
+
 /** Context for meeting preparation. */
 export interface MeetingPrepContextResult {
   stakeholderContexts: StakeholderContextResult[];
+  /** Context found in StrategyGPT threads for attendees without stakeholder profiles */
+  threadSourcedContexts: ThreadSourcedAttendeeContext[];
   dealContext: DealContext | null;
   relevantNudges: Nudge[];
   recentStrategicNotes: StrategicNote[];
+  /** Open "next time I talk to X" items for matched contacts */
+  contactAgendaItems: ContactAgendaItem[];
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────
@@ -1194,8 +1208,93 @@ export async function retrieveStakeholderContext(
 }
 
 /**
+ * Search coaching thread messages for mentions of a person's name.
+ * Used as a fallback when someone isn't in the stakeholders table
+ * but has been discussed in StrategyGPT threads.
+ */
+async function searchThreadsForPerson(
+  supabase: SupabaseClient,
+  userId: string,
+  personName: string
+): Promise<ThreadSourcedAttendeeContext | null> {
+  // Search coaching_conversations for messages mentioning this person
+  // Use ilike with the person's name to find relevant messages
+  const pattern = `%${personName}%`;
+
+  // First, find threads that mention this person in their title or contact_name
+  const { data: matchingThreads } = await supabase
+    .from("coaching_threads")
+    .select("thread_id, title, company, contact_name")
+    .eq("user_id", userId)
+    .eq("is_archived", false)
+    .or(`title.ilike.${pattern},contact_name.ilike.${pattern}`)
+    .order("last_message_at", { ascending: false })
+    .limit(5);
+
+  const threadIds = (matchingThreads ?? []).map((t) => t.thread_id);
+
+  // Also search message content for the name (across all threads)
+  const { data: messageMatches } = await supabase
+    .from("coaching_conversations")
+    .select("thread_id, content, created_at, role")
+    .eq("user_id", userId)
+    .ilike("content", pattern)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  // Combine thread IDs from both sources
+  if (messageMatches) {
+    for (const m of messageMatches) {
+      if (m.thread_id && !threadIds.includes(m.thread_id)) {
+        threadIds.push(m.thread_id);
+      }
+    }
+  }
+
+  if (threadIds.length === 0) return null;
+
+  // Fetch thread info for matched threads
+  const { data: threads } = await supabase
+    .from("coaching_threads")
+    .select("thread_id, title, company")
+    .in("thread_id", threadIds.slice(0, 5));
+
+  const threadMap = new Map(
+    (threads ?? []).map((t) => [t.thread_id, t])
+  );
+
+  // Build excerpts from messages that mention this person
+  const excerpts: { date: string; content: string }[] = [];
+  const allMessages = messageMatches ?? [];
+
+  for (const msg of allMessages.slice(0, 10)) {
+    // Truncate long messages to relevant excerpt
+    const content = msg.content.length > 500
+      ? msg.content.slice(0, 500) + " [...]"
+      : msg.content;
+    excerpts.push({
+      date: msg.created_at.split("T")[0],
+      content,
+    });
+  }
+
+  if (excerpts.length === 0) return null;
+
+  // Use the most relevant thread's info
+  const primaryThread = threadMap.get(threadIds[0]);
+
+  return {
+    name: personName,
+    threadTitle: primaryThread?.title ?? "StrategyGPT thread",
+    threadCompany: primaryThread?.company ?? null,
+    excerpts,
+  };
+}
+
+/**
  * Retrieve everything needed to prepare for a meeting.
  * Fetches stakeholder context for each attendee, plus deal context and relevant nudges.
+ * Falls back to searching StrategyGPT threads for attendees without stakeholder profiles.
  */
 export async function retrieveMeetingPrepContext(
   supabase: SupabaseClient,
@@ -1241,11 +1340,53 @@ export async function retrieveMeetingPrepContext(
     .map((r) => r.value)
     .filter((ctx): ctx is StakeholderContextResult => ctx !== null);
 
+  // For attendees without stakeholder profiles, search StrategyGPT threads
+  const knownNames = new Set(
+    stakeholderContexts.map((sc) => sc.stakeholder.name.toLowerCase())
+  );
+  const unknownNames = namesToLookup.filter(
+    (name) => !knownNames.has(name.toLowerCase())
+  );
+
+  let threadSourcedContexts: ThreadSourcedAttendeeContext[] = [];
+  if (unknownNames.length > 0) {
+    const threadSearchResults = await Promise.allSettled(
+      unknownNames.map((name) => searchThreadsForPerson(supabase, userId, name))
+    );
+    threadSourcedContexts = threadSearchResults
+      .filter(
+        (r): r is PromiseFulfilledResult<ThreadSourcedAttendeeContext | null> =>
+          r.status === "fulfilled"
+      )
+      .map((r) => r.value)
+      .filter((ctx): ctx is ThreadSourcedAttendeeContext => ctx !== null);
+  }
+
+  // Fetch open contact agenda items for matched stakeholders
+  // ("next time I talk to X, ask about...")
+  const matchedContactIds = stakeholderContexts
+    .map((sc) => sc.stakeholder.related_contact_id)
+    .filter((id): id is string => !!id);
+
+  let contactAgendaItems: ContactAgendaItem[] = [];
+  if (matchedContactIds.length > 0) {
+    const { data: agendaItems } = await supabase
+      .from("contact_agenda_items")
+      .select("*")
+      .eq("user_id", userId)
+      .eq("status", "open")
+      .in("contact_id", matchedContactIds)
+      .order("created_at", { ascending: false });
+    contactAgendaItems = (agendaItems as ContactAgendaItem[]) || [];
+  }
+
   return {
     stakeholderContexts,
+    threadSourcedContexts,
     dealContext,
     relevantNudges: (nudgesResult.data as Nudge[]) || [],
     recentStrategicNotes: (notesResult.data as StrategicNote[]) || [],
+    contactAgendaItems,
   };
 }
 
