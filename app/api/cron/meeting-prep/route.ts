@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
           });
 
           // Write the generated prep brief back to the meeting record
-          await supabase
+          const { error: updateError } = await supabase
             .from("meeting_notes")
             .update({
               prep_brief: prepResult.prep,
@@ -99,7 +99,11 @@ export async function POST(request: NextRequest) {
             })
             .eq("note_id", meeting.note_id);
 
-          entry.meetingsPrepped++;
+          if (updateError) {
+            entry.errors.push(`Meeting ${meeting.note_id}: failed to save prep: ${updateError.message}`);
+          } else {
+            entry.meetingsPrepped++;
+          }
         } catch (error) {
           entry.errors.push(
             `Meeting ${meeting.note_id}: ${error instanceof Error ? error.message : "Unknown error"}`
