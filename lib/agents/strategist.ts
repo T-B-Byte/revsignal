@@ -391,7 +391,8 @@ function buildBriefingContextDoc(ctx: BriefingContext): string {
         .map((a) => (a.role ? `${a.name} (${a.role})` : a.name))
         .join(", ");
       const dealTag = m.deal_id ? " [DEAL-LINKED]" : "";
-      return `- [${m.meeting_date}] ${m.title} — with ${attendeeStr}${dealTag}`;
+      const prepTag = m.prep_brief ? " (prep ready)" : " (no prep yet)";
+      return `- [${m.meeting_date}] ${m.title} — with ${attendeeStr}${dealTag}${prepTag}`;
     });
     sections.push(
       `UPCOMING MEETINGS (next 7 days):\n${upcomingLines.join("\n")}`
@@ -1767,6 +1768,36 @@ function buildMeetingPrepContextDoc(
       (n) => `- [${n.priority.toUpperCase()}] ${n.title}: ${n.message}`
     );
     sections.push(`RELEVANT NUDGES:\n${nudgeLines.join("\n")}`);
+  }
+
+  // Contact agenda items ("next time I talk to X, ask about...")
+  if (ctx.contactAgendaItems && ctx.contactAgendaItems.length > 0) {
+    // Build contact_id → stakeholder name map for labeling
+    const contactIdToName = new Map<string, string>();
+    for (const sc of ctx.stakeholderContexts) {
+      if (sc.stakeholder.related_contact_id) {
+        contactIdToName.set(sc.stakeholder.related_contact_id, sc.stakeholder.name);
+      }
+    }
+
+    // Group items by contact name
+    const grouped = new Map<string, string[]>();
+    for (const item of ctx.contactAgendaItems) {
+      const name = contactIdToName.get(item.contact_id) ?? "Unknown contact";
+      const list = grouped.get(name) ?? [];
+      list.push(item.description);
+      grouped.set(name, list);
+    }
+
+    const agendaLines: string[] = [];
+    for (const [name, items] of grouped) {
+      for (const desc of items) {
+        agendaLines.push(`- [${name}]: ${desc}`);
+      }
+    }
+    sections.push(
+      `CONTACT AGENDA ITEMS (things to ask/discuss with these people):\n${agendaLines.join("\n")}`
+    );
   }
 
   return sections.join("\n\n");

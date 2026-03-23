@@ -83,6 +83,7 @@ export interface MeetingNoteSummary {
   action_items: { description: string; owner: string; due_date?: string }[];
   tags: string[];
   deal_id: string | null;
+  prep_brief?: string | null;
 }
 
 /** Context specifically for The Strategist's morning briefing. */
@@ -468,10 +469,11 @@ export async function retrieveBriefingContext(
     // Upcoming meetings (today + next 7 days)
     supabase
       .from("meeting_notes")
-      .select("note_id, title, meeting_date, meeting_type, attendees, ai_summary, content, action_items, tags, deal_id")
+      .select("note_id, title, meeting_date, meeting_type, attendees, ai_summary, content, action_items, tags, deal_id, prep_brief, status")
       .eq("user_id", userId)
       .gte("meeting_date", todayStr)
       .lte("meeting_date", sevenDaysFromNow)
+      .neq("status", "cancelled")
       .order("meeting_date", { ascending: true })
       .limit(10),
     supabase
@@ -551,6 +553,7 @@ export async function retrieveBriefingContext(
         }[]) || [],
       tags: (n.tags as string[]) || [],
       deal_id: (n.deal_id as string) || null,
+      prep_brief: (n.prep_brief as string) || null,
     }));
   }
 
