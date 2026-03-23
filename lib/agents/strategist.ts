@@ -27,6 +27,7 @@ import {
   retrieveStakeholderContext,
   retrieveMeetingPrepContext,
   retrieveGlobalThreadBriefs,
+  retrieveMeetingContext,
   type BriefingContext,
   type DealContext,
   type StrategicContextResult,
@@ -2095,12 +2096,13 @@ export async function generateThreadResponse(
     })
   );
 
-  // Fetch global thread briefs in parallel with deal context
-  const [dealContext, globalBriefs] = await Promise.all([
+  // Fetch deal context, global thread briefs, and recent meeting notes in parallel
+  const [dealContext, globalBriefs, recentMeetings] = await Promise.all([
     options?.dealId
       ? retrieveDealContext(supabase, userId, options.dealId)
       : Promise.resolve(null),
     retrieveGlobalThreadBriefs(supabase, userId, threadId),
+    retrieveMeetingContext(supabase, userId, { limit: 15 }),
   ]);
 
   // M&A entity context: fetch entity details, contacts, notes, and documents
@@ -2214,6 +2216,25 @@ export async function generateThreadResponse(
         `OTHER THREAD SUMMARIES (your prior conversations with this user, for cross-reference. Proactively flag connections between threads when relevant.):\n${briefLines.join("\n")}`
       );
     }
+  }
+
+  // Recent meeting notes — gives the Strategist awareness of all meetings
+  if (recentMeetings.length > 0) {
+    const meetingLines = recentMeetings.map((m) => {
+      const attendeeStr = m.attendees.map((a) => a.name).join(", ");
+      const summary = m.ai_summary
+        ? m.ai_summary.length > 400
+          ? m.ai_summary.slice(0, 400) + " [...]"
+          : m.ai_summary
+        : "(no summary)";
+      const actionStr = m.action_items.length > 0
+        ? `\n    Action items: ${m.action_items.map((a) => `${a.description} (${a.owner}${a.due_date ? ", due " + a.due_date : ""})`).join("; ")}`
+        : "";
+      return `- [${m.meeting_date}] ${m.title} (${m.meeting_type.replace(/_/g, " ")})\n    Attendees: ${attendeeStr}\n    ${summary}${actionStr}`;
+    });
+    contextSections.push(
+      `RECENT MEETING NOTES (from the Meetings section):\n${meetingLines.join("\n\n")}`
+    );
   }
 
   // Open follow-ups for this thread
