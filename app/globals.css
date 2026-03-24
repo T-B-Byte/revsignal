@@ -29,8 +29,8 @@
   --color-border-hover: rgba(255, 255, 255, 0.15);
 
   /* Typography */
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+  --font-sans: var(--font-inter, "Inter"), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-jetbrains-mono, "JetBrains Mono"), ui-monospace, monospace;
 
   /* Spacing/sizing */
   --radius-sm: 0.375rem;

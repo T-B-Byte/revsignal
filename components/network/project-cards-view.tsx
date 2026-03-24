@@ -50,7 +50,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
   const [seeding, setSeeding] = useState(false);
   const [seedResult, setSeedResult] = useState<string | null>(null);
@@ -185,51 +185,60 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
       .filter((m) => m.name.trim())
       .map((m) => ({ name: m.name.trim(), role: m.role.trim() || undefined }));
 
-    if (editingProject) {
-      const res = await fetch("/api/projects", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          project_id: editingProject.project_id,
-          name,
-          description: description || null,
-          color,
-          category: category.trim() || null,
-          members: memberPayload,
-        }),
-      });
-      if (!res.ok) return;
-      const { project } = await res.json();
-      setProjects((prev) =>
-        prev.map((p) => (p.project_id === project.project_id ? project : p))
-      );
-    } else {
-      const res = await fetch("/api/projects", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          description: description || undefined,
-          color,
-          category: category.trim() || null,
-          members: memberPayload,
-        }),
-      });
-      if (!res.ok) return;
-      const { project } = await res.json();
-      setProjects((prev) => [project, ...prev]);
+    try {
+      if (editingProject) {
+        const res = await fetch("/api/projects", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            project_id: editingProject.project_id,
+            name,
+            description: description || null,
+            color,
+            category: category.trim() || null,
+            members: memberPayload,
+          }),
+        });
+        if (!res.ok) return;
+        const { project } = await res.json();
+        setProjects((prev) =>
+          prev.map((p) =>
+            p.project_id === project.project_id
+              ? { ...project, linked_threads: p.linked_threads }
+              : p
+          )
+        );
+      } else {
+        const res = await fetch("/api/projects", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name,
+            description: description || undefined,
+            color,
+            category: category.trim() || null,
+            members: memberPayload,
+          }),
+        });
+        if (!res.ok) return;
+        const { project } = await res.json();
+        setProjects((prev) => [project, ...prev]);
+      }
+      setShowDialog(false);
+      setEditingProject(null);
+    } catch {
+      // Network error: dialog stays open so user can retry
     }
-    setShowDialog(false);
-    setEditingProject(null);
   }
 
   async function handleDelete(projectId: string) {
-    const res = await fetch("/api/projects", {
-      method: "DELETE",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ project_id: projectId }),
-    });
-    if (res.ok) {
+    try {
+      const res = await fetch("/api/projects", {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ project_id: projectId }),
+      });
+      if (!res.ok) return;
       setProjects((prev) => prev.filter((p) => p.project_id !== projectId));
       setSelectedIds((prev) => {
         const next = new Set(prev);
@@ -238,6 +247,8 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
       });
       setShowDialog(false);
       setEditingProject(null);
+    } catch {
+      // Network error: dialog stays open
     }
   }
 
@@ -468,7 +479,9 @@ function ProjectCard({
                 Where you left off
               </p>
               <span className="text-[10px] text-text-muted">
-                {formatDistanceToNow(new Date(latestThread.last_message_at), { addSuffix: true })}
+                {latestThread.last_message_at && !isNaN(new Date(latestThread.last_message_at).getTime())
+                  ? formatDistanceToNow(new Date(latestThread.last_message_at), { addSuffix: true })
+                  : ""}
               </span>
             </div>
             <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed">

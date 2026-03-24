@@ -34,7 +34,7 @@ export function generatePrintHTML(projects: ProjectWithMembers[], title: string,
 
   // Sanitize color values: only allow valid hex colors
   const safeColor = (c: string | null | undefined): string => {
-    if (c && /^#[0-9a-fA-F]{3,8}$/.test(c)) return c;
+    if (c && /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(c)) return c;
     return "#3b82f6"; // fallback to accent blue
   };
 

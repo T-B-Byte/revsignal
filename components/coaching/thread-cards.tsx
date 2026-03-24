@@ -317,7 +317,7 @@ function ThreadCard({
               ? formatDistanceToNow(lastMessageDate, { addSuffix: true })
               : "unknown"}
           </span>
-          <span>{thread.message_count} message{thread.message_count !== 1 ? "s" : ""}</span>
+          <span>{thread.message_count ?? 0} message{(thread.message_count ?? 0) !== 1 ? "s" : ""}</span>
         </div>
       </div>
     </div>
