@@ -86,6 +86,11 @@ export function ThreadChat({
   const [searchingPerson, setSearchingPerson] = useState(false);
   const [personCandidate, setPersonCandidate] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role"> | null>(null);
   const [assigningToPerson, setAssigningToPerson] = useState(false);
+  const [creatingNewPerson, setCreatingNewPerson] = useState(false);
+  const [newPersonName, setNewPersonName] = useState("");
+  const [newPersonCompany, setNewPersonCompany] = useState("");
+  const [newPersonRole, setNewPersonRole] = useState("");
+  const [savingNewPerson, setSavingNewPerson] = useState(false);
   const [showTopicPicker, setShowTopicPicker] = useState(false);
   const [topicSearch, setTopicSearch] = useState("");
   const [topicResults, setTopicResults] = useState<{ id: string; type: string; title: string; subtitle?: string }[]>([]);
@@ -871,6 +876,54 @@ export function ThreadChat({
     }
   }
 
+  function openCreatePerson() {
+    setCreatingNewPerson(true);
+    setNewPersonName(personSearch.trim());
+    setNewPersonCompany(thread.company || dealCompany || "");
+    setNewPersonRole("");
+    setShowPersonPicker(false);
+    setPersonSearch("");
+    setPersonResults([]);
+  }
+
+  async function handleCreatePerson() {
+    const name = newPersonName.trim();
+    const company = newPersonCompany.trim();
+    if (!name || !company) return;
+    setSavingNewPerson(true);
+    try {
+      const res = await fetch("/api/contacts", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name,
+          company,
+          role: newPersonRole.trim() || undefined,
+        }),
+      });
+      if (res.ok) {
+        const { contact } = await res.json();
+        setPersonCandidate({
+          contact_id: contact.contact_id,
+          name: contact.name,
+          company: contact.company,
+          role: contact.role,
+        });
+        setCreatingNewPerson(false);
+        setNewPersonName("");
+        setNewPersonCompany("");
+        setNewPersonRole("");
+      } else {
+        const data = await res.json().catch(() => ({}));
+        setError(data.error || "Failed to create contact.");
+      }
+    } catch {
+      setError("Network error creating contact.");
+    } finally {
+      setSavingNewPerson(false);
+    }
+  }
+
   async function handleAssignToPerson() {
     if (!personCandidate || assigningToPerson) return;
     setAssigningToPerson(true);
@@ -1485,6 +1538,58 @@ export function ThreadChat({
                 Cancel
               </button>
             </div>
+          ) : creatingNewPerson ? (
+            <div className="flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1">
+              <input
+                type="text"
+                value={newPersonName}
+                onChange={(e) => setNewPersonName(e.target.value)}
+                placeholder="Name"
+                maxLength={200}
+                autoFocus
+                className="w-28 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+              />
+              <input
+                type="text"
+                value={newPersonCompany}
+                onChange={(e) => setNewPersonCompany(e.target.value)}
+                placeholder="Company"
+                maxLength={200}
+                className="w-28 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+              />
+              <input
+                type="text"
+                value={newPersonRole}
+                onChange={(e) => setNewPersonRole(e.target.value)}
+                placeholder="Role"
+                maxLength={200}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreatePerson();
+                  }
+                }}
+                className="w-24 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+              />
+              <button
+                onClick={handleCreatePerson}
+                disabled={savingNewPerson || !newPersonName.trim() || !newPersonCompany.trim()}
+                className="text-[10px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
+              >
+                {savingNewPerson ? "Saving…" : "Create"}
+              </button>
+              <button
+                onClick={() => {
+                  setCreatingNewPerson(false);
+                  setNewPersonName("");
+                  setNewPersonCompany("");
+                  setNewPersonRole("");
+                }}
+                className="text-[10px] text-text-muted hover:text-text-primary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
           ) : showPersonPicker ? (
             <div className="relative">
               <div className="flex items-center gap-1.5">
@@ -1530,6 +1635,14 @@ export function ThreadChat({
                   ))}
                   {!searchingPerson && personResults.length === 0 && (
                     <p className="px-3 py-2 text-[10px] text-text-muted">No contacts found</p>
+                  )}
+                  {!searchingPerson && (
+                    <button
+                      onClick={openCreatePerson}
+                      className="w-full border-t border-border-primary px-3 py-1.5 text-left text-xs font-medium text-emerald-400 hover:bg-surface-tertiary transition-colors"
+                    >
+                      + Create &ldquo;{personSearch.trim()}&rdquo; as new contact
+                    </button>
                   )}
                 </div>
               )}
