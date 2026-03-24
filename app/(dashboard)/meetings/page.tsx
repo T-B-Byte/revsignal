@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { MeetingsView } from "@/components/meetings/meetings-view";
 import type { MeetingNote } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Meetings | RevSignal",
   description: "Meeting prep and command center.",

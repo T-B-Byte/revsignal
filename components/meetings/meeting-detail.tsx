@@ -35,12 +35,13 @@ const STATUS_STYLES: Record<
 };
 
 function getCountdown(dateStr: string): string {
+  // Parse meeting date in local timezone to avoid UTC/local mismatch during SSR
   const now = new Date();
   const meeting = new Date(dateStr);
-  // Compare calendar dates, not raw milliseconds
-  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const meetingDate = new Date(meeting.getFullYear(), meeting.getMonth(), meeting.getDate());
-  const diffDays = Math.round((meetingDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+  // Use local date components for both to ensure consistent comparison
+  const todayStart = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const meetingStart = Date.UTC(meeting.getFullYear(), meeting.getMonth(), meeting.getDate());
+  const diffDays = Math.round((meetingStart - todayStart) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return `${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? "" : "s"} ago`;
   if (diffDays === 0) return "today";
   if (diffDays === 1) return "tomorrow";
@@ -431,7 +432,7 @@ export function MeetingDetail({
 
             <div className="mt-2 flex flex-wrap items-center gap-3 text-sm text-text-secondary">
               <span>{formatMeetingDate(meeting.meeting_date)}</span>
-              <span className="text-text-muted">
+              <span className="text-text-muted" suppressHydrationWarning>
                 &mdash; {getCountdown(meeting.meeting_date)}
               </span>
               <span

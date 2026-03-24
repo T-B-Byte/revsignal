@@ -3,6 +3,8 @@ import { redirect, notFound } from "next/navigation";
 import { MeetingDetail } from "@/components/meetings/meeting-detail";
 import type { MeetingNote, ContactAgendaItem, Deal, CoachingThread, CoachingMessage } from "@/types/database";
 
+export const dynamic = "force-dynamic";
+
 export const metadata = {
   title: "Meeting Prep | RevSignal",
 };

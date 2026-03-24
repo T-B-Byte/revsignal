@@ -25,12 +25,13 @@ interface MeetingsViewProps {
 // ---------------------------------------------------------------------------
 
 function getCountdown(dateStr: string): string {
+  // Parse meeting date in local timezone to avoid UTC/local mismatch during SSR
   const now = new Date();
   const meeting = new Date(dateStr);
-  // Compare calendar dates, not raw milliseconds
-  const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-  const meetingDate = new Date(meeting.getFullYear(), meeting.getMonth(), meeting.getDate());
-  const diffDays = Math.round((meetingDate.getTime() - todayDate.getTime()) / (1000 * 60 * 60 * 24));
+  // Use local date components for both to ensure consistent comparison
+  const todayStart = Date.UTC(now.getFullYear(), now.getMonth(), now.getDate());
+  const meetingStart = Date.UTC(meeting.getFullYear(), meeting.getMonth(), meeting.getDate());
+  const diffDays = Math.round((meetingStart - todayStart) / (1000 * 60 * 60 * 24));
   if (diffDays < 0) return `${Math.abs(diffDays)} day${Math.abs(diffDays) === 1 ? "" : "s"} ago`;
   if (diffDays === 0) return "today";
   if (diffDays === 1) return "tomorrow";
@@ -161,7 +162,7 @@ function TimelineStrip({ meetings }: { meetings: MeetingNote[] }) {
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 hidden group-hover:block whitespace-nowrap z-30">
                 <div className="rounded-md bg-surface-primary border border-border-primary px-2 py-1 text-xs shadow-lg">
                   <p className="font-medium text-text-primary">{m.title}</p>
-                  <p className="text-text-muted">{countdown}</p>
+                  <p className="text-text-muted" suppressHydrationWarning>{countdown}</p>
                 </div>
               </div>
             </div>
@@ -334,6 +335,7 @@ function MeetingCard({
                 ? "text-accent-primary"
                 : "text-text-muted"
             }`}
+            suppressHydrationWarning
           >
             {countdown}
           </span>
