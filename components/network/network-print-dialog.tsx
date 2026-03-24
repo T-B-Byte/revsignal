@@ -32,29 +32,36 @@ export function generatePrintHTML(projects: ProjectWithMembers[], title: string,
     day: "numeric",
   });
 
-  // Serialize project data as JSON for the embedded JS
+  // Sanitize color values: only allow valid hex colors
+  const safeColor = (c: string | null | undefined): string => {
+    if (c && /^#[0-9a-fA-F]{3,8}$/.test(c)) return c;
+    return "#3b82f6"; // fallback to accent blue
+  };
+
+  // Serialize project data as JSON for the embedded JS.
+  // Replace </ with <\/ to prevent </script> injection in the embedded script block.
   const projectsJSON = JSON.stringify(
     projects.map((p) => ({
       id: p.project_id,
       name: p.name,
       description: p.description,
       status: p.status,
-      color: p.color,
+      color: safeColor(p.color),
       members: (p.project_members ?? []).map((m) => ({
         name: m.name,
         role: m.role,
       })),
     }))
-  );
+  ).replace(/<\//g, "<\\/");
 
-  const statusLabelsJSON = JSON.stringify(STATUS_LABELS);
-  const statusColorsJSON = JSON.stringify(STATUS_COLORS);
+  const statusLabelsJSON = JSON.stringify(STATUS_LABELS).replace(/<\//g, "<\\/");
+  const statusColorsJSON = JSON.stringify(STATUS_COLORS).replace(/<\//g, "<\\/");
 
   return `<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>${title}</title>
+  <title>${escapeHtml(title)}</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -336,8 +343,7 @@ export function generatePrintHTML(projects: ProjectWithMembers[], title: string,
   <div class="toolbar">
     <span class="toolbar-label">Editor</span>
     <button onclick="addSection()">+ Add Section</button>
-    <button onclick="toggleAll(true)">Show All</button>
-    <button onclick="toggleAll(false)">Hide All</button>
+    <button onclick="resetLayout()">Reset Layout</button>
     <button class="btn-print" onclick="window.print()">Print / Save as PDF</button>
   </div>
 
@@ -604,16 +610,9 @@ export function generatePrintHTML(projects: ProjectWithMembers[], title: string,
     render();
   };
 
-  window.toggleAll = function(show) {
-    // Show all = put all projects in their sections; Hide all = clear all sections
-    // Actually: show = expand all projects back, hide = not useful.
-    // Let's make "Show All" = one flat section, "Hide All" = just a noop
-    // Better: these are meaningless without hidden projects. Let's repurpose:
-    // "Show All" = reset to single section with all projects
-    if (show) {
-      sections = [{ id: 'default', name: 'All Projects', projectIds: PROJECTS.map(function(p) { return p.id; }) }];
-      render();
-    }
+  window.resetLayout = function() {
+    sections = [{ id: 'default', name: 'All Projects', projectIds: PROJECTS.map(function(p) { return p.id; }) }];
+    render();
   };
 
   // Initial render
@@ -658,7 +657,7 @@ export function NetworkPrintDialog({ projects, onClose }: NetworkPrintDialogProp
     const blob = new Blob([html], { type: "text/html" });
     const url = URL.createObjectURL(blob);
     window.open(url, "_blank");
-    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
   }
 
   const selectedCount = selected.size;

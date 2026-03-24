@@ -136,9 +136,13 @@ export function StudioList({ initialProjects }: StudioListProps) {
 
   async function handleDeleteProject(projectId: string) {
     closeContextMenu();
-    const res = await fetch(`/api/studio/${projectId}`, { method: "DELETE" });
-    if (res.ok) {
-      setProjects((prev) => prev.filter((p) => p.project_id !== projectId));
+    try {
+      const res = await fetch(`/api/studio/${encodeURIComponent(projectId)}`, { method: "DELETE" });
+      if (res.ok) {
+        setProjects((prev) => prev.filter((p) => p.project_id !== projectId));
+      }
+    } catch {
+      // Network error; silently fail (project stays in list)
     }
   }
 

@@ -1912,6 +1912,7 @@ THREAD BEHAVIOR:
 - Track commitments. When Tina says she'll do something or sets a follow-up date, note it.
 - When you identify a follow-up action, include it in a FOLLOW_UPS section at the end of your response (see format below).
 - On each response, end with the next move. What should Tina do next?
+- CROSS-THREAD AWARENESS: You receive summaries of ALL other active threads in the "OTHER THREAD SUMMARIES" context block. Proactively surface connections between threads. If a contact, company, or topic from this thread appears in another thread summary, flag it. Never claim you lack context when it exists in another thread summary. Think across all threads at all times.
 
 FOLLOW-UP EXTRACTION:
 When you identify specific follow-up actions from the conversation, append them at the very end of your response in this exact format:
@@ -2053,7 +2054,7 @@ async function fetchImagesForVision(urls: string[]): Promise<FetchedImage[]> {
  * is visible to other threads via global briefs (cross-thread awareness).
  * REGENERATE_INTERVAL: regenerate the brief periodically to keep it fresh.
  */
-const FIRST_BRIEF_THRESHOLD = 3;
+const FIRST_BRIEF_THRESHOLD = 1;
 const THREAD_BRIEF_REGENERATE_INTERVAL = 20;
 
 export interface MeetingDetectedData {

@@ -149,7 +149,7 @@ export function ThreadCards({ threads }: ThreadCardsProps) {
             <h3 className="mb-3 text-xs font-bold uppercase tracking-wider text-text-muted px-1">
               {company}
             </h3>
-            <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {companyThreads.map((thread) => (
                 <ThreadCard
                   key={thread.thread_id}
@@ -165,6 +165,16 @@ export function ThreadCards({ threads }: ThreadCardsProps) {
   );
 }
 
+// Project status colors matching the Projects section
+const PROJECT_STATUS_COLORS: Record<string, string> = {
+  active: "#22c55e",
+  paused: "#eab308",
+  completed: "#6b7280",
+};
+
+// Default left border color for threads not linked to a project
+const DEFAULT_BORDER_COLOR = "#3b82f6";
+
 function ThreadCard({
   thread,
   onOpen,
@@ -175,108 +185,140 @@ function ThreadCard({
   const hasOverdue = thread.has_overdue;
   const followUpCount = thread.open_follow_up_count ?? 0;
   const taskCount = thread.open_task_count ?? 0;
-  const daysSinceActivity = Math.floor(
-    (Date.now() - new Date(thread.last_message_at).getTime()) / (1000 * 60 * 60 * 24)
-  );
+  const lastMessageDate = thread.last_message_at ? new Date(thread.last_message_at) : null;
+  const daysSinceActivity = lastMessageDate && !isNaN(lastMessageDate.getTime())
+    ? Math.floor((Date.now() - lastMessageDate.getTime()) / (1000 * 60 * 60 * 24))
+    : 0;
   const isStale = thread.deal_id && daysSinceActivity >= 7;
+
+  // Determine left border color: use project status color if linked, else default
+  const project = thread.projects;
+  const borderColor = project
+    ? PROJECT_STATUS_COLORS[project.status] ?? DEFAULT_BORDER_COLOR
+    : DEFAULT_BORDER_COLOR;
 
   return (
     <div
-      className="group cursor-pointer rounded-xl border border-border-primary bg-surface-primary p-5 transition-all hover:shadow-md hover:border-accent-primary/40"
+      className="group cursor-pointer rounded-none border-l-4 bg-surface-secondary transition-shadow hover:shadow-md"
+      style={{ borderLeftColor: borderColor }}
       onClick={onOpen}
     >
-      {/* Header */}
-      <div className="flex items-start justify-between gap-2 mb-3">
-        <div className="min-w-0 flex-1">
-          <h4 className="text-sm font-bold text-text-primary leading-tight truncate">
-            {thread.title}
-          </h4>
-          {thread.deals && (
-            <p className="mt-0.5 text-xs text-accent-primary truncate">
-              {thread.deals.company}
-              <span className="ml-1 text-text-muted">
-                ({thread.deals.stage.replace(/_/g, " ")})
-              </span>
-            </p>
-          )}
-          {thread.ma_entities && (
-            <p className="mt-0.5 text-xs text-purple-400 truncate">
-              {thread.ma_entities.company}
-              <span className="ml-1 text-text-muted">
-                ({thread.ma_entities.entity_type} &middot; {thread.ma_entities.stage})
-              </span>
-            </p>
-          )}
-        </div>
-
-        {/* Status indicators */}
-        <div className="flex items-center gap-1.5 shrink-0">
-          {hasOverdue && (
-            <span className="h-2 w-2 rounded-full bg-status-red" title="Overdue follow-up" />
-          )}
-          {followUpCount > 0 && !hasOverdue && (
-            <span
-              className="rounded-full bg-status-yellow/20 px-1.5 py-0.5 text-[10px] font-semibold text-status-yellow"
-              title={`${followUpCount} open follow-up${followUpCount > 1 ? "s" : ""}`}
-            >
-              {followUpCount}
-            </span>
-          )}
-          {taskCount > 0 && (
-            <span
-              className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400"
-              title={`${taskCount} open task${taskCount > 1 ? "s" : ""}`}
-            >
-              {taskCount}
-            </span>
-          )}
-          {isStale && (
-            <span className="rounded-full bg-status-red/20 px-1.5 py-0.5 text-[10px] font-semibold text-status-red">
-              Stale
-            </span>
-          )}
-        </div>
-      </div>
-
-      {/* Where we left off (thread brief or catchup) */}
-      {(thread.thread_brief || thread.catchup_text) && (
-        <div className="mb-3 rounded-lg bg-surface-secondary px-3 py-2">
-          <p className="text-[10px] font-semibold uppercase tracking-wider text-text-muted mb-1">
-            Where you left off
-          </p>
-          <p className="text-xs text-text-secondary line-clamp-3 leading-relaxed">
-            {thread.catchup_text || thread.thread_brief}
-          </p>
-        </div>
-      )}
-
-      {/* Team / participants */}
-      {thread.participants && thread.participants.length > 0 && (
-        <div className="border-t border-border-primary pt-2">
-          <p className="text-[9px] font-bold uppercase tracking-widest text-text-muted mb-1.5">
-            Team
-          </p>
-          <div className="flex flex-wrap gap-x-3 gap-y-1">
-            {thread.participants.map((p, i) => (
-              <div key={i} className="flex items-baseline gap-1">
-                <span className="text-[11px] font-semibold text-text-primary">
-                  {p.name}
+      <div className="px-5 py-4">
+        {/* Header row: title + status indicators */}
+        <div className="flex items-start justify-between gap-2 mb-3">
+          <div className="min-w-0 flex-1">
+            <h4 className="text-sm font-bold text-text-primary leading-tight truncate">
+              {thread.title}
+            </h4>
+            {thread.deals && (
+              <p className="mt-0.5 text-xs text-accent-primary truncate">
+                {thread.deals.company}
+                <span className="ml-1 text-text-muted">
+                  ({thread.deals.stage.replace(/_/g, " ")})
                 </span>
-                {p.role && (
-                  <span className="text-[10px] text-text-muted">{p.role}</span>
-                )}
-              </div>
-            ))}
+              </p>
+            )}
+            {thread.ma_entities && (
+              <p className="mt-0.5 text-xs text-purple-400 truncate">
+                {thread.ma_entities.company}
+                <span className="ml-1 text-text-muted">
+                  ({thread.ma_entities.entity_type} &middot; {thread.ma_entities.stage})
+                </span>
+              </p>
+            )}
+          </div>
+
+          {/* Status indicators */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {hasOverdue && (
+              <span className="h-2 w-2 rounded-full bg-status-red" title="Overdue follow-up" />
+            )}
+            {followUpCount > 0 && !hasOverdue && (
+              <span
+                className="rounded-full bg-status-yellow/20 px-1.5 py-0.5 text-[10px] font-semibold text-status-yellow"
+                title={`${followUpCount} open follow-up${followUpCount > 1 ? "s" : ""}`}
+              >
+                {followUpCount}
+              </span>
+            )}
+            {taskCount > 0 && (
+              <span
+                className="rounded-full bg-emerald-500/20 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-400"
+                title={`${taskCount} open task${taskCount > 1 ? "s" : ""}`}
+              >
+                {taskCount}
+              </span>
+            )}
+            {isStale && (
+              <span className="rounded-full bg-status-red/20 px-1.5 py-0.5 text-[10px] font-semibold text-status-red">
+                Stale
+              </span>
+            )}
           </div>
         </div>
-      )}
 
-      {/* Footer: last activity + message count */}
-      <div className="mt-3 flex items-center justify-between text-[10px] text-text-muted">
-        <span>
-          {formatDistanceToNow(new Date(thread.last_message_at), { addSuffix: true })}
-        </span>
-        <span>{thread.message_count} message{thread.message_count !== 1 ? "s" : ""}</span>
+        {/* Project badge */}
+        {project && (
+          <div className="mb-3 flex items-center gap-2">
+            <span
+              className="shrink-0 rounded-full px-2.5 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-white"
+              style={{ backgroundColor: PROJECT_STATUS_COLORS[project.status] ?? "#6b7280" }}
+            >
+              {project.status.toUpperCase()}
+            </span>
+            <span className="text-[11px] font-medium text-text-secondary truncate">
+              {project.name}
+            </span>
+            {project.category && (
+              <span className="rounded bg-surface-tertiary px-1.5 py-0.5 text-[10px] text-text-muted">
+                {project.category}
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Where we left off (thread brief or catchup) */}
+        {(thread.thread_brief || thread.catchup_text) && (
+          <div className="mb-3 rounded-lg bg-surface-tertiary/50 px-3 py-2">
+            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-accent-primary mb-1">
+              Where you left off
+            </p>
+            <p className="text-xs text-text-secondary line-clamp-3 leading-relaxed">
+              {thread.catchup_text || thread.thread_brief}
+            </p>
+          </div>
+        )}
+
+        {/* Team / participants */}
+        {thread.participants && thread.participants.length > 0 && (
+          <div className="border-t border-border-primary pt-3">
+            <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-text-muted mb-2">
+              Team
+            </p>
+            <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+              {thread.participants.map((p, i) => (
+                <span key={i} className="inline-flex items-baseline gap-1.5">
+                  <span className="text-[11px] font-bold text-text-primary">
+                    {p.name}
+                  </span>
+                  {p.role && (
+                    <span className="text-[10px] text-text-muted">{p.role}</span>
+                  )}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Footer: last activity + message count */}
+        <div className="mt-3 flex items-center justify-between text-[10px] text-text-muted">
+          <span>
+            {lastMessageDate && !isNaN(lastMessageDate.getTime())
+              ? formatDistanceToNow(lastMessageDate, { addSuffix: true })
+              : "unknown"}
+          </span>
+          <span>{thread.message_count} message{thread.message_count !== 1 ? "s" : ""}</span>
+        </div>
       </div>
     </div>
   );

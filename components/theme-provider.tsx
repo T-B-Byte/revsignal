@@ -27,6 +27,21 @@ export function useTheme() {
 }
 
 const STORAGE_KEY = "revsignal-theme";
+const VALID_THEMES: Theme[] = ["light", "dark", "system"];
+
+function readStoredTheme(): Theme {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored && VALID_THEMES.includes(stored as Theme)) return stored as Theme;
+  } catch { /* localStorage unavailable */ }
+  return "dark";
+}
+
+function writeStoredTheme(value: Theme): void {
+  try {
+    localStorage.setItem(STORAGE_KEY, value);
+  } catch { /* localStorage unavailable */ }
+}
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("dark");
@@ -55,8 +70,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY) as Theme | null;
-    const preference = stored ?? "dark";
+    const preference = readStoredTheme();
     setThemeState(preference);
     apply(resolve(preference));
   }, [apply, resolve]);
@@ -71,7 +85,7 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   function setTheme(next: Theme) {
     setThemeState(next);
-    localStorage.setItem(STORAGE_KEY, next);
+    writeStoredTheme(next);
     apply(resolve(next));
   }
 

@@ -39,6 +39,35 @@
   --radius-xl: 1rem;
 }
 
+/* ---- Light mode overrides ---- */
+.light {
+  --color-surface-primary: #f8fafc;
+  --color-surface-secondary: #ffffff;
+  --color-surface-tertiary: #f1f5f9;
+  --color-surface-elevated: rgba(255, 255, 255, 0.9);
+  --color-surface-card: rgba(255, 255, 255, 0.8);
+
+  --color-accent-primary: #2563eb;
+  --color-accent-secondary: #0891b2;
+  --color-accent-glow: rgba(37, 99, 235, 0.1);
+  --color-accent-hover: #1d4ed8;
+
+  --color-status-green: #16a34a;
+  --color-status-yellow: #ca8a04;
+  --color-status-red: #dc2626;
+  --color-status-green-bg: rgba(22, 163, 74, 0.08);
+  --color-status-yellow-bg: rgba(202, 138, 4, 0.08);
+  --color-status-red-bg: rgba(220, 38, 38, 0.08);
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94a3b8;
+  --color-text-inverse: #f8fafc;
+
+  --color-border-primary: rgba(0, 0, 0, 0.08);
+  --color-border-hover: rgba(0, 0, 0, 0.15);
+}
+
 /* Base styles */
 body {
   background: var(--color-surface-primary);
@@ -74,9 +103,22 @@ body {
   border: 1px solid var(--color-border-primary);
 }
 
+/* Light mode glass refinement */
+.light .glass {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
 /* Glow effect */
 .glow-blue {
   box-shadow: 0 0 20px var(--color-accent-glow);
+}
+
+/* Light mode scrollbar */
+.light ::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.12);
+}
+.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* Number/data styling */

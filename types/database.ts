@@ -1034,6 +1034,19 @@ export interface ProjectWithMembers extends Project {
   project_members: ProjectMember[];
 }
 
+export interface ProjectLinkedThread {
+  thread_id: string;
+  title: string;
+  thread_brief: string | null;
+  catchup_text: string | null;
+  last_message_at: string;
+  message_count: number;
+}
+
+export interface ProjectWithMembersAndThreads extends ProjectWithMembers {
+  linked_threads?: ProjectLinkedThread[];
+}
+
 export const PROJECT_STATUSES: { value: ProjectStatus; label: string }[] = [
   { value: "active", label: "Active" },
   { value: "paused", label: "Paused" },

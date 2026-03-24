@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import type { ProjectWithMembers } from "@/types/database";
+import { useRouter } from "next/navigation";
+import { formatDistanceToNow } from "date-fns";
+import type { ProjectWithMembersAndThreads } from "@/types/database";
 import { PROJECT_COLORS, PHAROSIQ_TEAM } from "@/types/database";
 import type { ProjectStatus } from "@/types/database";
 import { ProjectFiltersBar } from "./project-filters";
 import { generatePrintHTML } from "./network-print-dialog";
 
 interface ProjectCardsViewProps {
-  initialProjects: ProjectWithMembers[];
+  initialProjects: ProjectWithMembersAndThreads[];
 }
 
 interface MemberInput {
@@ -35,7 +37,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
   const [personFilter, setPersonFilter] = useState("");
   const [statusFilter, setStatusFilter] = useState<ProjectStatus[]>([]);
   const [showDialog, setShowDialog] = useState(false);
-  const [editingProject, setEditingProject] = useState<ProjectWithMembers | null>(null);
+  const [editingProject, setEditingProject] = useState<ProjectWithMembersAndThreads | null>(null);
   // Direct print: opens editor in new tab with selected (or all) projects
   function handlePrint() {
     const printProjects =
@@ -118,8 +120,8 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
 
   // Group filtered projects by category
   const groupedProjects = useMemo(() => {
-    const groups: { category: string | null; projects: ProjectWithMembers[] }[] = [];
-    const categoryMap = new Map<string | null, ProjectWithMembers[]>();
+    const groups: { category: string | null; projects: ProjectWithMembersAndThreads[] }[] = [];
+    const categoryMap = new Map<string | null, ProjectWithMembersAndThreads[]>();
 
     for (const p of filteredProjects) {
       const key = p.category || null;
@@ -167,7 +169,7 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
     setShowDialog(true);
   }
 
-  function handleEditProject(project: ProjectWithMembers) {
+  function handleEditProject(project: ProjectWithMembersAndThreads) {
     setEditingProject(project);
     setShowDialog(true);
   }
@@ -196,12 +198,11 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
           members: memberPayload,
         }),
       });
-      if (res.ok) {
-        const { project } = await res.json();
-        setProjects((prev) =>
-          prev.map((p) => (p.project_id === project.project_id ? project : p))
-        );
-      }
+      if (!res.ok) return;
+      const { project } = await res.json();
+      setProjects((prev) =>
+        prev.map((p) => (p.project_id === project.project_id ? project : p))
+      );
     } else {
       const res = await fetch("/api/projects", {
         method: "POST",
@@ -214,10 +215,9 @@ export function ProjectCardsView({ initialProjects }: ProjectCardsViewProps) {
           members: memberPayload,
         }),
       });
-      if (res.ok) {
-        const { project } = await res.json();
-        setProjects((prev) => [project, ...prev]);
-      }
+      if (!res.ok) return;
+      const { project } = await res.json();
+      setProjects((prev) => [project, ...prev]);
     }
     setShowDialog(false);
     setEditingProject(null);
@@ -393,12 +393,15 @@ function ProjectCard({
   onToggleSelect,
   onEdit,
 }: {
-  project: ProjectWithMembers;
+  project: ProjectWithMembersAndThreads;
   isSelected: boolean;
   onToggleSelect: () => void;
   onEdit: () => void;
 }) {
+  const router = useRouter();
   const members = project.project_members ?? [];
+  const threads = project.linked_threads ?? [];
+  const latestThread = threads[0] ?? null;
 
   return (
     <div
@@ -451,6 +454,34 @@ function ProjectCard({
           </p>
         )}
 
+        {/* StrategyGPT thread preview: where you left off */}
+        {latestThread && (
+          <div
+            className="mb-3 rounded-lg bg-surface-tertiary/50 px-3 py-2.5 hover:bg-surface-tertiary transition-colors"
+            onClick={(e) => {
+              e.stopPropagation();
+              router.push(`/coach/${latestThread.thread_id}`);
+            }}
+          >
+            <div className="flex items-center justify-between mb-1">
+              <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-accent-primary">
+                Where you left off
+              </p>
+              <span className="text-[10px] text-text-muted">
+                {formatDistanceToNow(new Date(latestThread.last_message_at), { addSuffix: true })}
+              </span>
+            </div>
+            <p className="text-xs text-text-secondary line-clamp-2 leading-relaxed">
+              {latestThread.catchup_text || latestThread.thread_brief || latestThread.title}
+            </p>
+            {threads.length > 1 && (
+              <p className="mt-1 text-[10px] text-text-muted">
+                +{threads.length - 1} more thread{threads.length > 2 ? "s" : ""}
+              </p>
+            )}
+          </div>
+        )}
+
         {/* Team section */}
         <div className="border-t border-border-primary pt-3">
           <p className="text-[9px] font-bold uppercase tracking-[0.08em] text-text-muted mb-2">
@@ -484,7 +515,7 @@ function ProjectCard({
 // --- Project Dialog (same as before, extracted) ---
 
 interface ProjectDialogProps {
-  project: ProjectWithMembers | null;
+  project: ProjectWithMembersAndThreads | null;
   allCategories: string[];
   onSave: (name: string, description: string, color: string, category: string, members: MemberInput[]) => void;
   onDelete?: () => void;
