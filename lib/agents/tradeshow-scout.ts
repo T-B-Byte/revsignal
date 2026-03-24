@@ -301,6 +301,7 @@ export async function extractSponsorsFromUrl(
         "User-Agent": "Mozilla/5.0 (compatible; RevSignal/1.0)",
       },
       redirect: "follow",
+      signal: AbortSignal.timeout(30_000), // 30s timeout for fetching sponsor page
     });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
@@ -335,7 +336,7 @@ export async function extractSponsorsFromHtml(
   const [response, durationMs] = await timed(() =>
     anthropic.messages.create({
       model: MODEL,
-      max_tokens: 4000,
+      max_tokens: 8000,
       system: EXTRACTION_PROMPT,
       messages: [
         {
@@ -396,41 +397,74 @@ export async function analyzeTradeshow(
     retrieveTradeshowContext(supabase, userId)
   );
 
-  // Build context document
-  const contextDoc = buildAnalysisContextDoc(sponsors, context);
-
   const anthropic = getAnthropic();
+  const today = new Date().toLocaleDateString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
 
-  const [response, generateDurationMs] = await timed(() =>
-    anthropic.messages.create({
-      model: MODEL,
-      max_tokens: 8000,
-      system: ANALYSIS_PROMPT,
-      messages: [
-        {
-          role: "user",
-          content: `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\n${contextDoc}`,
-        },
-      ],
-    })
-  );
+  // Batch sponsors into chunks of 20 to avoid output token limits.
+  // Each sponsor produces ~180 output tokens of detailed JSON, so 20 sponsors
+  // need ~3,600 tokens, well within the 8,000 max_tokens budget.
+  const BATCH_SIZE = 20;
+  const batches: ExtractedSponsor[][] = [];
+  for (let i = 0; i < sponsors.length; i += BATCH_SIZE) {
+    batches.push(sponsors.slice(i, i + BATCH_SIZE));
+  }
 
-  const text =
-    response.content.length > 0 && response.content[0].type === "text"
-      ? response.content[0].text
-      : "[]";
+  let analyzed: AnalyzedTarget[] = [];
+  let tokensUsed = 0;
+  let totalGenerateDurationMs = 0;
 
-  const tokensUsed =
-    (response.usage?.input_tokens ?? 0) + (response.usage?.output_tokens ?? 0);
+  for (const batch of batches) {
+    const contextDoc = buildAnalysisContextDoc(batch, context);
 
-  // Parse analysis results
-  let analyzed: AnalyzedTarget[];
-  try {
-    const parsed = JSON.parse(text.replace(/```json?\n?/g, "").replace(/```/g, "").trim());
-    analyzed = Array.isArray(parsed) ? parsed : [];
-  } catch {
-    console.error("[tradeshow-scout] Failed to parse analysis JSON");
-    analyzed = [];
+    const [response, generateDurationMs] = await timed(() =>
+      anthropic.messages.create({
+        model: MODEL,
+        max_tokens: 8000,
+        system: ANALYSIS_PROMPT,
+        messages: [
+          {
+            role: "user",
+            content: `Today is ${today}.\n\n${contextDoc}`,
+          },
+        ],
+      })
+    );
+
+    totalGenerateDurationMs += generateDurationMs;
+
+    const text =
+      response.content.length > 0 && response.content[0].type === "text"
+        ? response.content[0].text
+        : "[]";
+
+    tokensUsed +=
+      (response.usage?.input_tokens ?? 0) +
+      (response.usage?.output_tokens ?? 0);
+
+    // Check if output was truncated (hit max_tokens)
+    if (response.stop_reason === "max_tokens") {
+      console.warn(
+        `[tradeshow-scout] Batch of ${batch.length} sponsors hit max_tokens limit. Some entries may be missing.`
+      );
+    }
+
+    try {
+      const parsed = JSON.parse(
+        text.replace(/```json?\n?/g, "").replace(/```/g, "").trim()
+      );
+      if (Array.isArray(parsed)) {
+        analyzed = analyzed.concat(parsed);
+      }
+    } catch {
+      console.error(
+        `[tradeshow-scout] Failed to parse analysis JSON for batch of ${batch.length} sponsors. Response length: ${text.length}, stop_reason: ${response.stop_reason}`
+      );
+    }
   }
 
   // Check for existing deals/prospects to flag overlaps
@@ -503,7 +537,7 @@ export async function analyzeTradeshow(
     output: `Analyzed ${analyzed.length} sponsors. P1: ${analyzed.filter((a) => a.priority === "priority_1_walk_up").length}, P2: ${analyzed.filter((a) => a.priority === "priority_2_strong_conversation").length}, P3: ${analyzed.filter((a) => a.priority === "priority_3_competitive_intel").length}. Total pipeline: $${totalPipeline.toLocaleString()}`,
     sourcesCited: [],
     tokensUsed,
-    durationMs: contextDurationMs + generateDurationMs,
+    durationMs: contextDurationMs + totalGenerateDurationMs,
   });
 
   return { targets, tokensUsed };
@@ -713,13 +747,15 @@ export async function runFullTradeshowAnalysis(
       .eq("tradeshow_id", tradeshowId)
       .eq("user_id", userId);
   } catch (error) {
-    console.error("[tradeshow-scout] Full analysis failed:", error);
+    const message =
+      error instanceof Error ? error.message : String(error);
+    console.error("[tradeshow-scout] Full analysis failed:", message);
 
     await supabase
       .from("tradeshows")
       .update({
         status: "error",
-        analysis_summary: "Analysis failed. Please try again or paste the HTML directly.",
+        analysis_summary: `Analysis failed: ${message.slice(0, 500)}`,
       })
       .eq("tradeshow_id", tradeshowId)
       .eq("user_id", userId);

@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { after } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { PLANS } from "@/lib/stripe/config";
 import { runFullTradeshowAnalysis } from "@/lib/agents/tradeshow-scout";
 import { rateLimit } from "@/lib/rate-limit";
 import { z } from "zod";
 import type { SubscriptionTier } from "@/types/database";
+
+// Allow up to 120s for the background analysis to complete
+export const maxDuration = 120;
 
 // 5 tradeshow analyses per user per hour
 const limiter = rateLimit({ interval: 60 * 60 * 1000 });
@@ -96,18 +101,26 @@ export async function POST(request: NextRequest) {
 
   const tradeshowId = tradeshow.tradeshow_id;
 
-  // Fire-and-forget: run analysis in background
-  runFullTradeshowAnalysis(
-    supabase,
-    user.id,
-    tradeshowId,
-    body.name,
-    body.sponsorPageUrl
-  ).catch((error) => {
-    console.error(
-      "[api/agents/tradeshow-analyze] Background analysis failed:",
-      error instanceof Error ? error.message : error
-    );
+  // Use admin client for background work: the server client's cookie context
+  // is not available after the response is sent
+  const adminSupabase = createAdminClient();
+
+  // Run analysis after response is sent, keeping the serverless function alive
+  after(async () => {
+    try {
+      await runFullTradeshowAnalysis(
+        adminSupabase,
+        user.id,
+        tradeshowId,
+        body.name,
+        body.sponsorPageUrl
+      );
+    } catch (error) {
+      console.error(
+        "[api/agents/tradeshow-analyze] Background analysis failed:",
+        error instanceof Error ? error.message : error
+      );
+    }
   });
 
   return NextResponse.json({ tradeshowId, status: "analyzing" });

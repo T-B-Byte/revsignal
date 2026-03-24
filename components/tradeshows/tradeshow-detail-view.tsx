@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { TargetCard } from "./target-card";
@@ -18,12 +18,49 @@ interface TradeshowDetailViewProps {
 }
 
 export function TradeshowDetailView({
-  tradeshow,
-  targets,
-  contacts,
+  tradeshow: initialTradeshow,
+  targets: initialTargets,
+  contacts: initialContacts,
 }: TradeshowDetailViewProps) {
   const router = useRouter();
   const [isDeleting, setIsDeleting] = useState(false);
+  const [tradeshow, setTradeshow] = useState(initialTradeshow);
+  const [targets, setTargets] = useState(initialTargets);
+  const [contacts, setContacts] = useState(initialContacts);
+
+  const isAnalyzing =
+    tradeshow.status === "analyzing" || tradeshow.status === "partial";
+  const isError = tradeshow.status === "error";
+
+  // Poll for updates when analysis is in progress
+  useEffect(() => {
+    if (!isAnalyzing) return;
+
+    const interval = setInterval(async () => {
+      try {
+        const res = await fetch(
+          `/api/tradeshows/${tradeshow.tradeshow_id}`
+        );
+        if (!res.ok) return;
+        const data = await res.json();
+        setTradeshow(data.tradeshow);
+        setTargets(data.targets ?? []);
+        setContacts(data.contacts ?? []);
+
+        if (
+          data.tradeshow.status === "complete" ||
+          data.tradeshow.status === "error"
+        ) {
+          clearInterval(interval);
+          router.refresh();
+        }
+      } catch {
+        // Silently retry on next interval
+      }
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, [isAnalyzing, tradeshow.tradeshow_id, router]);
 
   // Group targets by priority
   const p1Targets = targets.filter(
@@ -100,63 +137,105 @@ export function TradeshowDetailView({
         </button>
       </div>
 
-      {/* Summary stats */}
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-lg border border-border-primary bg-surface-secondary p-3">
-          <p className="text-xs text-text-muted">Total Pipeline</p>
-          <p className="text-lg font-bold text-text-primary">
-            {formatCurrency(totalPipeline)}
+      {/* Analyzing state */}
+      {isAnalyzing && (
+        <div className="rounded-lg border border-accent-primary/30 bg-accent-primary/5 p-6">
+          <div className="flex items-center gap-3">
+            <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-accent-primary border-t-transparent" />
+            <div>
+              <p className="text-sm font-medium text-text-primary">
+                {tradeshow.status === "partial"
+                  ? "Classifying sponsors against ICPs..."
+                  : "Analyzing sponsor page..."}
+              </p>
+              <p className="text-xs text-text-muted mt-1">
+                {tradeshow.status === "partial" && tradeshow.total_sponsors
+                  ? `Found ${tradeshow.total_sponsors} sponsors. Now prioritizing targets and generating pitch angles.`
+                  : "Fetching the sponsor page and extracting company names. This usually takes 30-60 seconds."}
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Error state */}
+      {isError && (
+        <div className="rounded-lg border border-red-500/30 bg-red-500/5 p-6">
+          <p className="text-sm font-medium text-red-400">Analysis failed</p>
+          <p className="text-xs text-text-muted mt-1">
+            {tradeshow.analysis_summary ||
+              "Something went wrong. Try deleting this tradeshow and analyzing again."}
           </p>
         </div>
-        <div className="rounded-lg border border-border-primary bg-surface-secondary p-3">
-          <p className="text-xs text-text-muted">P1: Walk Up</p>
-          <p className="text-lg font-bold text-green-400">{p1Targets.length}</p>
-        </div>
-        <div className="rounded-lg border border-border-primary bg-surface-secondary p-3">
-          <p className="text-xs text-text-muted">P2: Strong Convo</p>
-          <p className="text-lg font-bold text-blue-400">{p2Targets.length}</p>
-        </div>
-        <div className="rounded-lg border border-border-primary bg-surface-secondary p-3">
-          <p className="text-xs text-text-muted">P3: Intel Only</p>
-          <p className="text-lg font-bold text-text-muted">{p3Targets.length}</p>
-        </div>
-      </div>
+      )}
 
-      {/* Priority sections */}
-      <PrioritySection
-        title="Priority 1: Walk Up"
-        color="text-green-400"
-        borderColor="border-green-500/30"
-        targets={p1Targets}
-        contactsByTarget={contactsByTarget}
-      />
+      {/* Summary stats (only show when we have results or are complete) */}
+      {!isAnalyzing && !isError && (
+        <>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-lg border border-border-primary bg-surface-secondary p-3">
+              <p className="text-xs text-text-muted">Total Pipeline</p>
+              <p className="text-lg font-bold text-text-primary">
+                {formatCurrency(totalPipeline)}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border-primary bg-surface-secondary p-3">
+              <p className="text-xs text-text-muted">P1: Walk Up</p>
+              <p className="text-lg font-bold text-green-400">
+                {p1Targets.length}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border-primary bg-surface-secondary p-3">
+              <p className="text-xs text-text-muted">P2: Strong Convo</p>
+              <p className="text-lg font-bold text-blue-400">
+                {p2Targets.length}
+              </p>
+            </div>
+            <div className="rounded-lg border border-border-primary bg-surface-secondary p-3">
+              <p className="text-xs text-text-muted">P3: Intel Only</p>
+              <p className="text-lg font-bold text-text-muted">
+                {p3Targets.length}
+              </p>
+            </div>
+          </div>
 
-      <PrioritySection
-        title="Priority 2: Strong Conversations"
-        color="text-blue-400"
-        borderColor="border-blue-500/30"
-        targets={p2Targets}
-        contactsByTarget={contactsByTarget}
-      />
+          {/* Priority sections */}
+          <PrioritySection
+            title="Priority 1: Walk Up"
+            color="text-green-400"
+            borderColor="border-green-500/30"
+            targets={p1Targets}
+            contactsByTarget={contactsByTarget}
+          />
 
-      <PrioritySection
-        title="Priority 3: Competitive Intel / Listen Only"
-        color="text-text-muted"
-        borderColor="border-border-primary"
-        targets={p3Targets}
-        contactsByTarget={contactsByTarget}
-        defaultCollapsed
-      />
+          <PrioritySection
+            title="Priority 2: Strong Conversations"
+            color="text-blue-400"
+            borderColor="border-blue-500/30"
+            targets={p2Targets}
+            contactsByTarget={contactsByTarget}
+          />
 
-      {unclassified.length > 0 && (
-        <PrioritySection
-          title="Unclassified"
-          color="text-text-muted"
-          borderColor="border-border-primary"
-          targets={unclassified}
-          contactsByTarget={contactsByTarget}
-          defaultCollapsed
-        />
+          <PrioritySection
+            title="Priority 3: Competitive Intel / Listen Only"
+            color="text-text-muted"
+            borderColor="border-border-primary"
+            targets={p3Targets}
+            contactsByTarget={contactsByTarget}
+            defaultCollapsed
+          />
+
+          {unclassified.length > 0 && (
+            <PrioritySection
+              title="Unclassified"
+              color="text-text-muted"
+              borderColor="border-border-primary"
+              targets={unclassified}
+              contactsByTarget={contactsByTarget}
+              defaultCollapsed
+            />
+          )}
+        </>
       )}
     </div>
   );

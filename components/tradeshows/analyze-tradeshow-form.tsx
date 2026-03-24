@@ -41,45 +41,11 @@ export function AnalyzeTradeshowForm({ onClose }: AnalyzeTradeshowFormProps) {
       }
 
       const { tradeshowId } = await res.json();
-      setStatus("Analyzing sponsors...");
 
-      // Poll for completion
-      let attempts = 0;
-      const maxAttempts = 60; // 3 minutes at 3s intervals
-
-      const poll = async () => {
-        while (attempts < maxAttempts) {
-          attempts++;
-          await new Promise((resolve) => setTimeout(resolve, 3000));
-
-          const pollRes = await fetch(`/api/tradeshows/${tradeshowId}`);
-          if (!pollRes.ok) continue;
-
-          const data = await pollRes.json();
-          const tradeshowStatus = data.tradeshow?.status;
-
-          if (tradeshowStatus === "complete") {
-            setStatus("Complete!");
-            router.push(`/tradeshows/${tradeshowId}`);
-            router.refresh();
-            return;
-          }
-
-          if (tradeshowStatus === "partial") {
-            setStatus("Classifying targets...");
-          }
-
-          if (tradeshowStatus === "error") {
-            throw new Error(
-              data.tradeshow?.analysis_summary || "Analysis failed"
-            );
-          }
-        }
-
-        throw new Error("Analysis timed out. Check the tradeshows page for results.");
-      };
-
-      await poll();
+      // Navigate to the detail page immediately; it handles polling for status
+      router.push(`/tradeshows/${tradeshowId}`);
+      router.refresh();
+      onClose();
     } catch (err) {
       setError(err instanceof Error ? err.message : "An error occurred");
       setIsSubmitting(false);
