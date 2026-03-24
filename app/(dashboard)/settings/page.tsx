@@ -29,7 +29,7 @@ const INTEGRATIONS = [
   {
     name: "OneDrive / SharePoint",
     description: "Sales collateral access",
-    status: "not_configured" as const,
+    provider: null,
   },
 ];
 
@@ -82,6 +82,16 @@ export default async function SettingsPage() {
   const tier: SubscriptionTier = subscription?.tier ?? 'power';
   const status: SubscriptionStatus = subscription?.status ?? "active";
   const plan = PLANS[tier];
+
+  // Check which integrations are connected
+  const { data: tokens } = await supabase
+    .from("integration_tokens")
+    .select("provider, updated_at")
+    .eq("user_id", user.id);
+
+  const connectedProviders = new Map(
+    (tokens ?? []).map((t) => [t.provider, t.updated_at as string])
+  );
 
   return (
     <div>
@@ -179,20 +189,20 @@ export default async function SettingsPage() {
           <CardContent>
             <div className="space-y-4">
               {INTEGRATIONS.map((integration) => (
-                <div
-                  key={integration.name}
-                  className="flex items-center justify-between rounded-md border border-border-primary bg-surface-tertiary px-4 py-3"
-                >
-                  <div>
-                    <p className="text-sm font-medium text-text-primary">
-                      {integration.name}
-                    </p>
-                    <p className="text-xs text-text-muted">
-                      {integration.description}
-                    </p>
+                  <div
+                    key={integration.name}
+                    className="flex items-center justify-between rounded-md border border-border-primary bg-surface-tertiary px-4 py-3"
+                  >
+                    <div>
+                      <p className="text-sm font-medium text-text-primary">
+                        {integration.name}
+                      </p>
+                      <p className="text-xs text-text-muted">
+                        {integration.description}
+                      </p>
+                    </div>
+                      <Badge variant="gray">Not configured</Badge>
                   </div>
-                  <Badge variant="gray">Not configured</Badge>
-                </div>
               ))}
             </div>
             <p className="mt-4 text-xs text-text-muted">
