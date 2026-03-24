@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { ProspectResearchForm } from './prospect-research-form';
 import { ProspectCard } from './prospect-card';
 import { AddProspectDialog } from './add-prospect-dialog';
+import { TargetAccountsTable } from './target-accounts-table';
 import { Button } from '@/components/ui/button';
 import type { Prospect, CoachingThread, CoachingMessage, Deal } from '@/types/database';
 
@@ -65,6 +66,9 @@ export function ProspectsView({
           Add Prospect
         </Button>
       </div>
+
+      {/* Target Accounts */}
+      <TargetAccountsTable prospects={prospects} />
 
       {/* AI Research Form */}
       <ProspectResearchForm

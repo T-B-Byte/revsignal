@@ -1,7 +1,7 @@
 /**
  * Seed script: ICP categories and example companies
  *
- * Populates the `prospects` table with 9 ICP categories and their
+ * Populates the `prospects` table with 11 ICP categories and their
  * representative companies. Each record includes a specific reason
  * why that ICP category would buy pharosIQ's data.
  *
@@ -48,29 +48,11 @@ function buildIcpData(userId: string): ProspectRecord[] {
       user_id: userId,
     },
     {
-      company: 'Terminus',
-      icp_category: 'ABM Platforms',
-      estimated_acv: 350000,
+      company: 'DemandScience',
+      icp_category: 'ABM / Demand Gen',
+      estimated_acv: 200000,
       why_they_buy:
-        'Currently relies on Bombora for intent data. First-party contact-level signals would give their customers better campaign targeting and reduce dependency on a single data supplier.',
-      source: 'seed_data',
-      user_id: userId,
-    },
-    {
-      company: 'N.Rich',
-      icp_category: 'ABM Platforms',
-      estimated_acv: 350000,
-      why_they_buy:
-        'European ABM platform expanding globally — needs global intent coverage, especially first-party data with clean GDPR consent basis for EU operations.',
-      source: 'seed_data',
-      user_id: userId,
-    },
-    {
-      company: 'Triblio',
-      icp_category: 'ABM Platforms',
-      estimated_acv: 350000,
-      why_they_buy:
-        'Mid-market ABM platform that can differentiate by embedding pharosIQ\'s contact-level intent into their orchestration engine. White-label opportunity.',
+        'Absorbed Terminus, TrueInfluence, and Leadiro into a unified demand gen platform. PE-backed (Audax), 70M+ verified contacts, actively consumes intent data for lead gen programs. Natural OEM buyer.',
       source: 'seed_data',
       user_id: userId,
     },
@@ -151,26 +133,6 @@ function buildIcpData(userId: string): ProspectRecord[] {
       user_id: userId,
     },
 
-    // ----- Ad Tech / DSPs ($100-250K, midpoint $175K) -----
-    {
-      company: 'The Trade Desk',
-      icp_category: 'Ad Tech / DSPs',
-      estimated_acv: 175000,
-      why_they_buy:
-        'Largest independent DSP — B2B intent audiences are high-value segments for their advertisers. pharosIQ data as custom audience segments on TTD drives premium CPMs.',
-      source: 'seed_data',
-      user_id: userId,
-    },
-    {
-      company: 'StackAdapt',
-      icp_category: 'Ad Tech / DSPs',
-      estimated_acv: 175000,
-      why_they_buy:
-        'Multi-channel programmatic platform growing fast in B2B. Intent-based audience segments improve campaign performance and justify higher spend from B2B advertisers.',
-      source: 'seed_data',
-      user_id: userId,
-    },
-
     // ----- Data Enrichment ($200-500K, midpoint $350K) -----
     {
       company: 'Clearbit (Breeze)',
@@ -211,11 +173,11 @@ function buildIcpData(userId: string): ProspectRecord[] {
       user_id: userId,
     },
     {
-      company: 'TechTarget',
+      company: 'TechTarget (Informa)',
       icp_category: 'Content Syndication',
-      estimated_acv: 150000,
+      estimated_acv: 350000,
       why_they_buy:
-        'Direct competitor in intent data but declining. Their customers are looking for alternatives. pharosIQ as a supplemental or replacement data source for TechTarget\'s Priority Engine customers.',
+        'Direct competitor in intent data but declining (revenue down 6%, stock down 94%). Acquired Anteriad (which absorbed Triblio). Their customers are looking for alternatives. pharosIQ as a supplemental or replacement data source. Account-level only due to data leakage risk.',
       source: 'seed_data',
       user_id: userId,
     },
@@ -258,6 +220,84 @@ function buildIcpData(userId: string): ProspectRecord[] {
       user_id: userId,
     },
 
+    // ----- B2B Review / Research Platforms -----
+    {
+      company: 'G2',
+      icp_category: 'B2B Review Platforms',
+      estimated_acv: 200000,
+      why_they_buy:
+        'Already sells buyer intent signals from their review platform. pharosIQ\'s first-party intent data layered onto G2\'s review-based signals creates a more complete buyer journey picture for their vendor customers.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+    {
+      company: 'Gartner Digital Markets',
+      icp_category: 'B2B Review Platforms',
+      estimated_acv: 350000,
+      why_they_buy:
+        'Operates Capterra, GetApp, and Software Advice. Massive B2B software review network already monetizing buyer intent. Gartner has enterprise budget and would license pharosIQ signals to enhance intent products across all three properties.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+    {
+      company: 'TrustRadius',
+      icp_category: 'B2B Review Platforms',
+      estimated_acv: 150000,
+      why_they_buy:
+        'B2B review platform selling buyer intent data to vendors. Smaller than G2 but same model. pharosIQ signals would differentiate their intent offering and help them compete upmarket against G2.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+    {
+      company: 'PeerSpot',
+      icp_category: 'B2B Review Platforms',
+      estimated_acv: 150000,
+      why_they_buy:
+        'Enterprise tech review platform (formerly IT Central Station) selling intent data to vendors. Focused on enterprise IT buyers. pharosIQ signals would expand their intent coverage beyond their owned review traffic.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+    {
+      company: 'TechnologyAdvice',
+      icp_category: 'B2B Review Platforms',
+      estimated_acv: 150000,
+      why_they_buy:
+        'Operates multiple B2B review and comparison sites, already monetizes buyer intent leads. Motivated to differentiate against G2 through data partnerships. pharosIQ signals enhance their lead quality and justifies premium pricing to advertisers.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+
+    // ----- Intent Data Competitors (sell account-level only) -----
+    {
+      company: '6sense',
+      icp_category: 'Intent Data (Competitor)',
+      estimated_acv: 350000,
+      why_they_buy:
+        'Revenue AI platform processing 500B+ signals/month, ~$200M revenue. Valuation crashed from $5.2B to ~$906M. First-party intent data as a supplemental signal source diversifies their data inputs. Account-level only due to data leakage risk into their platform.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+    {
+      company: 'Bombora',
+      icp_category: 'Intent Data (Competitor)',
+      estimated_acv: 175000,
+      why_they_buy:
+        'Co-op model aggregating data from 5,000+ publisher sites, ~$56M revenue. Account-level only (Tina pitched this restriction due to data leakage risk from their co-op redistribution model). First-party data supplements their third-party co-op signals.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+
+    // ----- Demand Generation -----
+    {
+      company: 'Metadata.io',
+      icp_category: 'Demand Generation',
+      estimated_acv: 175000,
+      why_they_buy:
+        'AI-powered B2B demand gen platform automating paid campaigns (LinkedIn, Facebook, display) using intent data and audience targeting. pharosIQ signals would power their targeting engine with first-party contact-level precision.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+
     // ----- Recruiting/HR Tech ($100-300K, midpoint $200K) -----
     {
       company: 'LinkedIn',
@@ -269,20 +309,22 @@ function buildIcpData(userId: string): ProspectRecord[] {
       user_id: userId,
     },
     {
-      company: 'Indeed',
-      icp_category: 'Recruiting/HR Tech',
-      estimated_acv: 200000,
-      why_they_buy:
-        'World\'s largest job site — intent data identifying companies researching hiring tools, workforce planning, or expansion topics helps their enterprise sales team target the right accounts.',
-      source: 'seed_data',
-      user_id: userId,
-    },
-    {
       company: 'ZipRecruiter',
       icp_category: 'Recruiting/HR Tech',
       estimated_acv: 200000,
       why_they_buy:
         'AI-driven recruiting marketplace that can embed intent signals to help employers identify candidates who are actively researching career moves in specific industries.',
+      source: 'seed_data',
+      user_id: userId,
+    },
+
+    // ----- Sales Automation -----
+    {
+      company: 'Clay',
+      icp_category: 'Sales Intelligence',
+      estimated_acv: 350000,
+      why_they_buy:
+        'Data orchestration platform that chains 75+ enrichment providers into automated workflows. pharosIQ intent signals as a native Clay integration would reach thousands of sales teams building prospecting workflows. High-leverage distribution channel.',
       source: 'seed_data',
       user_id: userId,
     },
@@ -327,7 +369,7 @@ export async function seedIcps(options: { dryRun?: boolean } = {}): Promise<numb
   const userId = getUserId();
   const records = buildIcpData(userId);
 
-  console.log(`\n[seed:icps] ${dryRun ? 'DRY RUN — ' : ''}Preparing ${records.length} prospect records across 9 ICP categories\n`);
+  console.log(`\n[seed:icps] ${dryRun ? 'DRY RUN — ' : ''}Preparing ${records.length} prospect records across 11 ICP categories\n`);
 
   // Log summary by category
   const categories = new Map<string, number>();

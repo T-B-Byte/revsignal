@@ -174,6 +174,7 @@ export interface Prospect {
   fit_analysis: string | null;
   suggested_contacts: SuggestedContact[];
   next_action: string | null;
+  outreach_date: string | null;
   status: ProspectStatus;
   created_at: string;
   updated_at: string;
@@ -1058,6 +1059,162 @@ export interface CompetitorComparison {
   created_at: string;
   updated_at: string;
 }
+
+// --- DaaS Use Cases (Contracts) ---
+
+export type UseCaseStatus = "draft" | "review" | "final" | "attached";
+
+export type DeliveryMethodUC = "api" | "flat_file" | "sftp" | "cloud_delivery";
+
+export type AccessTier = "display_only" | "crm_append" | "bulk_export";
+
+export type OverageModel = "per_query" | "hard_shutoff";
+
+export interface WorkflowStep {
+  step_number: number;
+  description: string;
+}
+
+export interface DaasUseCase {
+  use_case_id: string;
+  user_id: string;
+  deal_id: string | null;
+  customer_name: string;
+  status: UseCaseStatus;
+  delivery_method: DeliveryMethodUC | null;
+  access_tier: AccessTier | null;
+  licensed_fields: string[];
+  permitted_workflows: WorkflowStep[];
+  caching_permitted: boolean;
+  cache_ttl_days: number | null;
+  end_user_access: boolean;
+  end_user_can_export: boolean;
+  anti_competitive_clause: boolean;
+  custom_restrictions: string | null;
+  volume_annual_minimum: number | null;
+  volume_monthly_queries: number | null;
+  overage_model: OverageModel | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** With joined deal info for list views */
+export interface DaasUseCaseWithDeal extends DaasUseCase {
+  deals?: Pick<Deal, "deal_id" | "company" | "stage" | "acv"> | null;
+}
+
+/** pharosIQ B2B contact data schema fields available for licensing */
+export const DAAS_LICENSED_FIELDS = [
+  // Company Identity
+  { key: "company_id", label: "Company ID", group: "Company Identity", description: "Unique pharosIQ company identifier" },
+  { key: "company_name", label: "Company Name", group: "Company Identity", description: "Legal or commonly known company name" },
+  { key: "company_website", label: "Company Website", group: "Company Identity", description: "Primary company website URL" },
+  { key: "company_linkedin_url", label: "Company LinkedIn URL", group: "Company Identity", description: "LinkedIn company page URL" },
+  { key: "email_domain_id", label: "Email Domain ID", group: "Company Identity", description: "Primary email domain identifier" },
+  // Location
+  { key: "city", label: "City", group: "Location", description: "Company headquarters city" },
+  { key: "state_province", label: "State / Province", group: "Location", description: "Company headquarters state or province" },
+  { key: "country_iso2", label: "Country (ISO2)", group: "Location", description: "Two-letter ISO country code" },
+  // Firmographics
+  { key: "employee_size_name", label: "Employee Size Range", group: "Firmographics", description: "Categorical employee count range (e.g., 51-200)" },
+  { key: "employee_total", label: "Employee Total", group: "Firmographics", description: "Exact employee count" },
+  { key: "industry_name", label: "Industry Name", group: "Firmographics", description: "Primary industry classification" },
+  { key: "linkedin_industry_id", label: "LinkedIn Industry ID", group: "Firmographics", description: "LinkedIn industry taxonomy identifier" },
+  // Financial
+  { key: "revenue_range", label: "Revenue Range", group: "Financial", description: "Categorical revenue band" },
+  { key: "revenue_total", label: "Revenue Total", group: "Financial", description: "Estimated annual revenue figure" },
+  // Classification
+  { key: "naics_code", label: "NAICS Code", group: "Classification", description: "6-digit NAICS industry classification code" },
+  { key: "naics_description", label: "NAICS Description", group: "Classification", description: "Human-readable NAICS classification" },
+  { key: "is_domain_primary_company_id", label: "Primary Domain Flag", group: "Classification", description: "Whether this is the primary company for the email domain" },
+] as const;
+
+export type DaasFieldKey = typeof DAAS_LICENSED_FIELDS[number]["key"];
+
+export const DAAS_FIELD_GROUPS = ["Company Identity", "Location", "Firmographics", "Financial", "Classification"] as const;
+
+export const ACCESS_TIER_OPTIONS: { value: AccessTier; label: string; description: string }[] = [
+  {
+    value: "display_only",
+    label: "Display Only",
+    description: "End users can view pharosIQ data inside the customer's platform. No export, no CRM sync, no local storage.",
+  },
+  {
+    value: "crm_append",
+    label: "CRM Append / Export",
+    description: "End users can push records into their own CRM or download individual records. No bulk export, no redistribution.",
+  },
+  {
+    value: "bulk_export",
+    label: "Bulk Export / Flat File",
+    description: "End users can export large datasets. Highest risk tier: requires caching terms, destruction obligations, and audit rights.",
+  },
+];
+
+export const DELIVERY_METHOD_UC_OPTIONS: { value: DeliveryMethodUC; label: string; description: string }[] = [
+  { value: "api", label: "API", description: "Real-time queries against pharosIQ endpoints. Volume measured in queries per month." },
+  { value: "flat_file", label: "Flat File", description: "Scheduled file delivery (CSV/JSON). Volume measured in records per delivery." },
+  { value: "sftp", label: "SFTP", description: "Automated file transfer to customer-managed server." },
+  { value: "cloud_delivery", label: "Cloud Delivery", description: "Shared storage (S3, GCS, Snowflake). Volume measured in records per refresh." },
+];
+
+export const OVERAGE_MODEL_OPTIONS: { value: OverageModel; label: string; description: string }[] = [
+  { value: "per_query", label: "Cost Per Query", description: "Customer pays an agreed rate for each query past the monthly threshold." },
+  { value: "hard_shutoff", label: "Hard Shutoff", description: "API returns 429 when threshold is reached. Customer must wait for next billing cycle or purchase additional queries." },
+];
+
+export const USE_CASE_STATUSES: { value: UseCaseStatus; label: string; color: string }[] = [
+  { value: "draft", label: "Draft", color: "#6b7280" },
+  { value: "review", label: "In Review", color: "#eab308" },
+  { value: "final", label: "Final", color: "#3b82f6" },
+  { value: "attached", label: "Attached to Deal", color: "#22c55e" },
+];
+
+/** Common intended use workflow templates */
+export const WORKFLOW_TEMPLATES: { name: string; steps: WorkflowStep[] }[] = [
+  {
+    name: "API Enrichment (Display Only)",
+    steps: [
+      { step_number: 1, description: "Customer's application sends a query to pharosIQ API with a company identifier (domain, name, or company_id)." },
+      { step_number: 2, description: "pharosIQ API returns the licensed data fields for the matched company record." },
+      { step_number: 3, description: "Customer displays the returned data within their platform UI to their authenticated end users." },
+      { step_number: 4, description: "No caching, local storage, or export of the returned data is permitted." },
+    ],
+  },
+  {
+    name: "API Enrichment (CRM Append)",
+    steps: [
+      { step_number: 1, description: "Customer's application sends a query to pharosIQ API with a company identifier (domain, name, or company_id)." },
+      { step_number: 2, description: "pharosIQ API returns the licensed data fields for the matched company record." },
+      { step_number: 3, description: "Customer displays the returned data within their platform UI to their authenticated end users." },
+      { step_number: 4, description: "End users may append returned records to their own CRM or internal systems for operational use." },
+      { step_number: 5, description: "Appended records are subject to the Caching Addendum TTL and must be refreshed or destroyed per the agreed schedule." },
+      { step_number: 6, description: "End users may not redistribute, sublicense, or share appended records with any third party." },
+    ],
+  },
+  {
+    name: "Flat File / Bulk Delivery",
+    steps: [
+      { step_number: 1, description: "pharosIQ delivers a flat file (CSV/JSON) containing the licensed data fields on the agreed schedule (weekly/monthly)." },
+      { step_number: 2, description: "Customer ingests the file into their internal data infrastructure." },
+      { step_number: 3, description: "Customer uses the data to power features within their platform for authenticated end users." },
+      { step_number: 4, description: "Previous file deliveries must be destroyed within the TTL defined in the Caching Addendum." },
+      { step_number: 5, description: "Customer provides monthly usage reports to pharosIQ detailing record counts accessed." },
+    ],
+  },
+  {
+    name: "Embedded OEM (White Label)",
+    steps: [
+      { step_number: 1, description: "Customer integrates pharosIQ data into their product via API or bulk delivery." },
+      { step_number: 2, description: "Customer's product displays pharosIQ data to end users under Customer's own brand (no pharosIQ attribution required unless negotiated)." },
+      { step_number: 3, description: "End users may interact with the data within Customer's product (search, filter, view, export per the Access Tier)." },
+      { step_number: 4, description: "Customer is contractually required to bind all end users to restrictions equivalent to this Intended Use exhibit." },
+      { step_number: 5, description: "Customer is liable for any end-user breach of the passthrough restrictions." },
+      { step_number: 6, description: "Customer may not position pharosIQ data as a standalone data product separate from their core platform." },
+    ],
+  },
+];
 
 // --- Revenue Math Constants ---
 

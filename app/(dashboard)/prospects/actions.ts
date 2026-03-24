@@ -123,6 +123,36 @@ export async function updateProspect(
   return { success: true };
 }
 
+export async function markOutreach(
+  prospectId: string,
+  date: string | null
+): Promise<{ success: boolean } | { error: string }> {
+  const supabase = await createClient();
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { error: "Not authenticated" };
+
+  // Validate prospectId format
+  if (!/^[0-9a-f-]{36}$/i.test(prospectId)) {
+    return { error: "Invalid prospect ID" };
+  }
+
+  const { error } = await supabase
+    .from("prospects")
+    .update({ outreach_date: date })
+    .eq("id", prospectId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath("/prospects");
+  return { success: true };
+}
+
 export async function deleteProspect(
   prospectId: string
 ): Promise<{ success: boolean } | { error: string }> {
