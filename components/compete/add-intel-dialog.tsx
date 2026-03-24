@@ -31,6 +31,10 @@ const categoryOptions = [
   { value: "integration", label: "Integration" },
   { value: "market_share", label: "Market Share" },
   { value: "customer_feedback", label: "Customer Feedback" },
+  { value: "landmine", label: "Landmine Question" },
+  { value: "win_loss", label: "Win/Loss Pattern" },
+  { value: "proof_point", label: "Proof Point" },
+  { value: "talk_track", label: "Talk Track" },
 ];
 
 export function AddIntelDialog({

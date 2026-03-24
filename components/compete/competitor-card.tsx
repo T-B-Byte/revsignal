@@ -14,8 +14,10 @@ interface CompetitorCardProps {
 
 function categoryVariant(category: string) {
   if (category === 'weakness') return 'red' as const;
-  if (category === 'pharosiq_advantage') return 'green' as const;
+  if (category === 'pharosiq_advantage' || category === 'proof_point') return 'green' as const;
   if (category === 'pricing') return 'yellow' as const;
+  if (category === 'landmine' || category === 'talk_track') return 'purple' as const;
+  if (category === 'win_loss') return 'orange' as const;
   return 'blue' as const;
 }
 

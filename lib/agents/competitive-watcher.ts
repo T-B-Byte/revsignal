@@ -72,7 +72,10 @@ Generate a comprehensive battle card for the competitor below. Base it ONLY on t
 Structure:
 
 ## Overview
-[What they do, their positioning, target market. Sourced from intel records.]
+[What they do, their positioning, target market, size/funding if known. Sourced from intel records.]
+
+## Pricing & Packaging
+[Their known pricing model, tiers, and how it compares to pharosIQ. If no pricing intel exists, say so. Never guess.]
 
 ## Their Strengths
 [What they genuinely do well. Be honest — knowing their strengths helps us compete.]
@@ -83,11 +86,23 @@ Structure:
 ## Our Differentiators
 [Why pharosIQ data wins against this competitor. Focus on: first-party (not co-op), contact-level (not account-level), permission-based, 270M+ contacts, 650+ intent categories.]
 
+## Landmines to Set
+[3-5 questions to ask the prospect early in the process that expose this competitor's weaknesses. Frame as discovery questions, not attacks. e.g., "Have you validated whether their intent signals resolve to actual contacts, or just account-level flags?"]
+
 ## Common Objections & Responses
-[When a prospect brings up this competitor, what do they say and how to respond?]
+[When a prospect brings up this competitor, what do they say and how to respond? Format as "They say: X" / "You say: Y" pairs.]
+
+## Talk Track
+[2-3 sentence positioning statement for when this competitor comes up in conversation. This is the quick, confident framing, not the detailed rebuttal.]
 
 ## Win Themes
 [The 2-3 key messages that consistently win against this competitor]
+
+## Win/Loss Patterns
+[When do we tend to win against this competitor (deal size, use case, buyer persona)? When do we tend to lose? When should we not compete? If no win/loss data exists, say "No win/loss data captured yet" and suggest what to track.]
+
+## Proof Points
+[Customers who switched from this competitor, relevant case studies, quotes, or metrics. If none exist, say "No proof points captured yet" and suggest what would be most valuable to collect.]
 
 ## Data Freshness
 [List the dates of the intel records used. Flag anything older than 30 days as "may be outdated."]
@@ -265,7 +280,7 @@ export async function generateBattleCard(
     const [response, dur] = await timed(() =>
       anthropic.messages.create({
         model: MODEL,
-        max_tokens: 2000,
+        max_tokens: 3000,
         system: BATTLE_CARD_PROMPT,
         messages: [
           {
