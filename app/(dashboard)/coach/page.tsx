@@ -57,7 +57,8 @@ export default async function CoachPage() {
         *,
         deals:deal_id (deal_id, company, stage),
         ma_entities:ma_entity_id (entity_id, company, entity_type, stage),
-        projects:project_id (project_id, name, status, category)
+        projects:project_id (project_id, name, status, category),
+        contacts:contact_id (contact_id, name, company, role)
       `)
       .eq("user_id", user.id)
       .order("last_message_at", { ascending: false }),

@@ -9,6 +9,8 @@ const participantSchema = z.object({
   contact_id: z.string().uuid().optional(),
 });
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 const updateThreadSchema = z.object({
   title: z.string().min(1).max(200).optional(),
   contact_name: z.string().min(1).max(200).nullable().optional(),
@@ -18,6 +20,7 @@ const updateThreadSchema = z.object({
   prospect_id: z.string().uuid().nullable().optional(),
   project_id: z.string().uuid().nullable().optional(),
   ma_entity_id: z.string().uuid().nullable().optional(),
+  contact_id: z.string().uuid().nullable().optional(),
   is_archived: z.boolean().optional(),
   participants: z.array(participantSchema).max(20).optional(),
 });
@@ -31,6 +34,10 @@ type RouteContext = { params: Promise<{ threadId: string }> };
 export async function PATCH(request: NextRequest, context: RouteContext) {
   const supabase = await createClient();
   const { threadId } = await context.params;
+
+  if (!UUID_RE.test(threadId)) {
+    return NextResponse.json({ error: "Invalid thread ID" }, { status: 400 });
+  }
 
   const {
     data: { user },
@@ -95,6 +102,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
     }
   }
 
+  if (parsed.data.contact_id) {
+    const { data: contact } = await supabase
+      .from("contacts")
+      .select("contact_id")
+      .eq("contact_id", parsed.data.contact_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!contact) {
+      return NextResponse.json({ error: "Contact not found" }, { status: 404 });
+    }
+  }
+
   if (parsed.data.ma_entity_id) {
     const { data: entity } = await supabase
       .from("ma_entities")
@@ -135,6 +155,10 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 export async function DELETE(_request: NextRequest, context: RouteContext) {
   const supabase = await createClient();
   const { threadId } = await context.params;
+
+  if (!UUID_RE.test(threadId)) {
+    return NextResponse.json({ error: "Invalid thread ID" }, { status: 400 });
+  }
 
   const {
     data: { user },

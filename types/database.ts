@@ -498,11 +498,12 @@ export interface ThreadFollowUp {
   completed_at: string | null;
 }
 
-/** Thread with joined deal/M&A info for sidebar display */
+/** Thread with joined deal/M&A/contact info for sidebar display */
 export interface CoachingThreadWithDeal extends CoachingThread {
   deals?: Pick<Deal, "deal_id" | "company" | "stage"> | null;
   ma_entities?: Pick<MaEntity, "entity_id" | "company" | "entity_type" | "stage"> | null;
   projects?: Pick<Project, "project_id" | "name" | "status" | "category"> | null;
+  contacts?: Pick<Contact, "contact_id" | "name" | "company" | "role"> | null;
   open_follow_up_count?: number;
   has_overdue?: boolean;
   open_task_count?: number;

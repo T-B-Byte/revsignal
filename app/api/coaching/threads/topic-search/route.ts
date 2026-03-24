@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-export type TopicType = "deal" | "prospect" | "project" | "ma_entity";
+export type TopicType = "deal" | "prospect" | "project" | "ma_entity" | "contact";
 
 export interface TopicResult {
   id: string;
@@ -24,7 +24,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const query = request.nextUrl.searchParams.get("q")?.trim() ?? "";
+  const query = request.nextUrl.searchParams.get("q")?.trim().slice(0, 100) ?? "";
   if (query.length < 1) {
     return NextResponse.json({ topics: [] });
   }
@@ -107,6 +107,35 @@ export async function GET(request: NextRequest) {
         subtitle: `${m.entity_type} · ${m.stage.replace(/_/g, " ")}`,
       });
     }
+  }
+
+  // Search contacts (by name and by company separately to avoid .or() filter injection)
+  const [{ data: contactsByName }, { data: contactsByCompany }] = await Promise.all([
+    supabase
+      .from("contacts")
+      .select("contact_id, name, company, role")
+      .eq("user_id", user.id)
+      .ilike("name", pattern)
+      .limit(5),
+    supabase
+      .from("contacts")
+      .select("contact_id, name, company, role")
+      .eq("user_id", user.id)
+      .ilike("company", pattern)
+      .limit(5),
+  ]);
+
+  const seenContactIds = new Set<string>();
+  const allContacts = [...(contactsByName ?? []), ...(contactsByCompany ?? [])];
+  for (const c of allContacts) {
+    if (seenContactIds.has(c.contact_id)) continue;
+    seenContactIds.add(c.contact_id);
+    results.push({
+      id: c.contact_id,
+      type: "contact",
+      title: c.name,
+      subtitle: [c.role, c.company].filter(Boolean).join(" · ") || "Contact",
+    });
   }
 
   return NextResponse.json({ topics: results });

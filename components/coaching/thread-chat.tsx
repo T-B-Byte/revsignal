@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { formatAgentHtml, stripFollowUps, extractMeetingDetected } from "@/lib/format-agent-html";
 import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
-import type { CoachingMessage, CoachingThread, InteractionType, Deal, Contact, MessageReaction } from "@/types/database";
+import type { CoachingMessage, CoachingThread, CoachingThreadWithDeal, InteractionType, Deal, Contact, Project, MaEntity, MessageReaction } from "@/types/database";
+import { ThreadBreadcrumb } from "./thread-breadcrumb";
 import type { MessageChannel } from "@/lib/agents/email-composer";
 import { INTERACTION_TYPES, MESSAGE_REACTIONS } from "@/types/database";
 import { DatePicker } from "@/components/ui/date-picker";
 
 interface ThreadChatProps {
-  thread: CoachingThread;
+  thread: CoachingThreadWithDeal;
   initialMessages: CoachingMessage[];
   dealCompany?: string | null;
   activeDeals?: Pick<Deal, "deal_id" | "company" | "stage">[];
@@ -77,32 +78,22 @@ export function ThreadChat({
   const [showContactSearch, setShowContactSearch] = useState(false);
   const [searchingContacts, setSearchingContacts] = useState(false);
   const [uploadingImages, setUploadingImages] = useState(false);
-  const [showDealPicker, setShowDealPicker] = useState(false);
+  // Unified entity linking state
   const [linkedDealId, setLinkedDealId] = useState<string | null>(thread.deal_id);
-  const [linkingDeal, setLinkingDeal] = useState(false);
-  const [showPersonPicker, setShowPersonPicker] = useState(false);
-  const [personSearch, setPersonSearch] = useState("");
-  const [personResults, setPersonResults] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role">[]>([]);
-  const [searchingPerson, setSearchingPerson] = useState(false);
-  const [personCandidate, setPersonCandidate] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role"> | null>(null);
-  const [assigningToPerson, setAssigningToPerson] = useState(false);
-  const [creatingNewPerson, setCreatingNewPerson] = useState(false);
-  const [newPersonName, setNewPersonName] = useState("");
-  const [newPersonCompany, setNewPersonCompany] = useState("");
-  const [newPersonRole, setNewPersonRole] = useState("");
-  const [savingNewPerson, setSavingNewPerson] = useState(false);
-  const [showTopicPicker, setShowTopicPicker] = useState(false);
-  const [topicSearch, setTopicSearch] = useState("");
-  const [topicResults, setTopicResults] = useState<{ id: string; type: string; title: string; subtitle?: string }[]>([]);
-  const [searchingTopics, setSearchingTopics] = useState(false);
-  const [linkedTopic, setLinkedTopic] = useState<{ id: string; type: string; title: string; subtitle?: string } | null>(() => {
-    // Initialize from thread's existing entity links (excluding deal, which has its own picker)
-    if (thread.project_id) return { id: thread.project_id, type: "project", title: "" };
-    if (thread.prospect_id) return { id: thread.prospect_id, type: "prospect", title: "" };
-    if (thread.ma_entity_id) return { id: thread.ma_entity_id, type: "ma_entity", title: "" };
-    return null;
-  });
-  const [linkingTopic, setLinkingTopic] = useState(false);
+  const [linkedDeal, setLinkedDeal] = useState<Pick<Deal, "deal_id" | "company" | "stage"> | null>(thread.deals ?? null);
+  const [linkedProjectId, setLinkedProjectId] = useState<string | null>(thread.project_id);
+  const [linkedProject, setLinkedProject] = useState<Pick<Project, "project_id" | "name" | "status" | "category"> | null>(thread.projects ?? null);
+  const [linkedContactId2, setLinkedContactId2] = useState<string | null>(thread.contact_id);
+  const [linkedContact, setLinkedContact] = useState<Pick<Contact, "contact_id" | "name" | "company" | "role"> | null>(thread.contacts ?? null);
+  const [linkedProspectId, setLinkedProspectId] = useState<string | null>(thread.prospect_id);
+  const [linkedProspectName, setLinkedProspectName] = useState<string | null>(null);
+  const [linkedMaEntityId, setLinkedMaEntityId] = useState<string | null>(thread.ma_entity_id);
+  const [linkedMaEntity, setLinkedMaEntity] = useState<Pick<MaEntity, "entity_id" | "company" | "entity_type" | "stage"> | null>(thread.ma_entities ?? null);
+  const [showEntityPicker, setShowEntityPicker] = useState(false);
+  const [entitySearch, setEntitySearch] = useState("");
+  const [entityResults, setEntityResults] = useState<{ id: string; type: string; title: string; subtitle?: string }[]>([]);
+  const [searchingEntities, setSearchingEntities] = useState(false);
+  const [linkingEntity, setLinkingEntity] = useState(false);
   const [taskFromId, setTaskFromId] = useState<string | null>(null);
   const [taskDesc, setTaskDesc] = useState("");
   const [taskSourceText, setTaskSourceText] = useState("");  // original selected text for highlighting
@@ -156,15 +147,17 @@ export function ThreadChat({
     setError(null);
     setInput("");
     setLinkedDealId(thread.deal_id);
-    setShowDealPicker(false);
-    setShowTopicPicker(false);
-    setTopicSearch("");
-    setTopicResults([]);
-    // Initialize linked topic from thread entity links
-    if (thread.project_id) setLinkedTopic({ id: thread.project_id, type: "project", title: "" });
-    else if (thread.prospect_id) setLinkedTopic({ id: thread.prospect_id, type: "prospect", title: "" });
-    else if (thread.ma_entity_id) setLinkedTopic({ id: thread.ma_entity_id, type: "ma_entity", title: "" });
-    else setLinkedTopic(null);
+    setLinkedDeal(thread.deals ?? null);
+    setLinkedProjectId(thread.project_id);
+    setLinkedProject(thread.projects ?? null);
+    setLinkedContactId2(thread.contact_id);
+    setLinkedContact(thread.contacts ?? null);
+    setLinkedProspectId(thread.prospect_id);
+    setLinkedMaEntityId(thread.ma_entity_id);
+    setLinkedMaEntity(thread.ma_entities ?? null);
+    setShowEntityPicker(false);
+    setEntitySearch("");
+    setEntityResults([]);
 
     const controller = new AbortController();
     const messageIds = initialMessages.map((m) => m.conversation_id);
@@ -204,51 +197,6 @@ export function ThreadChat({
 
     return () => controller.abort();
   }, [thread.thread_id, thread.deal_id, initialMessages]);
-
-  // Resolve initial topic title when thread has an existing link
-  useEffect(() => {
-    if (!linkedTopic || linkedTopic.title) return;
-    // Search for the linked entity to get its title
-    const type = linkedTopic.type;
-    const id = linkedTopic.id;
-    const controller = new AbortController();
-
-    (async () => {
-      try {
-        // Use the topic search with a broad query, or fetch directly
-        let title = "";
-        let subtitle = "";
-        if (type === "project") {
-          const res = await fetch("/api/projects", { signal: controller.signal });
-          if (res.ok) {
-            const data = await res.json();
-            const p = data.projects?.find((pr: { project_id: string }) => pr.project_id === id);
-            if (p) { title = p.name; subtitle = p.category ?? p.status; }
-          }
-        } else if (type === "prospect") {
-          const res = await fetch(`/api/prospects/${id}`, { signal: controller.signal });
-          if (res.ok) {
-            const data = await res.json();
-            if (data.prospect) { title = data.prospect.company; subtitle = data.prospect.icp_category ?? "Prospect"; }
-          }
-        } else if (type === "ma_entity") {
-          const res = await fetch("/api/ma", { signal: controller.signal });
-          if (res.ok) {
-            const data = await res.json();
-            const m = data.entities?.find((e: { entity_id: string }) => e.entity_id === id);
-            if (m) { title = m.company; subtitle = `${m.entity_type} · ${m.stage.replace(/_/g, " ")}`; }
-          }
-        }
-        if (title) {
-          setLinkedTopic({ id, type, title, subtitle });
-        }
-      } catch {
-        // ignore abort / network errors
-      }
-    })();
-
-    return () => controller.abort();
-  }, [linkedTopic]);
 
   // Close context menu on click anywhere
   useEffect(() => {
@@ -837,193 +785,113 @@ export function ThreadChat({
     }
   }
 
-  async function handleLinkDeal(dealId: string | null) {
-    setLinkingDeal(true);
-    try {
-      const res = await fetch(`/api/coaching/threads/${thread.thread_id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deal_id: dealId }),
-      });
-      if (res.ok) {
-        setLinkedDealId(dealId);
-        setShowDealPicker(false);
-      }
-    } catch {
-      // Silent fail
-    } finally {
-      setLinkingDeal(false);
-    }
-  }
-
-  async function searchPerson(query: string) {
-    setPersonSearch(query);
+  // Unified entity search
+  async function searchEntities(query: string) {
+    setEntitySearch(query);
     if (query.length < 2) {
-      setPersonResults([]);
+      setEntityResults([]);
       return;
     }
-    setSearchingPerson(true);
-    try {
-      const res = await fetch(`/api/contacts?search=${encodeURIComponent(query)}&limit=8`);
-      if (res.ok) {
-        const data = await res.json();
-        setPersonResults(data.contacts ?? []);
-      }
-    } catch {
-      // ignore
-    } finally {
-      setSearchingPerson(false);
-    }
-  }
-
-  function openCreatePerson() {
-    setCreatingNewPerson(true);
-    setNewPersonName(personSearch.trim());
-    setNewPersonCompany(thread.company || dealCompany || "");
-    setNewPersonRole("");
-    setShowPersonPicker(false);
-    setPersonSearch("");
-    setPersonResults([]);
-  }
-
-  async function handleCreatePerson() {
-    const name = newPersonName.trim();
-    const company = newPersonCompany.trim();
-    if (!name || !company) return;
-    setSavingNewPerson(true);
-    try {
-      const res = await fetch("/api/contacts", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          company,
-          role: newPersonRole.trim() || undefined,
-        }),
-      });
-      if (res.ok) {
-        const { contact } = await res.json();
-        setPersonCandidate({
-          contact_id: contact.contact_id,
-          name: contact.name,
-          company: contact.company,
-          role: contact.role,
-        });
-        setCreatingNewPerson(false);
-        setNewPersonName("");
-        setNewPersonCompany("");
-        setNewPersonRole("");
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to create contact.");
-      }
-    } catch {
-      setError("Network error creating contact.");
-    } finally {
-      setSavingNewPerson(false);
-    }
-  }
-
-  async function handleAssignToPerson() {
-    if (!personCandidate || assigningToPerson) return;
-    setAssigningToPerson(true);
-    try {
-      const res = await fetch(
-        `/api/coaching/threads/${thread.thread_id}/assign-to-contact`,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ contact_id: personCandidate.contact_id }),
-        }
-      );
-      if (res.ok) {
-        router.push("/coach");
-      } else {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to assign thread.");
-        setAssigningToPerson(false);
-      }
-    } catch {
-      setError("Network error assigning thread.");
-      setAssigningToPerson(false);
-    }
-  }
-
-  async function searchTopics(query: string) {
-    setTopicSearch(query);
-    if (query.length < 2) {
-      setTopicResults([]);
-      return;
-    }
-    setSearchingTopics(true);
+    setSearchingEntities(true);
     try {
       const res = await fetch(`/api/coaching/threads/topic-search?q=${encodeURIComponent(query)}`);
       if (res.ok) {
         const data = await res.json();
-        setTopicResults(data.topics ?? []);
+        setEntityResults(data.topics ?? []);
       }
     } catch {
       // ignore
     } finally {
-      setSearchingTopics(false);
+      setSearchingEntities(false);
     }
   }
 
-  async function handleLinkTopic(topic: { id: string; type: string; title: string; subtitle?: string }) {
-    setLinkingTopic(true);
-    // Build the update payload: set the matching FK, clear the others
-    const payload: Record<string, string | null> = {
-      deal_id: null,
-      prospect_id: null,
-      project_id: null,
-      ma_entity_id: null,
+  // Link a single entity (additive, does NOT clear others)
+  async function handleLinkEntity(entity: { id: string; type: string; title: string; subtitle?: string }) {
+    setLinkingEntity(true);
+    const fkMap: Record<string, string> = {
+      deal: "deal_id",
+      prospect: "prospect_id",
+      project: "project_id",
+      ma_entity: "ma_entity_id",
+      contact: "contact_id",
     };
-    if (topic.type === "deal") payload.deal_id = topic.id;
-    else if (topic.type === "prospect") payload.prospect_id = topic.id;
-    else if (topic.type === "project") payload.project_id = topic.id;
-    else if (topic.type === "ma_entity") payload.ma_entity_id = topic.id;
+    const fk = fkMap[entity.type];
+    if (!fk) {
+      setLinkingEntity(false);
+      return;
+    }
 
     try {
       const res = await fetch(`/api/coaching/threads/${thread.thread_id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({ [fk]: entity.id }),
       });
       if (res.ok) {
-        setLinkedTopic(topic);
-        // Also update the deal picker state if a deal was selected
-        if (topic.type === "deal") {
-          setLinkedDealId(topic.id);
-        } else {
-          setLinkedDealId(null);
+        // Update local state for the specific entity type
+        if (entity.type === "deal") {
+          setLinkedDealId(entity.id);
+          const deal = activeDeals.find((d) => d.deal_id === entity.id);
+          setLinkedDeal(deal ?? { deal_id: entity.id, company: entity.title, stage: entity.subtitle?.replace(/ /g, "_") as Deal["stage"] ?? "lead" });
+        } else if (entity.type === "project") {
+          setLinkedProjectId(entity.id);
+          setLinkedProject({ project_id: entity.id, name: entity.title, status: "active", category: entity.subtitle ?? null });
+        } else if (entity.type === "contact") {
+          setLinkedContactId2(entity.id);
+          const parts = entity.subtitle?.split(" · ") ?? [];
+          setLinkedContact({ contact_id: entity.id, name: entity.title, company: parts[1] ?? "", role: parts[0] ?? "" });
+        } else if (entity.type === "prospect") {
+          setLinkedProspectId(entity.id);
+          setLinkedProspectName(entity.title);
+        } else if (entity.type === "ma_entity") {
+          setLinkedMaEntityId(entity.id);
+          setLinkedMaEntity({ entity_id: entity.id, company: entity.title, entity_type: "target", stage: "identified" });
         }
-        setShowTopicPicker(false);
-        setTopicSearch("");
-        setTopicResults([]);
+        setShowEntityPicker(false);
+        setEntitySearch("");
+        setEntityResults([]);
       }
     } catch {
       // silent fail
     } finally {
-      setLinkingTopic(false);
+      setLinkingEntity(false);
     }
   }
 
-  async function handleUnlinkTopic() {
-    setLinkingTopic(true);
+  // Unlink a specific entity type
+  async function handleUnlinkEntity(type: string, _id: string) {
+    setLinkingEntity(true);
+    const fkMap: Record<string, string> = {
+      deal: "deal_id",
+      prospect: "prospect_id",
+      project: "project_id",
+      ma_entity: "ma_entity_id",
+      contact: "contact_id",
+    };
+    const fk = fkMap[type];
+    if (!fk) {
+      setLinkingEntity(false);
+      return;
+    }
+
     try {
       const res = await fetch(`/api/coaching/threads/${thread.thread_id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ deal_id: null, prospect_id: null, project_id: null, ma_entity_id: null }),
+        body: JSON.stringify({ [fk]: null }),
       });
       if (res.ok) {
-        setLinkedTopic(null);
-        setLinkedDealId(null);
+        if (type === "deal") { setLinkedDealId(null); setLinkedDeal(null); }
+        else if (type === "project") { setLinkedProjectId(null); setLinkedProject(null); }
+        else if (type === "contact") { setLinkedContactId2(null); setLinkedContact(null); }
+        else if (type === "prospect") { setLinkedProspectId(null); setLinkedProspectName(null); }
+        else if (type === "ma_entity") { setLinkedMaEntityId(null); setLinkedMaEntity(null); }
       }
     } catch {
       // silent fail
     } finally {
-      setLinkingTopic(false);
+      setLinkingEntity(false);
     }
   }
 
@@ -1426,17 +1294,10 @@ export function ThreadChat({
     <div className="flex h-full flex-col">
       {/* Thread header */}
       <div className="shrink-0 border-b border-border-primary px-6 py-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-base font-semibold text-text-primary">
-              {thread.title}
-            </h2>
-            {thread.company && (
-              <span className="rounded-full bg-surface-tertiary px-2 py-0.5 text-xs text-text-secondary">
-                {thread.company}
-              </span>
-            )}
-          </div>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-base font-semibold text-text-primary">
+            {thread.title}
+          </h2>
           <button
             onClick={() => setShowCompose(!showCompose)}
             className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
@@ -1452,296 +1313,92 @@ export function ThreadChat({
             Draft Message
           </button>
         </div>
-        <div className="flex items-center gap-2 mt-0.5">
-          {/* Participant chips */}
-          {thread.participants && thread.participants.length > 0 && (
-            <div className="flex flex-wrap gap-1">
-              {thread.participants.map((p, i) => (
-                <span
-                  key={i}
-                  className="inline-flex items-center gap-1 rounded-full bg-accent-primary/10 px-2 py-0.5 text-[11px] font-medium text-accent-primary"
-                >
-                  {p.name}
-                  {p.role && (
-                    <span className="text-text-muted font-normal">· {p.role}</span>
-                  )}
-                </span>
-              ))}
-            </div>
-          )}
-          {/* Fallback for threads without participants */}
-          {(!thread.participants || thread.participants.length === 0) && thread.contact_role && (
-            <p className="text-xs text-text-secondary">{thread.contact_role}</p>
-          )}
-          {dealCompany && !thread.company && (
-            <p className="text-xs text-accent-primary">{dealCompany}</p>
-          )}
-          {/* Deal link */}
-          {showDealPicker ? (
+
+        {/* Breadcrumb: linked entities + participants */}
+        <ThreadBreadcrumb
+          project={linkedProject}
+          deal={linkedDeal}
+          contact={linkedContact}
+          maEntity={linkedMaEntity}
+          prospectId={linkedProspectId}
+          prospectName={linkedProspectName}
+          company={thread.company}
+          participants={thread.participants}
+          onLink={() => setShowEntityPicker(true)}
+          onUnlink={handleUnlinkEntity}
+          linkingInProgress={linkingEntity}
+        />
+
+        {/* Unified entity search picker */}
+        {showEntityPicker && (
+          <div className="relative mt-2">
             <div className="flex items-center gap-1.5">
-              <select
-                value={linkedDealId ?? ""}
-                onChange={(e) => handleLinkDeal(e.target.value || null)}
-                disabled={linkingDeal}
-                className="rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+              <input
+                type="text"
+                value={entitySearch}
+                onChange={(e) => searchEntities(e.target.value)}
+                placeholder="Search deals, projects, contacts, prospects..."
+                className="w-80 rounded border border-border-primary bg-surface-secondary px-2 py-1 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
                 autoFocus
-              >
-                <option value="">No deal</option>
-                {activeDeals.map((d) => (
-                  <option key={d.deal_id} value={d.deal_id}>
-                    {d.company} ({d.stage.replace(/_/g, " ")})
-                  </option>
-                ))}
-              </select>
+              />
               <button
-                onClick={() => setShowDealPicker(false)}
+                onClick={() => {
+                  setShowEntityPicker(false);
+                  setEntitySearch("");
+                  setEntityResults([]);
+                }}
                 className="text-xs text-text-muted hover:text-text-primary"
               >
                 Cancel
               </button>
             </div>
-          ) : linkedDealId ? (
-            <button
-              onClick={() => setShowDealPicker(true)}
-              className="rounded-full bg-accent-primary/10 px-2 py-0.5 text-[10px] font-medium text-accent-primary hover:bg-accent-primary/20 transition-colors"
-              title="Change linked deal"
-            >
-              {activeDeals.find((d) => d.deal_id === linkedDealId)?.company ?? "Linked deal"} ·{" "}
-              {activeDeals.find((d) => d.deal_id === linkedDealId)?.stage.replace(/_/g, " ") ?? ""}
-            </button>
-          ) : (
-            <button
-              onClick={() => setShowDealPicker(true)}
-              className="text-[10px] text-text-muted hover:text-accent-primary transition-colors"
-            >
-              + Link to deal
-            </button>
-          )}
+            {entitySearch.length >= 2 && (
+              <div className="absolute top-8 left-0 z-20 w-80 rounded-md border border-border-primary bg-surface-primary shadow-lg max-h-60 overflow-y-auto">
+                {searchingEntities && (
+                  <p className="px-3 py-2 text-[10px] text-text-muted">Searching...</p>
+                )}
+                {entityResults.map((t) => {
+                  // Check if this entity is already linked
+                  const isLinked =
+                    (t.type === "deal" && linkedDealId === t.id) ||
+                    (t.type === "project" && linkedProjectId === t.id) ||
+                    (t.type === "contact" && linkedContactId2 === t.id) ||
+                    (t.type === "prospect" && linkedProspectId === t.id) ||
+                    (t.type === "ma_entity" && linkedMaEntityId === t.id);
 
-          {/* Person assign */}
-          {personCandidate ? (
-            <div className="flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1">
-              <span className="text-[10px] text-emerald-400">
-                Move to <span className="font-medium">{personCandidate.name}</span> and delete?
-              </span>
-              <button
-                onClick={handleAssignToPerson}
-                disabled={assigningToPerson}
-                className="text-[10px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
-              >
-                {assigningToPerson ? "Moving…" : "Confirm"}
-              </button>
-              <button
-                onClick={() => setPersonCandidate(null)}
-                className="text-[10px] text-text-muted hover:text-text-primary transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : creatingNewPerson ? (
-            <div className="flex items-center gap-1.5 rounded-md bg-emerald-500/10 px-2 py-1">
-              <input
-                type="text"
-                value={newPersonName}
-                onChange={(e) => setNewPersonName(e.target.value)}
-                placeholder="Name"
-                maxLength={200}
-                autoFocus
-                className="w-28 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
-              />
-              <input
-                type="text"
-                value={newPersonCompany}
-                onChange={(e) => setNewPersonCompany(e.target.value)}
-                placeholder="Company"
-                maxLength={200}
-                className="w-28 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
-              />
-              <input
-                type="text"
-                value={newPersonRole}
-                onChange={(e) => setNewPersonRole(e.target.value)}
-                placeholder="Role"
-                maxLength={200}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    handleCreatePerson();
-                  }
-                }}
-                className="w-24 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
-              />
-              <button
-                onClick={handleCreatePerson}
-                disabled={savingNewPerson || !newPersonName.trim() || !newPersonCompany.trim()}
-                className="text-[10px] font-medium text-emerald-400 hover:text-emerald-300 transition-colors disabled:opacity-50"
-              >
-                {savingNewPerson ? "Saving…" : "Create"}
-              </button>
-              <button
-                onClick={() => {
-                  setCreatingNewPerson(false);
-                  setNewPersonName("");
-                  setNewPersonCompany("");
-                  setNewPersonRole("");
-                }}
-                className="text-[10px] text-text-muted hover:text-text-primary transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          ) : showPersonPicker ? (
-            <div className="relative">
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  value={personSearch}
-                  onChange={(e) => searchPerson(e.target.value)}
-                  placeholder="Search people…"
-                  className="w-36 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
-                  autoFocus
-                />
-                <button
-                  onClick={() => {
-                    setShowPersonPicker(false);
-                    setPersonSearch("");
-                    setPersonResults([]);
-                  }}
-                  className="text-xs text-text-muted hover:text-text-primary"
-                >
-                  Cancel
-                </button>
-              </div>
-              {personSearch.length >= 2 && (
-                <div className="absolute top-7 left-0 z-20 w-64 rounded-md border border-border-primary bg-surface-primary shadow-lg">
-                  {searchingPerson && (
-                    <p className="px-3 py-2 text-[10px] text-text-muted">Searching…</p>
-                  )}
-                  {personResults.map((c) => (
-                    <button
-                      key={c.contact_id}
-                      onClick={() => {
-                        setPersonCandidate(c);
-                        setShowPersonPicker(false);
-                        setPersonSearch("");
-                        setPersonResults([]);
-                      }}
-                      className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-surface-tertiary transition-colors"
-                    >
-                      {c.name}
-                      {c.role && <span className="text-text-muted"> · {c.role}</span>}
-                      <span className="text-text-muted"> · {c.company}</span>
-                    </button>
-                  ))}
-                  {!searchingPerson && personResults.length === 0 && (
-                    <p className="px-3 py-2 text-[10px] text-text-muted">No contacts found</p>
-                  )}
-                  {!searchingPerson && (
-                    <button
-                      onClick={openCreatePerson}
-                      className="w-full border-t border-border-primary px-3 py-1.5 text-left text-xs font-medium text-emerald-400 hover:bg-surface-tertiary transition-colors"
-                    >
-                      + Create &ldquo;{personSearch.trim()}&rdquo; as new contact
-                    </button>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowPersonPicker(true)}
-              className="text-[10px] text-text-muted hover:text-emerald-400 transition-colors"
-            >
-              + Link to person
-            </button>
-          )}
-
-          {/* Topic link */}
-          {showTopicPicker ? (
-            <div className="relative">
-              <div className="flex items-center gap-1.5">
-                <input
-                  type="text"
-                  value={topicSearch}
-                  onChange={(e) => searchTopics(e.target.value)}
-                  placeholder="Search deals, projects, prospects…"
-                  className="w-52 rounded border border-border-primary bg-surface-secondary px-2 py-0.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
-                  autoFocus
-                />
-                <button
-                  onClick={() => {
-                    setShowTopicPicker(false);
-                    setTopicSearch("");
-                    setTopicResults([]);
-                  }}
-                  className="text-xs text-text-muted hover:text-text-primary"
-                >
-                  Cancel
-                </button>
-              </div>
-              {topicSearch.length >= 2 && (
-                <div className="absolute top-7 left-0 z-20 w-72 rounded-md border border-border-primary bg-surface-primary shadow-lg max-h-60 overflow-y-auto">
-                  {searchingTopics && (
-                    <p className="px-3 py-2 text-[10px] text-text-muted">Searching…</p>
-                  )}
-                  {topicResults.map((t) => (
+                  return (
                     <button
                       key={`${t.type}-${t.id}`}
-                      onClick={() => handleLinkTopic(t)}
-                      disabled={linkingTopic}
-                      className="w-full px-3 py-1.5 text-left text-xs text-text-primary hover:bg-surface-tertiary transition-colors flex items-center gap-2"
+                      onClick={() => !isLinked && handleLinkEntity(t)}
+                      disabled={linkingEntity || isLinked}
+                      className={`w-full px-3 py-1.5 text-left text-xs transition-colors flex items-center gap-2 ${
+                        isLinked
+                          ? "text-text-muted bg-surface-tertiary/50 cursor-default"
+                          : "text-text-primary hover:bg-surface-tertiary"
+                      }`}
                     >
                       <span className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider ${
                         t.type === "deal" ? "bg-accent-primary/15 text-accent-primary"
                         : t.type === "prospect" ? "bg-blue-500/15 text-blue-400"
                         : t.type === "project" ? "bg-violet-500/15 text-violet-400"
+                        : t.type === "contact" ? "bg-emerald-500/15 text-emerald-400"
                         : "bg-amber-500/15 text-amber-400"
                       }`}>
                         {t.type === "ma_entity" ? "M&A" : t.type}
                       </span>
                       <span className="truncate">{t.title}</span>
                       {t.subtitle && <span className="text-text-muted shrink-0">· {t.subtitle}</span>}
+                      {isLinked && <span className="text-[9px] text-text-muted ml-auto">linked</span>}
                     </button>
-                  ))}
-                  {!searchingTopics && topicResults.length === 0 && (
-                    <p className="px-3 py-2 text-[10px] text-text-muted">No results found</p>
-                  )}
-                </div>
-              )}
-            </div>
-          ) : linkedTopic && linkedTopic.title ? (
-            <div className="flex items-center gap-1">
-              <button
-                onClick={() => setShowTopicPicker(true)}
-                className={`rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors ${
-                  linkedTopic.type === "deal" ? "bg-accent-primary/10 text-accent-primary hover:bg-accent-primary/20"
-                  : linkedTopic.type === "prospect" ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
-                  : linkedTopic.type === "project" ? "bg-violet-500/10 text-violet-400 hover:bg-violet-500/20"
-                  : "bg-amber-500/10 text-amber-400 hover:bg-amber-500/20"
-                }`}
-                title="Change linked topic"
-              >
-                {linkedTopic.title}
-                {linkedTopic.subtitle && ` · ${linkedTopic.subtitle}`}
-              </button>
-              <button
-                onClick={handleUnlinkTopic}
-                disabled={linkingTopic}
-                className="text-[10px] text-text-muted hover:text-red-400 transition-colors"
-                title="Remove topic link"
-              >
-                ×
-              </button>
-            </div>
-          ) : (
-            <button
-              onClick={() => setShowTopicPicker(true)}
-              className="text-[10px] text-text-muted hover:text-violet-400 transition-colors"
-            >
-              + Link to topic
-            </button>
-          )}
-        </div>
+                  );
+                })}
+                {!searchingEntities && entityResults.length === 0 && (
+                  <p className="px-3 py-2 text-[10px] text-text-muted">No results found</p>
+                )}
+              </div>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Message compose panel */}
