@@ -33,12 +33,13 @@ The opportunity is to monetize the same data asset five additional ways, each re
 | 1 | DaaS Signal Licensing | OEM/annual license | $1.0-1.6M |
 | 2 | Surge Dossiers (Demand Gen Uplift) | CPL premium | $4.5-7.5M |
 | 3 | SurgeEngine.ai (Self-Service Platform) | Per-report + subscription | $300K-600K |
-| 4 | Jobson Title Expansion | Annual license | $500K-1.0M |
+| 4 | Jobson Title Expansion | Annual data brick license | $500K-1.0M |
 | 5 | Surge Trending & Radar Reports | Subscription tiers | $600K-1.2M |
-| | **Total Year 1 Incremental** | | **$6.9-11.9M** |
-| | **Total Year 2 (at scale)** | | **$15-22M** |
+| 6 | ICP Analyzer (Closed-Won Intelligence) | Per-report + subscription | $200K-500K |
+| | **Total Year 1 Incremental** | | **$7.1-12.4M** |
+| | **Total Year 2 (at scale)** | | **$16-24M** |
 
-All five prongs draw from the same underlying data asset. Marginal cost of each new stream is near zero.
+All six prongs draw from the same underlying data asset. Marginal cost of each new stream is near zero.
 
 ---
 
@@ -57,6 +58,7 @@ Three of the five revenue prongs run through SurgeEngine.ai:
 SurgeEngine.ai is more than a product. It is the self-service front door to pharosIQ's entire DaaS business. Every interaction captures qualification data (product, competitors, buyer persona, email) that feeds the demand gen sales team as warm, pre-qualified leads.
 
 **Domain:** SurgeEngine.ai (owned, ready to deploy)
+**Status:** Working MVP is live. Five report types, PDF export, Surge Trending, Surge Radar, ICP Analyzer, and Title Expansion demos are all functional.
 
 ---
 
@@ -209,19 +211,45 @@ Content-level intent signals delivered as a raw data feed or API to platforms th
 ### What We Sell
 AI-assembled, modular account intelligence packages delivered alongside demand gen leads. Instead of a naked lead, the customer gets a lead plus everything their SDR needs to work it.
 
-### What's Inside a Surge Dossier
+### The Lego Architecture
+Think of Surge Dossiers as a Lego set. There are 14 module types that can be assembled into different report configurations depending on the use case:
+
+**Core Modules (available in all report types):**
 - **Buyer overview** with contextualized value propositions
 - **Buying committee** with LinkedIn profiles, work history, recent activity
 - **Competitive heat map** with objections and battle card talking points
+- **Executive brief** for C-level summary
+
+**Outreach Modules:**
 - **Personalized outreach** (email drafts + LinkedIn scripts) for each committee member
-- **Call preparation** with concrete talking points
+- **LinkedIn content posts** that SDRs can publish to build credibility before outreach
+- **Call preparation** with per-person scripts ("If you get Priya on the phone, here's exactly what to talk about")
 - **Sequenced activity plan** (week 1, 2, 3 playbook)
+
+**Intelligence Modules:**
 - **Employee/customer sentiment** (Reddit, Glassdoor, job boards)
-- **Events radar** and hiring trends
+- **Events and hiring radar**
+- **Buyer challenges** with solution mapping
+- **Capability fit** analysis with gap identification
+
+**Account Management Modules:**
+- **Account health scorecard** (renewal risk, expansion opportunity)
+- **Recommended actions** with priority and rationale
+
+### Five Report Types from the Same Data
+
+| Report Type | Audience | Key Modules | Use Case |
+|------------|----------|-------------|----------|
+| **SDR Outreach** | SDRs working new leads | All outreach modules + intelligence | "Here's everything you need to work this account" |
+| **AE Deep Dive** | Account executives on named accounts | All modules including buyer challenges, capability fit | Strategic account planning, not scripts |
+| **Event Prep** | Anyone attending a conference or dinner | Condensed overview, conversation starters | One-pager to glance at on your phone before walking up to someone |
+| **QBR** | Account teams on existing customers | Health scorecard, recommended actions, sentiment | Retention and expansion focused |
+| **Executive Brief** | C-suite | 2-minute read: key facts, top threat, 3 actions | A CEO reads this and knows exactly what's happening |
 
 ### How It Works
 - Customer orders demand gen leads as usual
 - For premium-tier orders, each lead includes a Surge Dossier for the target account
+- Customer selects report type based on use case (SDR, AE, Event Prep, QBR, Executive)
 - Delivered as PDF (ingestible into any AI tool) or pulled directly into Outreach
 - Customer onboarding requires four inputs: buying committee targets, product to sell, top 5 competitors, latest pitch deck
 
@@ -313,13 +341,17 @@ SurgeEngine.ai is broad-market, but priority outreach to:
 ## SLIDE 9: PRONG 4 — Jobson Title Expansion
 
 ### What We Sell
-Annual license for martech and sales tech companies to access pharosIQ's expanded contact title data through Jobson. Companies pay for the ability to query and expand their target title coverage beyond what they can source independently.
+Access to pharosIQ's title expansion engine. Jobson takes any job title (e.g., "Head of Marketing") and expands it into every permutation of how that title appears across 270M+ professional profiles, including translations to 15+ languages. ABM companies and DSPs buy the complete data brick (flat file) to power their audience targeting.
+
+### The Problem It Solves
+Marketers and ABM platforms build audiences by targeting job titles. But "VP of Marketing" is written 200+ ways across LinkedIn: Vice President Marketing, VP Marketing & Communications, SVP Digital Marketing, Vizepräsident Marketing (German), Directeur Marketing (French), and on and on. Miss a variation, miss the prospect. Current solutions require manual guesswork or incomplete synonym lists.
 
 ### How It Works
-- Customer licenses access to Jobson's title expansion API
-- Query by company, industry, or title pattern
-- Returns expanded title matches with contact records
-- Annual subscription, no per-query fees at standard volume
+- Customer inputs a job title
+- Jobson returns every variation: English permutations, abbreviations, seniority levels, related titles, and translations across 15+ languages
+- Results include match counts per variation and language breakdown
+- Customer purchases the full data brick (complete flat file) for integration into their targeting systems
+- Updated monthly as new title patterns emerge
 
 ### Pricing Model
 - $50K/year per customer (standard license)
@@ -396,6 +428,41 @@ Both live on SurgeEngine.ai. Both upsell to Surge Dossiers.
 
 ---
 
+## SLIDE 10B: PRONG 6 — ICP Analyzer (Closed-Won Intelligence)
+
+### What We Sell
+A data product that answers: "What did my best customers have in common before they bought, and who else looks like that right now?"
+
+Customers upload their closed-won deal list. The system cross-references each company against pharosIQ's intent data to find the signals those companies were showing in the weeks and months before they became customers. It synthesizes an "ideal customer profile" based on actual buying behavior (not guesswork), then identifies lookalike companies currently exhibiting the same signal patterns.
+
+### How It Works
+1. Customer uploads a list of closed-won accounts (company name, deal size, close date)
+2. pharosIQ's intent data reveals what each company was researching before they closed
+3. AI identifies common patterns: which signals appear most frequently, how far in advance they appeared, and how strong the correlation is
+4. System outputs a data-backed ICP profile with specific buying triggers
+5. System identifies lookalike companies currently matching those patterns, ranked by match score
+6. Each lookalike includes estimated deal size, recommended entry point, and current surge topics
+
+### Why This Is Different
+Every company has an ICP. Most are built from gut feel, firmographic filters, and sales team opinions. This builds an ICP from actual intent signal patterns that preceded closed deals. It turns "companies like our best customers" from a heuristic into a data product.
+
+### Pricing Model
+- Per-report: $500 (includes top 25 lookalikes)
+- Quarterly refresh: $1,500/quarter
+- Annual subscription with monthly lookalike updates: $5,000/year
+
+### Revenue Projection
+- Year 1: 400-1,000 reports = **$200K-500K**
+- Year 2: Subscription conversion at scale = **$500K-1.0M**
+
+### Target Buyers
+- Sales leaders who want data-backed target lists, not opinion-based ones
+- RevOps teams building territory plans and account scoring models
+- PE/VC firms doing due diligence on portfolio company ICPs
+- ABM teams that want to move from static account lists to signal-driven targeting
+
+---
+
 ## SLIDE 11: The Revenue Impact Model
 
 ### Starting Point
@@ -411,7 +478,8 @@ Both live on SurgeEngine.ai. Both upsell to Surge Dossiers.
 | 3 | SurgeEngine.ai (self-service) | $300K | $600K |
 | 4 | Jobson Title Expansion | $500K | $1.0M |
 | 5 | Surge Trending & Radar | $600K | $1.2M |
-| | **Total Year 1 Incremental** | **$6.9M** | **$11.9M** |
+| 6 | ICP Analyzer | $200K | $500K |
+| | **Total Year 1 Incremental** | **$7.1M** | **$12.4M** |
 
 ### Year 2 DaaS Revenue (At Scale)
 
@@ -422,7 +490,8 @@ Both live on SurgeEngine.ai. Both upsell to Surge Dossiers.
 | 3 | SurgeEngine.ai (self-service) | $1.0M | $1.5M |
 | 4 | Jobson Title Expansion | $1.25M | $1.5M |
 | 5 | Surge Trending & Radar | $1.8M | $2.4M |
-| | **Total Year 2 Incremental** | **$14.0M** | **$20.4M** |
+| 6 | ICP Analyzer | $500K | $1.0M |
+| | **Total Year 2 Incremental** | **$14.5M** | **$21.4M** |
 
 ### Valuation Impact
 
@@ -453,22 +522,24 @@ DaaS is near-zero marginal cost. The data already exists. The AI processing is a
 
 ## SLIDE 12: How the Five Prongs Reinforce Each Other
 
-This is not five separate businesses. It's one flywheel.
+This is not six separate businesses. It's one flywheel.
 
 **The Flywheel:**
 
 Surge Trending/Radar (entry point, low friction)
 → Customer sees which companies are surging
 → "Want the full dossier?" → Surge Dossier purchase
+→ "What do my closed-won deals look like?" → ICP Analyzer
+→ ICP Analyzer finds lookalikes → more Surge Dossier purchases
 → "Want dossiers on every lead?" → Dossier-enhanced CPL
+→ "Need the right titles for targeting?" → Jobson Title Expansion
 → "Want to embed this in your platform?" → DaaS Signal License
-→ "Need expanded contact coverage?" → Jobson Title Expansion
 → More data usage → more signal coverage → better surge detection
 → Back to top
 
 **Every prong feeds the next. Every customer interaction opens the door to the next product.**
 
-SurgeEngine.ai is the self-service front door. It captures leads (Prong 3) who become Surge Trending subscribers (Prong 5) who buy dossiers (Prong 2) who become OEM partners (Prong 1).
+SurgeEngine.ai is the self-service front door. It captures leads (Prong 3) who become Surge Trending subscribers (Prong 5) who run ICP Analyses (Prong 6) who buy dossiers (Prong 2) who become OEM partners (Prong 1). Title Expansion (Prong 4) feeds audience data to ABM platforms who then need Surge Trending to see which of those titled contacts are actually in-market.
 
 ---
 
@@ -484,8 +555,15 @@ SurgeEngine.ai is the self-service front door. It captures leads (Prong 3) who b
 | ZoomInfo | Resells Bombora data for intent. Not proprietary. | pharosIQ's first-party signals are a differentiated alternative. Reduces ZoomInfo customers' single-vendor dependency. |
 | Clearbit (Breeze) | Acquired by HubSpot. Enrichment only, no intent. | pharosIQ adds the "when" to their "who." Complementary, not competitive. |
 
+### The Intentsify Warning
+Intentsify, pharosIQ's top competitor in the intent data space, has already partnered with a company that builds this exact type of modular intelligence report. They stopped leading with intent data and started leading with the assembled reports, because it gets them into sales conversations that raw data never could. They are selling dossier-style packages through a channel partner today.
+
+pharosIQ has the same data (better data, arguably: first-party, contact-level, 650+ categories). The difference is: Intentsify is paying a partner to assemble reports from their data. pharosIQ can build its own, keep the margin, control the product, and own the customer relationship.
+
+**The risk of not acting: pharosIQ's biggest competitor is already monetizing this model. Every quarter of delay is a quarter where Intentsify builds market share with a product pharosIQ could own.**
+
 ### The Dossier Differentiator
-Nobody else is selling AI-assembled, account-specific sales intelligence packages at scale. Competitors sell raw data or platform access. pharosIQ sells **ready-to-use intelligence** that eliminates the gap between "here's a lead" and "here's how to work it."
+Nobody else is selling AI-assembled, account-specific sales intelligence packages at scale with their own first-party intent data powering the content. Competitors sell raw data or platform access. pharosIQ sells **ready-to-use intelligence** that eliminates the gap between "here's a lead" and "here's how to work it." And unlike Intentsify's outsourced approach, pharosIQ would own the entire stack: data, assembly, delivery, and customer relationship.
 
 ---
 
@@ -493,18 +571,24 @@ Nobody else is selling AI-assembled, account-specific sales intelligence package
 
 **SurgeEngine.ai** is the self-service front door to pharosIQ's DaaS products.
 
-### Three Modes
+### Six Product Modes
 
 | Mode | User Input | Output | Price |
 |------|-----------|--------|-------|
-| **Surge Dossier** | Target account + 4 onboarding questions | Complete account intelligence package (PDF) | $200-500/report |
-| **Surge Trending** | Intent topics (10/25/50) | Ranked list of surging companies, updated weekly | $500-2,000/mo |
-| **Surge Radar** | Target account list | What each account is actively researching | $500-2,000/mo |
+| **Surge Dossier** | Target account + 4 onboarding questions | Modular intelligence package (5 report types), delivered as PDF | $200-500/report |
+| **Surge Trending** | Intent topics (10/25/50) | Ranked list of surging companies with scores and signals, updated weekly | $500-2,000/mo |
+| **Surge Radar** | Target account list | What each account is researching, competitive evaluations detected, recommended actions | $500-2,000/mo |
+| **ICP Analyzer** | Closed-won deal list | Common pre-close signals, synthesized ICP profile, lookalike companies currently matching | $500/report |
+| **Title Expansion** | Job title | Every variation across 270M+ profiles in 15+ languages, downloadable as data brick | $50K/yr license |
+| **Event Prep** | Event name + attendee list | One-page per-person briefings with conversation starters, optimized for mobile | $50-150/briefing |
 
 ### Every Mode Upsells to the Next
-- Trending shows companies → "Get the dossier"
+- Trending shows companies → "Get the dossier on any of these"
 - Radar shows research activity → "Get the dossier"
+- ICP Analyzer finds lookalikes → "Get dossiers on your top matches"
 - Dossier shows buying committee → "Want this for every lead?" → demand gen partnership
+- Title Expansion feeds audience targeting → "Now see which of those titles are surging" → Surge Trending
+- Event Prep leads to post-event follow-up → "Generate full dossiers for your best conversations"
 
 ### Lead Generation Engine
 Every SurgeEngine.ai interaction captures:
@@ -557,16 +641,17 @@ The data already exists in TCC. This is an assembly and packaging problem, not a
 |-------|-----------------|-------------|----------------|-----|
 | 1. DaaS Signal Licensing | $50-100K (API build) | Minimal (support, integration) | $1.0-1.6M | 10-16x |
 | 2. Surge Dossiers (CPL uplift) | ~$25K (report template + AI pipeline) | ~$0.50-2.00/dossier (AI) | $4.5-7.5M | 180-300x |
-| 3. SurgeEngine.ai | $75-150K (full platform) | Hosting, AI costs (~$2-5K/mo) | $300-600K | 2-4x Year 1, 7-10x Year 2 |
+| 3. SurgeEngine.ai | **Already built** (MVP live) | Hosting, AI costs (~$2-5K/mo) | $300-600K | Near-infinite (sunk cost) |
 | 4. Jobson Title Expansion | ~$0 (existing infrastructure) | Minimal | $500K-1.0M | Near-infinite |
-| 5. Surge Trending/Radar | Included in SurgeEngine.ai build | Minimal | $600K-1.2M | Included above |
-| **Total** | **$150-275K** | **$5-10K/month** | **$6.9-11.9M** | **25-43x** |
+| 5. Surge Trending/Radar | **Already built** (demo live) | Minimal | $600K-1.2M | Near-infinite |
+| 6. ICP Analyzer | **Already built** (demo live) | Minimal (AI processing) | $200K-500K | Near-infinite |
+| **Total** | **$75-125K remaining** | **$5-10K/month** | **$7.1-12.4M** | **57-99x** |
 
 ### Build vs. Buy Decision
 Outsourcing the full SurgeEngine.ai build to external developers costs $75-150K. Allocating 1-2 internal pharosIQ engineers reduces that to loaded salary cost (~$30-50K equivalent for 3 months). The critical dependency is not engineering talent. It is API access to TCC's intent data and contact records.
 
 ### The Ask
-Total investment across all five prongs: **$150-275K**. Total Year 1 incremental revenue: **$6.9-11.9M**. That's a 25-43x return on investment in Year 1 alone.
+Total remaining investment across all six prongs: **$75-125K** (API layer build + partner integrations). SurgeEngine.ai, Surge Trending, Surge Radar, ICP Analyzer, and Title Expansion are already built. Total Year 1 incremental revenue: **$7.1-12.4M**. That's a 57-99x return on remaining investment in Year 1 alone.
 
 ---
 
@@ -599,40 +684,42 @@ Total investment across all five prongs: **$150-275K**. Total Year 1 incremental
 
 ---
 
-## SLIDE 17: I Can Build This. Today.
+## SLIDE 17: I Already Built This.
 
-I have an AI engineering co-pilot (Claude Code) that I use to build production software. It is the same AI that powers the Surge Dossier generation pipeline. I have already built RevSignal, a fully functional sales command center, using this tool.
+SurgeEngine.ai is not a slide deck. It is a working product. I built it on my own time using an AI engineering co-pilot (Claude Code), the same AI that powers the dossier generation pipeline.
 
-**What I need from pharosIQ engineering to start building SurgeEngine.ai:**
+### What Is Live Today (Demo-Ready)
 
-### API Endpoints Required
+| Feature | Status |
+|---------|--------|
+| SurgeEngine.ai web application (auth, dashboard, intake forms) | Built |
+| 5 dossier report types (SDR, AE, Event Prep, QBR, Executive Brief) | Built |
+| 14 intelligence modules (Lego architecture, assembles per report type) | Built |
+| AI-powered dossier generation pipeline (Claude Sonnet 4.6) | Built |
+| PDF export (professional intelligence report format) | Built |
+| Surge Trending demo (5 topics, 60+ companies) | Built |
+| Surge Radar demo (19 accounts with buying signals and competitive evals) | Built |
+| ICP Analyzer demo (12 closed-won deals, pattern discovery, 12 lookalikes) | Built |
+| Title Expansion demo (5 titles, 15+ languages, 200+ variations each) | Built |
+| Stripe payment integration (free tier, per-dossier, subscriptions) | Built |
+| Landing page and product showcase | Built |
+| 7 seeded demo dossiers (SAP across all 5 report types, Lenovo, DocuSign) | Built |
 
-| Endpoint | Purpose | Used By |
-|----------|---------|---------|
-| Intent signals by topic | Query which companies are surging for a given intent category | Surge Trending, Surge Radar, Surge Dossiers |
-| Intent signals by account | Query what a specific company is researching | Surge Radar, Surge Dossiers |
-| Contact records by company | Pull buying committee contacts for a target account | Surge Dossiers |
-| Company firmographic data | Company size, industry, revenue, tech stack | Surge Dossiers |
-| Jobson title search | Query expanded title/contact records | Jobson Title Expansion, Surge Dossiers |
+### What's Needed to Go From Demo to Production
 
-### What I Build (No Engineering Headcount Required)
+The platform is fully functional with AI-generated data. To ground it in pharosIQ's actual first-party data, I need API access to three endpoints Ben Luck's team maintains:
 
-- SurgeEngine.ai web application (intake forms, user auth, payment)
-- AI-powered dossier generation pipeline (data in → Claude assembly → formatted PDF out)
-- Surge Trending and Surge Radar report engines
-- Stripe subscription and per-report billing
-- Email delivery of completed dossiers
-- Landing page and marketing site
+| API | Purpose | Products It Powers |
+|-----|---------|-------------------|
+| **Holmes** (Content/Intent) | Query intent signals by topic and by account | Surge Trending, Surge Radar, Surge Dossiers, ICP Analyzer |
+| **Jobson** (Title Expansion) | Expand job titles into all variations across languages | Title Expansion data bricks, Surge Dossier buying committees |
+| **Talison** (Target Account Lists) | Retrieve and manage target account lists | Surge Radar, ICP Analyzer |
 
-### What This Means
+Ben has confirmed access to all three. Once credentials are live, I can wire them into the existing platform within days. No engineering sprint allocation. No hiring. No vendor contracts.
 
-I can build the entire front-end, the AI pipeline, the PDF generation, Stripe integration, and email delivery. What I can't do is connect to TCC's actual database without API access or credentials. Give me a data feed or API endpoint into TCC, and I will build the rest of SurgeEngine.ai as a real product.
+### The Build Math
 
-No engineering sprint allocation. No hiring. No vendor contracts.
-
-Through normal product development channels, this is an 8-12 week build at $75-150K. I have already built the AI pipeline patterns, the payment infrastructure, and the email delivery system in my own sales command center. I can have a working SurgeEngine.ai MVP live in 1-2 weeks, on my own time, at near zero external cost.
-
-The only thing standing between today and a live product is data access.
+Through normal product development channels, this platform would be an 8-12 week build at $75-150K. I built the working MVP in under two weeks, on my own time, at near zero external cost. The only remaining step is connecting live data.
 
 ---
 
@@ -641,21 +728,22 @@ The only thing standing between today and a live product is data access.
 ### From Leadership
 - Approval to pilot Surge Dossiers with 3-5 demand gen customers
 - Access to demand gen customer list and current CPL pricing
-- Introduction to Jobson team for title expansion partnership scoping
-- Green light to build SurgeEngine.ai on owned domain
+- Green light to deploy SurgeEngine.ai on the owned domain (production)
 
-### Resources
-- Ben Luck's team: data pipeline support for dossier generation
-- Engineering: API access for SurgeEngine.ai to query intent data
-- Sales: 3-5 customer intros for dossier pilot
-- Marketing: SurgeEngine.ai landing page support
+### From Ben Luck's Team
+- API credentials for Holmes, Jobson, and Talison (access confirmed, awaiting credentials)
+- Data pipeline support for production-scale dossier generation
+
+### From Sales
+- 3-5 customer intros for dossier pilot (highest CPL volume, active SDR teams)
 
 ### Timeline to First Revenue
 - DaaS Signal Licensing: 60-90 days (existing relationships)
 - Surge Dossier CPL uplift: 30-60 days (pilot with existing customers)
-- SurgeEngine.ai: 90-120 days (build + launch)
-- Jobson Title Expansion: 60-90 days (sales cycle)
-- Surge Trending/Radar: 90-120 days (build + launch)
+- SurgeEngine.ai (live data): 2-4 weeks after API credentials are active
+- Jobson Title Expansion: 30-60 days (demo is ready, sales cycle begins immediately)
+- Surge Trending/Radar: 2-4 weeks after Holmes API is connected
+- ICP Analyzer: 4-6 weeks after Holmes API is connected
 
 ---
 
@@ -663,15 +751,19 @@ The only thing standing between today and a live product is data access.
 
 pharosIQ generates $60M/year from one use of its data.
 
-This strategy unlocks five additional revenue streams from the same asset, adding **$7-12M in Year 1** and **$15-20M in Year 2**.
+This strategy unlocks six additional revenue streams from the same asset, adding **$7-12M in Year 1** and **$15-21M in Year 2**.
 
 Because DaaS revenue carries a 6-10x multiple vs. 2-4x for services, even modest DaaS revenue disproportionately increases enterprise value.
 
 $10M in DaaS revenue at an 8x multiple = **$80M in enterprise value**.
 
-The data already exists. The customers already exist. The domain is ready. The AI to assemble the dossiers is available today.
+The data already exists. The customers already exist. The domain is ready.
 
-This isn't a bet on something new. It's monetizing what pharosIQ already has.
+**And unlike a typical pitch, the product is already built.** SurgeEngine.ai is a working platform with five dossier report types, Surge Trending, Surge Radar, ICP Analyzer, Title Expansion, PDF export, and Stripe billing. Seven demo dossiers are ready to walk through. The only step between demo and production is connecting pharosIQ's live data through the Holmes, Jobson, and Talison APIs.
+
+pharosIQ's top competitor is already selling this type of product through a channel partner. Every quarter of delay is a quarter where they build market share with a product pharosIQ could own.
+
+This isn't a bet on something new. It's monetizing what pharosIQ already has, with a product that's already built, against a competitor that's already moving.
 
 ---
 
