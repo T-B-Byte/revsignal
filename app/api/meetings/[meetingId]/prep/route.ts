@@ -58,12 +58,25 @@ export async function POST(request: NextRequest, context: RouteContext) {
     : undefined;
 
   // Generate the prep brief via The Strategist
-  const result = await generateMeetingPrep(supabase, user.id, {
-    title: meeting.title,
-    attendeeNames,
-    agenda: agendaText ? `- ${agendaText}` : undefined,
-    dealId: meeting.deal_id ?? undefined,
-  });
+  let result;
+  try {
+    result = await generateMeetingPrep(supabase, user.id, {
+      title: meeting.title,
+      attendeeNames,
+      agenda: agendaText ? `- ${agendaText}` : undefined,
+      dealId: meeting.deal_id ?? undefined,
+    });
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error("[api/meetings/prep] Generation failed:", message);
+    if (error instanceof Error && error.stack) {
+      console.error("[api/meetings/prep] Stack:", error.stack);
+    }
+    return NextResponse.json(
+      { error: `Meeting prep generation failed: ${message}` },
+      { status: 500 }
+    );
+  }
 
   // Save the prep brief to the meeting record
   const { error: updateError } = await supabase

@@ -967,7 +967,7 @@ export async function retrieveMeetingContext(
       const attendees = Array.isArray(n.attendees)
         ? (n.attendees as MeetingAttendee[])
         : [];
-      return attendees.some((a) => a.name.toLowerCase().includes(name));
+      return attendees.some((a) => a.name?.toLowerCase().includes(name));
     });
   }
 
