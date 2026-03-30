@@ -143,6 +143,8 @@
     .accounts-table tbody td.check-cell { text-align: center; }
     .accounts-table tbody td.stage-cell { text-align: center; }
     .accounts-table tbody td.dropdown-cell { text-align: center; padding: 4px 3px; }
+    .accounts-table tbody td.acv-display-cell { text-align: right; padding: 4px 8px; white-space: nowrap; }
+    .acv-value { font-size: 12px; font-weight: 700; color: var(--gray-900); }
     .accounts-table tbody tr:hover { background: var(--gray-100); }
     .accounts-table tbody tr.highlight { background: #fffbeb; }
     .accounts-table tbody tr.highlight td { font-weight: 600; }
@@ -678,6 +680,7 @@ function showSave() { var b = document.getElementById('saveBanner'); b.classList
 
 function acvNum(s) { if (!s) return 0; return parseInt(s.replace(/[$,]/g, ''), 10) || 0; }
 function fmtTotal(n) { if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M'; if (n >= 1000) return '$' + (n / 1000).toFixed(0) + 'K'; return '$' + n; }
+function fmtAcv(s) { if (!s) return '\u2014'; var n = acvNum(s); if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M'; return '$' + n.toLocaleString(); }
 
 function makeDropdown(options, stateObj, key) {
   var saved = stateObj[key] || '';
@@ -734,33 +737,27 @@ function render() {
 
     var savedAcv = acvs[k] || a.defaultAcv;
 
+    // Build ACV display cell (static text, auto-populated by tier selection)
+    var acvDisplay = '<span class="acv-value" data-idx="' + k + '">' + (savedAcv ? fmtAcv(savedAcv) : '\u2014') + '</span>';
+    var acvRangeHtml = '';
+    for (var t2 = 0; t2 < TIERS.length; t2++) {
+      if (checks[k + '-' + TIERS[t2]]) {
+        acvRangeHtml = '<div class="acv-range" style="font-size:11px;font-weight:700;color:var(--' + TIERS[t2] + ');margin-top:4px;text-align:center;">' + TIER_ACV_RANGES[TIERS[t2]] + '</div>';
+        break;
+      }
+    }
+
     row.innerHTML =
       '<td>' + (i + 1) + '</td>' +
       '<td>' + a.name + flags + '</td>' +
       '<td><span class="cat-badge ' + a.catClass + '">' + a.cat + '</span></td>' +
       tierCells +
       '<td class="dropdown-cell">' + makeDropdown(LEADS_OPTIONS, leads, k) + '</td>' +
-      '<td class="dropdown-cell">' + makeDropdown(ACV_OPTIONS, acvs, k) + '</td>' +
+      '<td class="acv-display-cell">' + acvDisplay + acvRangeHtml + '</td>' +
       '<td class="dropdown-cell">' + makeDropdown(INTRO_OPTIONS, intros, k) + '</td>' +
       stageCells;
 
     tbody.appendChild(row);
-    var acvSelect = row.querySelectorAll('.cell-dropdown')[1];
-    if (acvSelect) acvSelect.value = savedAcv;
-    // Show tier ACV range on load if a tier is checked
-    for (var t2 = 0; t2 < TIERS.length; t2++) {
-      if (checks[k + '-' + TIERS[t2]]) {
-        var acvCell = row.querySelectorAll('.cell-dropdown')[1];
-        if (acvCell) {
-          var rangeSpan = document.createElement('div');
-          rangeSpan.className = 'acv-range';
-          rangeSpan.style.cssText = 'font-size:11px;font-weight:700;color:var(--' + TIERS[t2] + ');margin-top:4px;text-align:center;';
-          rangeSpan.textContent = TIER_ACV_RANGES[TIERS[t2]];
-          acvCell.parentNode.appendChild(rangeSpan);
-        }
-        break;
-      }
-    }
   }
 
   var totalsRow = document.createElement('tr'); totalsRow.className = 'totals-row';
@@ -776,10 +773,9 @@ function render() {
       var c = load(CHECK_KEY);
       var a = load(ACV_KEY);
       var row = this.closest('tr');
-      var acvSelect = row.querySelectorAll('.cell-dropdown')[1];
-      var acvCell = acvSelect ? acvSelect.parentNode : null;
+      var acvValueSpan = row.querySelector('.acv-value');
+      var acvCell = row.querySelector('.acv-display-cell');
       var rangeSpan = acvCell ? acvCell.querySelector('.acv-range') : null;
-      var printVal = acvCell ? acvCell.querySelector('.print-value') : null;
 
       // Make tiers mutually exclusive: uncheck all others in this row
       if (this.checked) {
@@ -794,21 +790,22 @@ function render() {
       c[idx + '-' + tier] = this.checked;
       save(CHECK_KEY, c);
 
-      if (this.checked && acvSelect) {
-        // Auto-populate ACV dropdown to tier's starting value
+      if (this.checked) {
+        // Auto-populate ACV to tier's starting value
         var defaultAcv = TIER_ACV_DEFAULTS[tier] || '';
-        acvSelect.value = defaultAcv;
         a[idx] = defaultAcv;
         save(ACV_KEY, a);
-        if (printVal) printVal.textContent = defaultAcv || '\u2014';
-        // Show tier range hint below dropdown
-        if (!rangeSpan) {
+        if (acvValueSpan) acvValueSpan.textContent = defaultAcv ? fmtAcv(defaultAcv) : '\u2014';
+        // Show tier range hint
+        if (!rangeSpan && acvCell) {
           rangeSpan = document.createElement('div');
           rangeSpan.className = 'acv-range';
           acvCell.appendChild(rangeSpan);
         }
-        rangeSpan.style.cssText = 'font-size:11px;font-weight:700;color:var(--' + tier + ');margin-top:4px;text-align:center;';
-        rangeSpan.textContent = TIER_ACV_RANGES[tier];
+        if (rangeSpan) {
+          rangeSpan.style.cssText = 'font-size:11px;font-weight:700;color:var(--' + tier + ');margin-top:4px;text-align:center;';
+          rangeSpan.textContent = TIER_ACV_RANGES[tier];
+        }
       } else if (!this.checked) {
         // Clear range hint if no tier is checked
         var anyChecked = false;
@@ -833,7 +830,6 @@ function render() {
       var cell = this.parentNode; var row = cell.parentNode; var cells = row.children;
       var cellIdx = Array.prototype.indexOf.call(cells, cell);
       if (cellIdx === 7) { var s = load(LEADS_KEY); s[storeKey] = this.value; save(LEADS_KEY, s); }
-      else if (cellIdx === 8) { var s = load(ACV_KEY); s[storeKey] = this.value; save(ACV_KEY, s); updateCounts(); }
       else if (cellIdx === 9) { var s = load(INTRO_KEY); s[storeKey] = this.value; save(INTRO_KEY, s); }
     });
   });
