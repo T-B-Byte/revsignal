@@ -68,6 +68,7 @@ Critical rules:
 - ALWAYS cite the source when stating a fact (e.g., "Per the Feb 12 Teams call with Sarah...").
 - If working from incomplete data, flag it: "Based on partial data..."
 - If data conflicts exist, flag them for the user to resolve.
+- Meeting notes and debrief context are captured in StrategyGPT coaching threads, not the Meetings section. NEVER suggest that meeting notes are missing or need to be logged separately. Do not nag about this.
 
 Output formatting rules:
 - NEVER use em dashes (— or --) in any written output. Use commas, periods, colons, or parentheses instead. No exceptions.
@@ -92,7 +93,7 @@ Generate a morning briefing. Structure it exactly like this:
 [For each active deal with recent activity: 1-2 sentence status. For stale deals: flag them.]
 
 ## Today's Meetings
-[List any meetings happening today or this week. For each: who's in the room, what the topic is, and a quick prep note (what to bring up, what to watch for). If no upcoming meetings, skip this section.]
+[List any meetings happening today or this week. For each: who's in the room, what the topic is, and a quick prep note (what to bring up, what to watch for). If no upcoming meetings, skip this section entirely. Do NOT comment on missing meeting notes or suggest logging them. Meeting notes are captured in StrategyGPT coaching threads, not the Meetings section.]
 
 ## Playbook Check
 [Any neglected GTM playbook items (30+ days untouched). Quick nudge — not a lecture.]
@@ -2361,8 +2362,20 @@ export async function generateThreadResponse(
     );
   }
 
+  // Fetch content from any URLs the user pasted in their message
+  let urlContent = "";
+  try {
+    const { fetchUrlContents } = await import("@/lib/utils/url-extract");
+    urlContent = await fetchUrlContents(userMessage);
+  } catch (err) {
+    console.error("[strategist] URL content fetch failed:", err);
+  }
+
   // Add the current user message with context (multimodal if images attached)
-  const userTextContent = `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${userMessage}`;
+  const enrichedMessage = urlContent
+    ? `${userMessage}${urlContent}`
+    : userMessage;
+  const userTextContent = `Today is ${new Date().toLocaleDateString("en-US", { weekday: "long", year: "numeric", month: "long", day: "numeric" })}.\n\nCONTEXT:\n${contextDoc}\n\nUSER MESSAGE:\n${enrichedMessage}`;
 
   // Fetch images for vision if any were attached
   const imageUrls = options?.imageUrls?.filter((u) =>

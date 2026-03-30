@@ -19,7 +19,7 @@ const VALID_INTERACTION_TYPES = [
 ] as const;
 
 const sendMessageSchema = z.object({
-  message: z.string().min(1).max(50000),
+  message: z.string().min(1).max(100000),
   interaction_type: z.enum(VALID_INTERACTION_TYPES).default("coaching"),
   attachments: z.array(z.string().url()).max(10).optional(),
 });
