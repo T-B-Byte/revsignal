@@ -1,0 +1,231 @@
+"use client";
+
+import { useState, useEffect } from "react";
+
+interface Doc {
+  id: string;
+  title: string;
+  description: string;
+  url: string;
+  password: string;
+  category: string;
+  created: string;
+}
+
+const DEFAULT_DOCS: Doc[] = [
+  {
+    id: "daas-framework",
+    title: "DaaS Product Framework",
+    description: "Tiered licensing model, surge product suite, target account matrix, and pipeline tracker. The master strategy doc for the Jeff/Chris/Marty alignment.",
+    url: "https://surgeengine.app/daas-framework.html",
+    password: "TinaBean",
+    category: "Strategy",
+    created: "2026-03-30",
+  },
+  {
+    id: "battlecards",
+    title: "Competitive Battle Cards",
+    description: "8 competitor battlecards for pharosIQ DaaS: Anteriad, Intentsify, TechTarget, Madison Logic, DemandScience, ProspectBase, DigitalZone, DemandWorks Media. Includes weaknesses, pharosIQ advantages, and landmine questions.",
+    url: "https://surgeengine.app/battlecards.html",
+    password: "BattleCard1",
+    category: "Competitive Intel",
+    created: "2026-03-31",
+  },
+  {
+    id: "daas-product-definition",
+    title: "DaaS Product Definition (Legacy)",
+    description: "Original contact vs. persona comparison doc. Superseded by the DaaS Framework but kept for reference.",
+    url: "https://revsignal.vercel.app/daas-product-definition.html",
+    password: "",
+    category: "Strategy",
+    created: "2026-03-28",
+  },
+];
+
+const STORAGE_KEY = "revsignal-docs";
+
+function loadDocs(): Doc[] {
+  if (typeof window === "undefined") return DEFAULT_DOCS;
+  const saved = localStorage.getItem(STORAGE_KEY);
+  if (saved) {
+    try {
+      return JSON.parse(saved);
+    } catch {
+      return DEFAULT_DOCS;
+    }
+  }
+  return DEFAULT_DOCS;
+}
+
+function saveDocs(docs: Doc[]) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(docs));
+}
+
+export default function DocsPage() {
+  const [docs, setDocs] = useState<Doc[]>(DEFAULT_DOCS);
+  const [editingPassword, setEditingPassword] = useState<string | null>(null);
+  const [passwordInput, setPasswordInput] = useState("");
+  const [showPassword, setShowPassword] = useState<Record<string, boolean>>({});
+  const [copied, setCopied] = useState<string | null>(null);
+
+  useEffect(() => {
+    setDocs(loadDocs());
+  }, []);
+
+  function updatePassword(id: string, newPassword: string) {
+    const updated = docs.map((d) =>
+      d.id === id ? { ...d, password: newPassword } : d
+    );
+    setDocs(updated);
+    saveDocs(updated);
+    setEditingPassword(null);
+    setPasswordInput("");
+  }
+
+  function toggleShowPassword(id: string) {
+    setShowPassword((prev) => ({ ...prev, [id]: !prev[id] }));
+  }
+
+  function copyLink(url: string, id: string) {
+    navigator.clipboard.writeText(url);
+    setCopied(id);
+    setTimeout(() => setCopied(null), 2000);
+  }
+
+  const categories = [...new Set(docs.map((d) => d.category))];
+
+  return (
+    <div className="max-w-4xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-2xl font-bold text-foreground">Documents</h1>
+        <p className="text-sm text-muted-foreground mt-1">
+          Strategy docs, frameworks, and shared artifacts. Password-protected for confidential distribution.
+        </p>
+      </div>
+
+      {categories.map((category) => (
+        <div key={category} className="mb-8">
+          <h2 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">
+            {category}
+          </h2>
+          <div className="space-y-4">
+            {docs
+              .filter((d) => d.category === category)
+              .map((doc) => (
+                <div
+                  key={doc.id}
+                  className="border border-border rounded-lg bg-card p-5"
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-3 mb-1">
+                        <h3 className="text-base font-semibold text-foreground">
+                          {doc.title}
+                        </h3>
+                        <span className="text-xs text-muted-foreground">
+                          {doc.created}
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-3">
+                        {doc.description}
+                      </p>
+
+                      {/* URL + Copy */}
+                      <div className="flex items-center gap-2 mb-3">
+                        <a
+                          href={doc.url}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-sm text-blue-500 hover:text-blue-400 underline underline-offset-2 truncate"
+                        >
+                          {doc.url}
+                        </a>
+                        <button
+                          onClick={() => copyLink(doc.url, doc.id)}
+                          className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80 shrink-0"
+                        >
+                          {copied === doc.id ? "Copied!" : "Copy Link"}
+                        </button>
+                      </div>
+
+                      {/* Password */}
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
+                          Password:
+                        </span>
+                        {editingPassword === doc.id ? (
+                          <div className="flex items-center gap-2">
+                            <input
+                              type="text"
+                              value={passwordInput}
+                              onChange={(e) => setPasswordInput(e.target.value)}
+                              placeholder="New password"
+                              className="text-sm px-2 py-1 rounded border border-border bg-background text-foreground w-40"
+                              autoFocus
+                              onKeyDown={(e) => {
+                                if (e.key === "Enter") updatePassword(doc.id, passwordInput);
+                                if (e.key === "Escape") { setEditingPassword(null); setPasswordInput(""); }
+                              }}
+                            />
+                            <button
+                              onClick={() => updatePassword(doc.id, passwordInput)}
+                              className="text-xs px-2 py-1 rounded bg-green-600 text-white hover:bg-green-700"
+                            >
+                              Save
+                            </button>
+                            <button
+                              onClick={() => { setEditingPassword(null); setPasswordInput(""); }}
+                              className="text-xs px-2 py-1 rounded bg-muted text-muted-foreground hover:bg-muted/80"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="flex items-center gap-2">
+                            <code className="text-sm font-mono bg-muted px-2 py-0.5 rounded text-foreground">
+                              {doc.password
+                                ? showPassword[doc.id]
+                                  ? doc.password
+                                  : "••••••••"
+                                : "None"}
+                            </code>
+                            {doc.password && (
+                              <button
+                                onClick={() => toggleShowPassword(doc.id)}
+                                className="text-xs text-muted-foreground hover:text-foreground"
+                              >
+                                {showPassword[doc.id] ? "Hide" : "Show"}
+                              </button>
+                            )}
+                            <button
+                              onClick={() => {
+                                setEditingPassword(doc.id);
+                                setPasswordInput(doc.password);
+                              }}
+                              className="text-xs text-muted-foreground hover:text-foreground"
+                            >
+                              Change
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Open button */}
+                    <a
+                      href={doc.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="shrink-0 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium hover:bg-blue-700 transition-colors"
+                    >
+                      Open
+                    </a>
+                  </div>
+                </div>
+              ))}
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
