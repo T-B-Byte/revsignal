@@ -25,7 +25,7 @@ const DEFAULT_DOCS: Doc[] = [
   {
     id: "battlecards",
     title: "Competitive Battle Cards",
-    description: "8 competitor battlecards for pharosIQ DaaS: Anteriad, Intentsify, TechTarget, Madison Logic, DemandScience, ProspectBase, DigitalZone, DemandWorks Media. Includes weaknesses, pharosIQ advantages, and landmine questions.",
+    description: "8 competitor battlecards for pharosIQ Lead Gen / Demand Gen sales team. Compares campaign delivery, lead quality, CPL, targeting precision, and signal provenance vs. DemandScience, Anteriad, Intentsify, TechTarget, Madison Logic, ProspectBase, DigitalZone, DemandWorks.",
     url: "https://surgeengine.app/battlecards.html",
     password: "BattleCard1",
     category: "Competitive Intel",
