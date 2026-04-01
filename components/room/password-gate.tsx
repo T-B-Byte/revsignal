@@ -64,7 +64,7 @@ export function PasswordGate({ slug, onUnlock }: PasswordGateProps) {
         {/* Logo / Brand */}
         <div className="mb-8 text-center">
           <img
-            src="/PharosIQ Logo_pharosIQ-Black WM White Logo.svg"
+            src="/PharosIQ Logo_pharosIQ-White Wordmark.svg"
             alt="pharosIQ"
             className="mx-auto mb-6 h-10 w-auto"
           />

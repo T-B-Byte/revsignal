@@ -157,7 +157,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
         </p>
         <div className="mt-4 flex items-center justify-center gap-2">
           <img
-            src={t("/PharosIQ Logo_pharosIQ-Black WM White Logo.svg", "/PharosIQ Logo_pharosIQ-White Wordmark.svg")}
+            src={t("/PharosIQ Logo_pharosIQ-White Wordmark.svg", "/PharosIQ Logo_pharosIq-Full Color.svg")}
             alt="pharosIQ"
             className="h-5 w-auto opacity-40"
           />
