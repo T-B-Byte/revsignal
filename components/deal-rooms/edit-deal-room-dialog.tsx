@@ -195,9 +195,26 @@ export function EditDealRoomDialog({
 
           {/* Product selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-text-secondary">
-              Products to Include
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-text-secondary">
+                Products to Include
+              </label>
+              {products.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedProducts(
+                      selectedProducts.length === products.length
+                        ? []
+                        : products.map((p) => p.product_id)
+                    )
+                  }
+                  className="text-xs text-brand-400 hover:text-brand-300"
+                >
+                  {selectedProducts.length === products.length ? "Deselect all" : "Select all"}
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {products.map((product) => {
                 const isSelected = selectedProducts.includes(product.product_id);

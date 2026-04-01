@@ -424,9 +424,26 @@ export function CreateDealRoomDialog({
 
           {/* Product selection */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-text-secondary">
-              Products to Include
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-text-secondary">
+                Products to Include
+              </label>
+              {products.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSelectedProducts(
+                      selectedProducts.length === products.length
+                        ? []
+                        : products.map((p) => p.product_id)
+                    )
+                  }
+                  className="text-xs text-brand-400 hover:text-brand-300"
+                >
+                  {selectedProducts.length === products.length ? "Deselect all" : "Select all"}
+                </button>
+              )}
+            </div>
             {products.length === 0 ? (
               <p className="text-xs text-text-muted">
                 No products found. Add products in the GTM Command Center first.
