@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CreateDealRoomDialog } from "@/components/deal-rooms/create-deal-room-dialog";
+import { EditDealRoomDialog } from "@/components/deal-rooms/edit-deal-room-dialog";
 import type {
   DealRoomWithCompany,
   DealRoomStatus,
@@ -52,7 +53,9 @@ function formatRelative(dateStr: string | null): string {
 export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps) {
   const router = useRouter();
   const [showCreate, setShowCreate] = useState(false);
+  const [editRoom, setEditRoom] = useState<DealRoomWithCompany | null>(null);
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
+  const [copiedPassword, setCopiedPassword] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
   // Stats
@@ -226,6 +229,34 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
                   </span>
                 </div>
 
+                {/* Password */}
+                {room.password_plain && (
+                  <div className="flex items-center gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2">
+                    <span className="text-[10px] uppercase text-text-muted font-medium tracking-wider">Password</span>
+                    <code className="flex-1 text-xs font-mono text-text-primary">{room.password_plain}</code>
+                    <button
+                      onClick={async () => {
+                        await navigator.clipboard.writeText(room.password_plain!);
+                        setCopiedPassword(room.room_id);
+                        setTimeout(() => setCopiedPassword(null), 2000);
+                      }}
+                      className="text-text-muted hover:text-brand-500 transition-colors cursor-pointer"
+                      title="Copy password"
+                    >
+                      {copiedPassword === room.room_id ? (
+                        <svg className="h-3.5 w-3.5 text-status-green" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M3 8.5l3 3 7-7" />
+                        </svg>
+                      ) : (
+                        <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                          <rect x="5" y="5" width="8" height="8" rx="1.5" />
+                          <path d="M3 11V4a1.5 1.5 0 011.5-1.5H11" />
+                        </svg>
+                      )}
+                    </button>
+                  </div>
+                )}
+
                 {/* Details */}
                 <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
                   <div>
@@ -280,6 +311,14 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
                   <Button
                     size="sm"
                     variant="ghost"
+                    onClick={() => setEditRoom(room)}
+                    disabled={isLoading}
+                  >
+                    Edit
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() => handleCopyLink(room.slug)}
                     disabled={isLoading}
                   >
@@ -318,6 +357,16 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         companies={companies}
         products={products}
       />
+
+      {/* Edit dialog */}
+      {editRoom && (
+        <EditDealRoomDialog
+          open={!!editRoom}
+          onClose={() => setEditRoom(null)}
+          room={editRoom}
+          products={products}
+        />
+      )}
     </div>
   );
 }

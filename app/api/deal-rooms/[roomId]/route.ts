@@ -168,6 +168,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
   if (fields.password) {
     updates.password_hash = await bcrypt.hash(fields.password, 10);
+    updates.password_plain = fields.password;
   }
 
   if (Object.keys(updates).length === 0) {
@@ -193,7 +194,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  return NextResponse.json({ deal_room: data });
+  const { password_hash: _h, ...safePatch } = data as Record<string, unknown>;
+  return NextResponse.json({ deal_room: safePatch });
 }
 
 /**

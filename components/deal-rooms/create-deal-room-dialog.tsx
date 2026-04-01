@@ -35,6 +35,25 @@ function slugify(name: string): string {
   return `${base}-${monthYear}`;
 }
 
+function generatePassword(): string {
+  const words = [
+    "surge", "signal", "intent", "radar", "pulse", "insight",
+    "spark", "drift", "bloom", "ridge", "crest", "forge",
+    "prism", "vault", "nexus", "orbit", "flare", "swift",
+  ];
+  const w1 = words[Math.floor(Math.random() * words.length)];
+  const w2 = words[Math.floor(Math.random() * words.length)];
+  const num = Math.floor(Math.random() * 90 + 10);
+  return `${w1}-${w2}-${num}`;
+}
+
+function generateWelcome(companyName: string, productNames: string[]): string {
+  const productList = productNames.length > 0
+    ? `We've put together a curated package including ${productNames.join(", ")} based on what we think fits ${companyName} best.`
+    : `We've put together a curated data solutions package tailored to ${companyName}.`;
+  return `Welcome to your personalized pharosIQ deal room. ${productList} Explore the solutions below, build a quote, or request a data test to see our coverage for your target accounts.`;
+}
+
 const ACCENT_COLORS = [
   { value: "", label: "Default (Brand)" },
   { value: "#4f6ef7", label: "Blue" },
@@ -68,7 +87,7 @@ export function CreateDealRoomDialog({
   const [accentColor, setAccentColor] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
 
-  // Auto-generate slug when company changes
+  // Auto-generate slug, password, and welcome message when company changes
   useEffect(() => {
     if (!companyId) {
       setSlug("");
@@ -77,7 +96,14 @@ export function CreateDealRoomDialog({
     const company = companies.find((c) => c.company_id === companyId);
     if (company) {
       setSlug(slugify(company.name));
+      setPassword(generatePassword());
+      setCustomHeader(`Built for ${company.name}`);
+      const selectedProductNames = products
+        .filter((p) => selectedProducts.includes(p.product_id))
+        .map((p) => p.name);
+      setWelcomeMessage(generateWelcome(company.name, selectedProductNames));
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, companies]);
 
   function resetForm() {
@@ -228,13 +254,27 @@ export function CreateDealRoomDialog({
             required
           />
 
-          <Input
-            label="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="Visitors will enter this to access the room"
-            required
-          />
+          <div className="space-y-1.5">
+            <label className="block text-sm font-medium text-text-secondary">Password</label>
+            <div className="flex gap-2">
+              <Input
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Visitors will enter this to access the room"
+                className="flex-1 font-mono"
+                required
+              />
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={() => setPassword(generatePassword())}
+                className="shrink-0 text-xs"
+              >
+                Regenerate
+              </Button>
+            </div>
+            <p className="text-xs text-text-muted">Share this with the prospect. You can view it later from the room card.</p>
+          </div>
 
           {/* Optional fields */}
           <Input
@@ -245,13 +285,30 @@ export function CreateDealRoomDialog({
             helperText="Appears at the top of the deal room (optional)"
           />
 
-          <Textarea
-            label="Welcome Message"
-            value={welcomeMessage}
-            onChange={(e) => setWelcomeMessage(e.target.value)}
-            placeholder="A brief welcome message shown after login..."
-            rows={3}
-          />
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-text-secondary">Welcome Message</label>
+              <button
+                type="button"
+                onClick={() => {
+                  const company = companies.find((c) => c.company_id === companyId);
+                  if (company) {
+                    const names = products.filter((p) => selectedProducts.includes(p.product_id)).map((p) => p.name);
+                    setWelcomeMessage(generateWelcome(company.name, names));
+                  }
+                }}
+                className="text-xs text-brand-400 hover:text-brand-300"
+              >
+                Auto-generate
+              </button>
+            </div>
+            <Textarea
+              value={welcomeMessage}
+              onChange={(e) => setWelcomeMessage(e.target.value)}
+              placeholder="A brief welcome message shown after login..."
+              rows={3}
+            />
+          </div>
 
           {/* Product selection */}
           <div className="space-y-2">

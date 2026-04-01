@@ -1445,6 +1445,7 @@ export interface DealRoom {
   company_id: string;
   slug: string;
   password_hash: string;
+  password_plain: string | null;
   status: DealRoomStatus;
   expires_at: string | null;
   custom_header: string | null;
