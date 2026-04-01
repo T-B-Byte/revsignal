@@ -558,6 +558,90 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
       captured_date: capturedDate,
       user_id: userId,
     },
+
+    // =============================================================
+    // MARCH 2026 DEMAND GEN INTEL + CUSTOMER SENTIMENT
+    // =============================================================
+
+    // --- DemandScience: Content-IQ launch ---
+    {
+      competitor: 'DemandScience',
+      category: 'demand_gen',
+      data_point: 'March 2026: Launched Content-IQ (analyzes organic market share, identifies authority gaps across topic clusters, evaluates brand visibility in AI Overviews and LLM responses). Content-IQ is an analytics layer, NOT a data source: it does not generate proprietary intent signals. Pushing narrative that content syndication + display should run as "one system" (upsell play). Leadership changes in March 2026. G2 Winter 2026: 26 badges, 167 reports, #1 in three Enterprise categories. 935 reviews, 4.3/5. Top complaint: reporting features need improvement for campaign performance visibility.',
+      source: 'web_research_mar2026',
+      captured_date: capturedDate,
+      user_id: userId,
+    },
+
+    // --- Anteriad: Forrester 5/5 Buying Group ---
+    {
+      competitor: 'Anteriad',
+      category: 'demand_gen',
+      data_point: 'March 2026: Received Forrester 5/5 in Buying Group Detail criterion (Forrester Wave: Marketing and Sales Data Providers Q1 2026). Launched AI-Driven Buying Group Profiles in Anteriad Marketing Cloud: combines proprietary B2B data with AI to dynamically identify, assemble, and activate complete buying groups. Activation across managed multichannel campaigns, content syndication, and BDR outreach in 30 languages. KEY WEAKNESS: AI-assembled buying groups from 2,500+ aggregated sources is modeled/inferred, not observed behavior from owned content properties.',
+      source: 'web_research_mar2026',
+      captured_date: capturedDate,
+      user_id: userId,
+    },
+
+    // --- TechTarget: New products March 2026 ---
+    {
+      competitor: 'TechTarget (Informa)',
+      category: 'demand_gen',
+      data_point: 'March 2026: Launched AI Visibility Audit (shows where brand appears in AI-generated answers) and GEO Topic Planner (Generative Engine Optimization for AI systems). Also launched Priority Engine Demand: bundles account-level intent + 32M contacts + content syndication + lead gen with Content Hubs (whitepapers, videos, webinars via TechTarget + BrightTALK). These products optimize CLIENT content visibility but do NOT improve quality of leads TechTarget delivers. Contact accuracy only ~60% per TrustRadius reviewer. G2: 451 reviews. Top complaints: login issues, slow loading, data described as "wonky," no Outreach/Groove integration.',
+      source: 'web_research_mar2026',
+      captured_date: capturedDate,
+      user_id: userId,
+    },
+
+    // --- Intentsify: Salutary Data "last mile" ---
+    {
+      competitor: 'Intentsify',
+      category: 'demand_gen',
+      data_point: 'March 2026: Salutary Data acquisition (Jan 2026) framed by analysts as solving the "last mile" problem: the gap between an intent signal and a verified human contact. Confirms core weakness: account-level only, had to BUY contact-level capability. Industry shifting to "declared intent over inferred behavior" as 2026-2030 trend (per @360MarTech). Intentsify\'s aggregated/inferred model is on the wrong side of that shift. pharosIQ\'s first-party content consumption signals ARE declared intent. G2: 4.4/5, 33 reviews. #1 complaint: expensive CPL limits volume. 2-3 week onboarding for new campaigns.',
+      source: 'web_research_mar2026',
+      captured_date: capturedDate,
+      user_id: userId,
+    },
+
+    // --- Madison Logic: Customer sentiment ---
+    {
+      competitor: 'Madison Logic',
+      category: 'customer_sentiment',
+      data_point: 'G2: 235 reviews. Expanded Adobe partnership and Convertr integration (for lead quality transparency, suggesting it was a known gap). Positives: high-quality leads, quick results, responsive support. Negatives: complex, unintuitive UI (steep learning curve, unclear buttons, frustrating navigation), missing features for data management. Convertr integration needed to add transparency they lacked. Still 100% Bombora-dependent for all intent data.',
+      source: 'web_research_mar2026',
+      captured_date: capturedDate,
+      user_id: userId,
+    },
+
+    // --- ProspectBase: B2BMX + hiring ---
+    {
+      competitor: 'ProspectBase',
+      category: 'demand_gen',
+      data_point: 'March 2026: Present at B2BMX 2026 marketplace. Named in TechConnectr Top B2B Lead Gen Companies 2026 Awards. Rich Stone joined as SVP Sales, NA (May 2025), building US sales presence. CommitSignal positioned as "complement to traditional intent" with growth-based intelligence (hiring, tech adoption, financial movement). No G2/TrustRadius reviews available (company too new, founded 2024). Note: unrelated SaaS product also called "CommitSignal" exists (@JesusAnutrof on X), not the same as ProspectBase.',
+      source: 'web_research_mar2026',
+      captured_date: capturedDate,
+      user_id: userId,
+    },
+
+    // --- DigitalZone: Buying Group Syndication push ---
+    {
+      competitor: 'DigitalZone',
+      category: 'demand_gen',
+      data_point: 'March 2026: Publishing thought leadership on "Buying Group Syndication" as Q2 2026 trend (AI agents deliver role-specific content to different personas simultaneously). 54% YoY revenue growth (2023), 128% client acquisition growth. Inc. 5000 three years running. Surveyed 1,500 B2B marketers (2025 State of Demand Gen) and 1,500 B2B buyers (2026 report). G2 reviews: top complaint is pricing (high and not competitive).',
+      source: 'web_research_mar2026',
+      captured_date: capturedDate,
+      user_id: userId,
+    },
+
+    // --- Industry Trend: Buying Group Syndication ---
+    {
+      competitor: 'Industry Trend',
+      category: 'market_shift',
+      data_point: 'March 2026: "Buying Group Syndication" emerging as the next battleground in demand gen. Anteriad (Forrester 5/5 Buying Group), DemandScience, DemandWorks, and DigitalZone all messaging around targeting 10+ stakeholders per deal simultaneously. TechTarget launched Priority Engine Demand for buying group identification. pharosIQ advantage: we show the ACTUAL people who consumed content from owned properties, not AI-assembled profiles guessed from aggregated data. Also: industry shifting from inferred intent to declared intent (2026-2030 trend per @360MarTech). pharosIQ\'s first-party content consumption signals are declared intent by definition.',
+      source: 'web_research_mar2026',
+      captured_date: capturedDate,
+      user_id: userId,
+    },
   ];
 }
 
