@@ -155,9 +155,9 @@ export function CreateDealRoomDialog({
       const data = await res.json();
       const newId = data.company?.company_id;
       if (newId) {
-        // Add to local list and select it
-        companies.push({ company_id: newId, name: newCompanyName.trim(), slug, logo_url: null });
         setCompanyId(newId);
+        // Refresh the page to pick up the new company in the list
+        router.refresh();
       }
       setShowAddCompany(false);
       setNewCompanyName("");
@@ -329,7 +329,7 @@ export function CreateDealRoomDialog({
                 <Input
                   value={newCompanyWebsite}
                   onChange={(e) => setNewCompanyWebsite(e.target.value)}
-                  placeholder="Website (optional)"
+                  placeholder="https://example.com (optional)"
                 />
                 <Input
                   value={newCompanyWhy}

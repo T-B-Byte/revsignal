@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 
 interface DataCoverageProps {
-  accentColor?: string;
   theme?: "dark" | "light";
 }
 

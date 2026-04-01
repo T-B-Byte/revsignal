@@ -82,8 +82,8 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
       });
 
       if (!res.ok) {
-        const data = await res.json();
-        setError(data.error || "Failed to submit quote");
+        const data = await res.json().catch(() => null);
+        setError(data?.error || "Failed to submit quote");
         setSubmitting(false);
         return;
       }

@@ -20,7 +20,7 @@ const createCompanySchema = z.object({
     "tier_3",
     "tier_4",
     "tier_5",
-  ] as const),
+  ] as const).default("tier_3"),
   contacts: z
     .array(
       z.object({
