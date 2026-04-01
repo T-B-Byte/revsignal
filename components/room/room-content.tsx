@@ -7,7 +7,15 @@ import { DataTestForm } from "./data-test-form";
 import { DataCoverage } from "./data-coverage";
 import { TINA_CALENDAR_URL } from "@/types/database";
 
-type Tab = "products" | "quote" | "data-test";
+type Tab = "products" | "title-expansion" | "dossier" | "closed-won" | "trending" | "radar" | "quote" | "data-test";
+
+const DEMO_TABS: { key: Tab; label: string; url: string }[] = [
+  { key: "title-expansion", label: "Title Expansion", url: "https://surgeengine.app/title-expansion" },
+  { key: "dossier", label: "Surge Dossier", url: "https://surgeengine.app/demo/sap" },
+  { key: "closed-won", label: "Closed-Won Analyzer", url: "https://surgeengine.app/closed-won-analyzer" },
+  { key: "trending", label: "Surge Trending", url: "https://surgeengine.app/surge-trending" },
+  { key: "radar", label: "Surge Radar", url: "https://surgeengine.app/surge-radar" },
+];
 
 interface RoomContentProps {
   room: Record<string, unknown>;
@@ -38,6 +46,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
 
   const tabs: { key: Tab; label: string; show: boolean }[] = [
     { key: "products", label: "Solutions", show: true },
+    ...DEMO_TABS.map((d) => ({ key: d.key, label: d.label, show: true })),
     { key: "quote", label: "Build a Quote", show: showQuoteBuilder },
     { key: "data-test", label: "Data Test", show: true },
   ];
@@ -86,14 +95,14 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
       </header>
 
       {/* Tab Navigation */}
-      <nav className={`mb-8 flex gap-1 rounded-lg p-1 ${t("bg-zinc-900", "bg-zinc-200")}`}>
+      <nav className={`mb-8 flex gap-1 overflow-x-auto rounded-lg p-1 scrollbar-none ${t("bg-zinc-900", "bg-zinc-200")}`}>
         {tabs
           .filter((tb) => tb.show)
           .map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${
+              className={`shrink-0 rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap ${
                 activeTab === tab.key
                   ? t("bg-zinc-800 text-zinc-100", "bg-white text-zinc-900 shadow-sm")
                   : t("text-zinc-400 hover:text-zinc-200", "text-zinc-500 hover:text-zinc-700")
@@ -136,6 +145,20 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
           password={password}
           theme={theme}
         />
+      )}
+
+      {/* Demo tabs */}
+      {DEMO_TABS.map((demo) =>
+        activeTab === demo.key ? (
+          <div key={demo.key} className={`overflow-hidden rounded-xl border ${t("border-zinc-800", "border-zinc-200")}`}>
+            <iframe
+              src={demo.url}
+              className="h-[850px] w-full"
+              title={demo.label}
+              sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+            />
+          </div>
+        ) : null
       )}
 
       {activeTab === "data-test" && (
