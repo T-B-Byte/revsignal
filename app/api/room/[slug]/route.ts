@@ -99,7 +99,7 @@ export async function POST(
     }
 
     // Return room data (exclude password_hash and internal fields)
-    const { password_hash: _, user_id: __, ...safeRoom } = room;
+    const { password_hash: _, user_id: __, password_plain: ___, ...safeRoom } = room;
 
     return NextResponse.json({
       room: safeRoom,
