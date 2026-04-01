@@ -66,9 +66,9 @@ export function PasswordGate({ slug, onUnlock }: PasswordGateProps) {
           <img
             src="/PharosIQ Logo_pharosIQ-White Wordmark.svg"
             alt="pharosIQ"
-            className="mx-auto mb-6 h-10 w-auto"
+            className="mx-auto mb-6 h-20 w-auto"
           />
-          <h1 className="text-2xl font-semibold text-zinc-100">Deal Room</h1>
+          <h1 className="text-lg font-medium text-zinc-400">Deal Room</h1>
           <p className="mt-2 text-sm text-zinc-400">
             Enter the password to access your personalized data solutions package.
           </p>
