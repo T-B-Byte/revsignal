@@ -104,7 +104,7 @@ export function CreateDealRoomDialog({
   const [welcomeMessage, setWelcomeMessage] = useState("");
   const [customHeader, setCustomHeader] = useState("");
   const [selectedProducts, setSelectedProducts] = useState<string[]>([]);
-  const [showAudienceDashboard, setShowAudienceDashboard] = useState(false);
+  const [showAudienceDashboard, setShowAudienceDashboard] = useState(true);
   const [showQuoteBuilder, setShowQuoteBuilder] = useState(true);
   const [accentColor, setAccentColor] = useState("");
   const [expiresAt, setExpiresAt] = useState("");

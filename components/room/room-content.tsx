@@ -107,10 +107,6 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
       {/* Tab Content */}
       {activeTab === "products" && (
         <div className="space-y-8">
-          <ProductShowcase products={products} accentColor={accentColor} theme={theme} />
-
-          <DataCoverage theme={theme} />
-
           {showAudienceDashboard && audienceDashboardUrl && (
             <section>
               <h2 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
@@ -119,13 +115,17 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
               <div className={`overflow-hidden rounded-xl border ${t("border-zinc-800", "border-zinc-200")}`}>
                 <iframe
                   src={audienceDashboardUrl}
-                  className="h-[600px] w-full"
+                  className="h-[800px] w-full"
                   title="Audience Intelligence Dashboard"
                   sandbox="allow-scripts allow-same-origin"
                 />
               </div>
             </section>
           )}
+
+          <ProductShowcase products={products} accentColor={accentColor} theme={theme} />
+
+          <DataCoverage theme={theme} />
         </div>
       )}
 
