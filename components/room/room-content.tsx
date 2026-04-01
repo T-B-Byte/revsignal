@@ -155,9 +155,13 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
             Book a call with Tina
           </a>
         </p>
-        <p className={`mt-2 text-xs ${t("text-zinc-600", "text-zinc-400")}`}>
-          Powered by pharosIQ Data Solutions
-        </p>
+        <div className="mt-4 flex items-center justify-center gap-2">
+          <img
+            src={t("/PharosIQ Logo_pharosIQ-Black WM White Logo.svg", "/PharosIQ Logo_pharosIQ-White Wordmark.svg")}
+            alt="pharosIQ"
+            className="h-5 w-auto opacity-40"
+          />
+        </div>
       </footer>
     </div>
   );

@@ -63,11 +63,11 @@ export function PasswordGate({ slug, onUnlock }: PasswordGateProps) {
       <div className="w-full max-w-md">
         {/* Logo / Brand */}
         <div className="mb-8 text-center">
-          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-green-600/20 text-green-400">
-            <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 10-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 002.25-2.25v-6.75a2.25 2.25 0 00-2.25-2.25H6.75a2.25 2.25 0 00-2.25 2.25v6.75a2.25 2.25 0 002.25 2.25z" />
-            </svg>
-          </div>
+          <img
+            src="/PharosIQ Logo_pharosIQ-Black WM White Logo.svg"
+            alt="pharosIQ"
+            className="mx-auto mb-6 h-10 w-auto"
+          />
           <h1 className="text-2xl font-semibold text-zinc-100">Deal Room</h1>
           <p className="mt-2 text-sm text-zinc-400">
             Enter the password to access your personalized data solutions package.
