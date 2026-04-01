@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
       slug: parsed.data.slug,
       password_hash: passwordHash,
       password_plain: parsed.data.password,
-      status: "draft",
+      status: "active",
       custom_header: parsed.data.custom_header ?? null,
       welcome_message: parsed.data.welcome_message ?? null,
       selected_products: parsed.data.selected_products ?? [],
