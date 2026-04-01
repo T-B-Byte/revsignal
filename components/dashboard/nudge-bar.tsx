@@ -10,8 +10,8 @@ interface NudgeBarProps {
 const PRIORITY_STYLES: Record<string, string> = {
   critical: "border-l-status-red bg-status-red/5",
   high: "border-l-status-yellow bg-status-yellow/5",
-  medium: "border-l-accent-primary bg-accent-primary/5",
-  low: "border-l-text-muted bg-surface-tertiary",
+  medium: "border-l-brand-500 bg-brand-500/5",
+  low: "border-l-text-muted bg-white/5",
 };
 
 export function NudgeBar({ hasAiAccess }: NudgeBarProps) {
@@ -112,7 +112,7 @@ export function NudgeBar({ hasAiAccess }: NudgeBarProps) {
               <button
                 onClick={() => handleAct(nudge)}
                 aria-label={`Act on: ${nudge.title}`}
-                className="rounded px-2 py-1 text-xs font-medium text-accent-primary hover:bg-accent-primary/10"
+                className="rounded px-2 py-1 text-xs font-medium text-brand-500 hover:bg-brand-500/10"
               >
                 Act
               </button>

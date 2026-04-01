@@ -556,13 +556,13 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
           <CardTitle>The Strategist</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="rounded-lg bg-surface-tertiary p-4 text-center">
+          <div className="rounded-lg bg-white/5 p-4 text-center">
             <p className="text-sm text-text-muted">
               AI briefings are available on the Power plan.
             </p>
             <a
               href="/settings"
-              className="mt-2 inline-block text-sm font-medium text-accent-primary hover:underline"
+              className="mt-2 inline-block text-sm font-medium text-brand-500 hover:underline"
             >
               Upgrade your plan
             </a>
@@ -582,7 +582,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
         <div className="flex items-center gap-2">
           <CardTitle>The Strategist</CardTitle>
           {isEdited && (
-            <span className="rounded bg-accent-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-accent-primary">
+            <span className="rounded bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-500">
               Edited
             </span>
           )}
@@ -606,7 +606,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
           {briefing && !editing && (
             <button
               onClick={handleStartEdit}
-              className="rounded-md border border-border-primary px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-tertiary"
+              className="rounded-md border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-white/5"
             >
               Edit
             </button>
@@ -615,7 +615,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
             <button
               onClick={handleRevertToOriginal}
               disabled={saving}
-              className="rounded-md border border-border-primary px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-surface-tertiary disabled:opacity-50"
+              className="rounded-md border border-white/10 px-3 py-1.5 text-xs font-medium text-text-muted transition-colors hover:bg-white/5 disabled:opacity-50"
             >
               Revert
             </button>
@@ -623,7 +623,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
           <button
             onClick={handleRefresh}
             disabled={loading}
-            className="rounded-md bg-accent-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
+            className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors hover:bg-brand-600 disabled:opacity-50"
           >
             {loading ? 'Generating...' : 'Refresh'}
           </button>
@@ -637,11 +637,11 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
         )}
 
         {initialLoading ? (
-          <div className="rounded-lg bg-surface-tertiary p-6 text-center">
+          <div className="rounded-lg bg-white/5 p-6 text-center">
             <p className="text-sm text-text-secondary">Loading briefing...</p>
           </div>
         ) : loading && !briefing ? (
-          <div className="rounded-lg bg-surface-tertiary p-6 text-center">
+          <div className="rounded-lg bg-white/5 p-6 text-center">
             <p className="text-sm text-text-secondary">
               The Strategist is preparing your morning briefing...
             </p>
@@ -654,20 +654,20 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
             <textarea
               value={editText}
               onChange={(e) => setEditText(e.target.value)}
-              className="w-full rounded-md border border-border-primary bg-surface-secondary p-3 font-mono text-xs leading-relaxed text-accent-primary focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
+              className="w-full rounded-md border border-white/10 bg-white/5 p-3 font-mono text-xs leading-relaxed text-brand-500 focus:border-brand-500 focus:outline-none focus:ring-1 focus:ring-accent-primary"
               rows={20}
             />
             <div className="flex items-center gap-2">
               <button
                 onClick={handleSaveEdit}
                 disabled={saving}
-                className="rounded-md bg-accent-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
+                className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors hover:bg-brand-600 disabled:opacity-50"
               >
                 {saving ? 'Saving...' : 'Save Edits'}
               </button>
               <button
                 onClick={() => { setEditing(false); setEditText(''); }}
-                className="rounded-md border border-border-primary px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-surface-tertiary"
+                className="rounded-md border border-white/10 px-3 py-1.5 text-xs font-medium text-text-secondary transition-colors hover:bg-white/5"
               >
                 Cancel
               </button>
@@ -695,8 +695,8 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                         <div
                           className={`group flex items-start gap-2 rounded-md px-2 py-1.5 transition-colors ${
                             activeItem === item.key
-                              ? 'bg-accent-primary/5 border border-accent-primary/20'
-                              : 'hover:bg-surface-tertiary border border-transparent'
+                              ? 'bg-brand-500/5 border border-brand-500/20'
+                              : 'hover:bg-white/5 border border-transparent'
                           } ${isDone ? 'opacity-60' : ''}`}
                           onContextMenu={(e) => actionable ? handleItemContextMenu(e, item.key, item.text) : undefined}
                         >
@@ -707,7 +707,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                               className={`mt-0.5 shrink-0 h-4 w-4 rounded border transition-colors flex items-center justify-center ${
                                 isDone
                                   ? 'bg-status-green border-status-green'
-                                  : 'border-border-primary hover:border-accent-primary'
+                                  : 'border-white/10 hover:border-brand-500'
                               }`}
                             >
                               {isDone && (
@@ -725,7 +725,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                             <p className={`text-xs leading-relaxed font-mono ${
                               isDone
                                 ? 'line-through text-text-muted'
-                                : 'text-accent-primary'
+                                : 'text-brand-500'
                             }`}>
                               {item.text}
                             </p>
@@ -744,7 +744,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                               {ann?.strategist_reply && (
                                 <button
                                   onClick={() => openItemPanel(item.key)}
-                                  className="inline-flex items-center gap-0.5 rounded bg-accent-primary/10 px-1.5 py-0.5 text-[10px] text-accent-primary hover:bg-accent-primary/20 transition-colors"
+                                  className="inline-flex items-center gap-0.5 rounded bg-brand-500/10 px-1.5 py-0.5 text-[10px] text-brand-500 hover:bg-brand-500/20 transition-colors"
                                   title="View Strategist reply"
                                 >
                                   <svg className="h-2.5 w-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -766,7 +766,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                             <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
                               <button
                                 onClick={() => openItemPanel(item.key)}
-                                className="rounded p-1 text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 transition-colors"
+                                className="rounded p-1 text-text-muted hover:text-brand-500 hover:bg-brand-500/10 transition-colors"
                                 title="Add note or push date"
                               >
                                 <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -812,7 +812,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
               </div>
             ))}
             {generatedAt && (
-              <p className="border-t border-border-primary pt-2 text-xs text-text-muted">
+              <p className="border-t border-white/10 pt-2 text-xs text-text-muted">
                 Generated{' '}
                 {new Date(generatedAt).toLocaleString('en-US', {
                   month: 'short',
@@ -824,13 +824,13 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
             )}
           </div>
         ) : (
-          <div className="rounded-lg bg-surface-tertiary p-6 text-center">
+          <div className="rounded-lg bg-white/5 p-6 text-center">
             <p className="text-sm text-text-secondary">
               No briefing available.
             </p>
             <button
               onClick={handleRefresh}
-              className="mt-2 text-sm font-medium text-accent-primary hover:underline"
+              className="mt-2 text-sm font-medium text-brand-500 hover:underline"
             >
               Generate now
             </button>
@@ -839,7 +839,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
         {/* Right-click context menu for briefing items */}
         {contextMenu && (
           <div
-            className="fixed z-50 rounded-lg border border-border-primary bg-surface-secondary shadow-lg py-1 min-w-[200px]"
+            className="fixed z-50 rounded-lg border border-white/10 bg-white/5 shadow-lg py-1 min-w-[200px]"
             style={{ left: contextMenu.x, top: contextMenu.y }}
             onClick={(e) => e.stopPropagation()}
           >
@@ -848,7 +848,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                 <button
                   onClick={createTaskFromItem}
                   disabled={taskCreating}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-tertiary transition-colors disabled:opacity-50"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-white/5 transition-colors disabled:opacity-50"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <rect x="3" y="3" width="18" height="18" rx="2" />
@@ -858,7 +858,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                 </button>
                 <button
                   onClick={showAgendaContactPicker}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-tertiary transition-colors"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-white/5 transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 11.25v7.5" />
@@ -867,7 +867,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                 </button>
                 <button
                   onClick={askStrategistFromContext}
-                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-surface-tertiary transition-colors"
+                  className="flex w-full items-center gap-2 px-3 py-2 text-sm text-text-primary hover:bg-white/5 transition-colors"
                 >
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                     <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" />
@@ -884,7 +884,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                   onChange={(e) => searchAgendaContacts(e.target.value)}
                   placeholder="Search contacts..."
                   autoFocus
-                  className="w-full rounded border border-border-primary bg-surface-primary px-2 py-1 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none mb-1"
+                  className="w-full rounded border border-white/10 bg-surface-primary px-2 py-1 text-xs text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:outline-none mb-1"
                 />
                 <div className="max-h-[160px] overflow-y-auto">
                   {agendaSearching && (
@@ -895,7 +895,7 @@ export function StrategistBriefing({ hasAiAccess }: StrategistBriefingProps) {
                       key={c.contact_id}
                       onClick={() => addToContactAgenda(c.contact_id)}
                       disabled={agendaSaving}
-                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-text-primary hover:bg-surface-tertiary transition-colors disabled:opacity-50"
+                      className="flex w-full items-center gap-2 rounded px-2 py-1.5 text-xs text-text-primary hover:bg-white/5 transition-colors disabled:opacity-50"
                     >
                       <span className="font-medium truncate">{c.name}</span>
                       {c.company && (
@@ -957,15 +957,15 @@ function AnnotationPanel({
   const isMac = typeof navigator !== 'undefined' && /Mac|iPhone|iPad/.test(navigator.userAgent);
 
   return (
-    <div className="ml-6 mr-2 mt-1 mb-2 rounded-md border border-accent-primary/20 bg-surface-secondary p-3 space-y-2.5">
+    <div className="ml-6 mr-2 mt-1 mb-2 rounded-md border border-brand-500/20 bg-white/5 p-3 space-y-2.5">
       {/* Strategist reply (shown if exists) */}
       {strategistReply && (
-        <div className="rounded-md border border-accent-primary/15 bg-accent-primary/5 p-2.5">
+        <div className="rounded-md border border-brand-500/15 bg-brand-500/5 p-2.5">
           <div className="flex items-center gap-1.5 mb-1.5">
-            <svg className="h-3 w-3 text-accent-primary" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
+            <svg className="h-3 w-3 text-brand-500" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M1 3h10v6H3l-2 2V3z" />
             </svg>
-            <span className="text-[10px] font-semibold text-accent-primary uppercase tracking-wider">
+            <span className="text-[10px] font-semibold text-brand-500 uppercase tracking-wider">
               The Strategist
             </span>
           </div>
@@ -975,7 +975,7 @@ function AnnotationPanel({
           {threadId && (
             <a
               href={`/coach/${threadId}`}
-              className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-accent-primary hover:underline"
+              className="mt-1.5 inline-flex items-center gap-1 text-[10px] text-brand-500 hover:underline"
             >
               Continue in thread
               <svg className="h-2.5 w-2.5" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -997,7 +997,7 @@ function AnnotationPanel({
           onChange={(e) => onNoteChange(e.target.value)}
           placeholder="Tell the Strategist where you are, ask a question, or leave a note..."
           rows={2}
-          className="w-full rounded border border-border-primary bg-surface-primary px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none resize-none"
+          className="w-full rounded border border-white/10 bg-surface-primary px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:outline-none resize-none"
           maxLength={5000}
           onKeyDown={(e) => {
             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
@@ -1036,9 +1036,9 @@ function AnnotationPanel({
 
       {/* Loading state */}
       {askingStrategist && (
-        <div className="flex items-center gap-2 rounded-md bg-accent-primary/5 px-2.5 py-2">
-          <div className="h-3 w-3 animate-spin rounded-full border-2 border-accent-primary border-t-transparent" />
-          <span className="text-[11px] text-accent-primary">The Strategist is thinking...</span>
+        <div className="flex items-center gap-2 rounded-md bg-brand-500/5 px-2.5 py-2">
+          <div className="h-3 w-3 animate-spin rounded-full border-2 border-brand-500 border-t-transparent" />
+          <span className="text-[11px] text-brand-500">The Strategist is thinking...</span>
         </div>
       )}
 
@@ -1050,7 +1050,7 @@ function AnnotationPanel({
         <div className="flex items-center gap-1.5">
           <button
             onClick={onCancel}
-            className="rounded px-2.5 py-1 text-[11px] font-medium text-text-secondary hover:bg-surface-tertiary transition-colors"
+            className="rounded px-2.5 py-1 text-[11px] font-medium text-text-secondary hover:bg-white/5 transition-colors"
           >
             Cancel
           </button>
@@ -1059,7 +1059,7 @@ function AnnotationPanel({
             <button
               onClick={onSave}
               disabled={saving || askingStrategist}
-              className="rounded bg-accent-primary px-2.5 py-1 text-[11px] font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
+              className="rounded bg-brand-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
             >
               {saving ? 'Saving...' : 'Save'}
             </button>
@@ -1069,7 +1069,7 @@ function AnnotationPanel({
             <button
               onClick={noteText.trim() ? onAskStrategist : onSave}
               disabled={askingStrategist || (!noteText.trim() && !pushDate)}
-              className="rounded bg-accent-primary px-2.5 py-1 text-[11px] font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
+              className="rounded bg-brand-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
             >
               {askingStrategist ? 'Sending...' : 'Send'}
             </button>

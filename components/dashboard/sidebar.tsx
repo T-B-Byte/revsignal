@@ -35,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/marketing", label: "Marketing", icon: MegaphoneIcon, key: "marketing" },
   { href: "/studio", label: "Studio", icon: StudioIcon, key: "studio" },
   { href: "/board-report", label: "Board Report", icon: ClipboardIcon, key: "board-report" },
+  { href: "/docs", label: "Docs", icon: DocsIcon, key: "docs" },
   { href: "/settings", label: "Settings", icon: GearIcon, key: "settings", pinned: true },
 ];
 
@@ -97,7 +98,7 @@ export function Sidebar() {
   return (
     <>
       <aside
-        className={`flex h-screen flex-col border-r border-border-primary bg-surface-secondary transition-[width] duration-200 ${
+        className={`flex h-screen flex-col border-r border-white/10 bg-[#0a101f] transition-[width] duration-200 ${
           isCollapsed ? "w-16" : "w-60"
         }`}
       >
@@ -106,11 +107,11 @@ export function Sidebar() {
           <Link href="/" className="text-lg font-bold text-text-primary">
             {isCollapsed ? (
               <span>
-                R<span className="text-accent-primary">S</span>
+                R<span className="bg-gradient-to-r from-brand-500 to-accent-secondary bg-clip-text text-transparent">S</span>
               </span>
             ) : (
               <span>
-                Rev<span className="text-accent-primary">Signal</span>
+                Rev<span className="bg-gradient-to-r from-brand-500 to-accent-secondary bg-clip-text text-transparent">Signal</span>
               </span>
             )}
           </Link>
@@ -289,8 +290,8 @@ function NavLink({
         isCollapsed ? "justify-center" : ""
       } ${
         isActive
-          ? "bg-accent-glow text-accent-primary"
-          : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary"
+          ? "bg-brand-500/15 text-brand-500 border border-brand-500/20"
+          : "text-text-secondary hover:bg-white/5 hover:text-text-primary border border-transparent"
       }`}
     >
       <item.icon className="h-4 w-4 shrink-0" />
@@ -466,6 +467,14 @@ function ContractIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  );
+}
+
+function DocsIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
     </svg>
   );
 }

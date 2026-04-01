@@ -28,21 +28,21 @@ export function RevenueMath() {
       <CardContent className="space-y-6">
         {/* Core math */}
         <div className="grid grid-cols-3 gap-4">
-          <div className="rounded-lg bg-surface-tertiary p-3 text-center">
-            <p className="text-xs text-text-muted">Annual Goal</p>
-            <p className="font-data text-lg font-bold text-accent-primary">
+          <div className="metric-card rounded-xl p-4 text-center">
+            <p className="text-xs text-text-secondary">Annual Goal</p>
+            <p className="font-data text-lg font-bold text-brand-500">
               {currencyFmt.format(REVENUE_TARGET)}
             </p>
           </div>
-          <div className="rounded-lg bg-surface-tertiary p-3 text-center">
-            <p className="text-xs text-text-muted">Avg ACV</p>
-            <p className="font-data text-lg font-bold text-text-primary">
+          <div className="metric-card rounded-xl p-4 text-center">
+            <p className="text-xs text-text-secondary">Avg ACV</p>
+            <p className="font-data text-lg font-bold text-white">
               {currencyFmt.format(TARGET_ACV)}
             </p>
           </div>
-          <div className="rounded-lg bg-surface-tertiary p-3 text-center">
-            <p className="text-xs text-text-muted">Customers</p>
-            <p className="font-data text-lg font-bold text-text-primary">
+          <div className="metric-card rounded-xl p-4 text-center">
+            <p className="text-xs text-text-secondary">Customers</p>
+            <p className="font-data text-lg font-bold text-white">
               {TARGET_CUSTOMERS}
             </p>
           </div>
@@ -56,25 +56,25 @@ export function RevenueMath() {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border-primary text-left text-xs text-text-muted">
+                <tr className="border-b border-white/10 text-left text-xs text-text-secondary">
                   <th className="pb-2 font-medium">Scenario</th>
                   <th className="pb-2 text-right font-medium">ACV</th>
                   <th className="pb-2 text-right font-medium">Customers</th>
                   <th className="pb-2 text-right font-medium">Total</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-primary">
+              <tbody className="divide-y divide-white/5">
                 {STRETCH_SCENARIOS.map((scenario) => {
                   const isBase = scenario.acv === TARGET_ACV;
                   return (
                     <tr
                       key={scenario.label}
-                      className={isBase ? 'bg-accent-glow' : ''}
+                      className={isBase ? 'bg-brand-500/10' : ''}
                     >
                       <td className="py-2 text-text-secondary">
                         {scenario.label}
                         {isBase && (
-                          <span className="ml-2 text-xs text-accent-primary">
+                          <span className="ml-2 text-xs text-brand-500">
                             *
                           </span>
                         )}

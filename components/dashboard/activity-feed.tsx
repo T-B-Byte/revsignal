@@ -26,13 +26,13 @@ const CHANNEL_ICONS: Record<ChannelType, { label: string; icon: string }> = {
 };
 
 const CHANNEL_COLORS: Record<ChannelType, string> = {
-  teams: 'bg-purple-500/20 text-purple-400',
-  email: 'bg-accent-primary/20 text-accent-primary',
+  teams: 'bg-accent-secondary/20 text-accent-secondary',
+  email: 'bg-brand-500/20 text-brand-500',
   call: 'bg-status-green/20 text-status-green',
-  linkedin: 'bg-blue-500/20 text-blue-400',
+  linkedin: 'bg-brand-500/20 text-brand-500',
   in_person: 'bg-status-yellow/20 text-status-yellow',
   internal: 'bg-orange-500/20 text-orange-400',
-  manual: 'bg-surface-tertiary text-text-muted',
+  manual: 'bg-white/5 text-text-muted',
 };
 
 export function ActivityFeed({ activities }: ActivityFeedProps) {

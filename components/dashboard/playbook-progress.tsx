@@ -42,19 +42,19 @@ export function PlaybookProgress({ workstreams }: PlaybookProgressProps) {
                       {ws.completed}/{ws.total}
                     </span>
                   </div>
-                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-tertiary">
+                  <div className="h-1.5 w-full overflow-hidden rounded-full bg-white/5">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${percent}%`,
                         backgroundColor:
                           percent === 100
-                            ? '#22c55e'
+                            ? '#10b981'
                             : percent > 50
-                              ? '#3b82f6'
+                              ? '#4f6ef7'
                               : percent > 0
-                                ? '#eab308'
-                                : '#6b7280',
+                                ? '#f59e0b'
+                                : '#64748b',
                       }}
                     />
                   </div>

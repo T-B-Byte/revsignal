@@ -10,9 +10,9 @@ const variantStyles: Record<BadgeVariant, string> = {
   green: 'bg-status-green-bg text-status-green border-status-green/20',
   yellow: 'bg-status-yellow-bg text-status-yellow border-status-yellow/20',
   red: 'bg-status-red-bg text-status-red border-status-red/20',
-  blue: 'bg-accent-primary/10 text-accent-primary border-accent-primary/20',
-  gray: 'bg-surface-tertiary text-text-secondary border-border-primary',
-  purple: 'bg-purple-500/10 text-purple-400 border-purple-500/20',
+  blue: 'bg-brand-500/10 text-brand-500 border-brand-500/20',
+  gray: 'bg-white/5 text-text-secondary border-white/10',
+  purple: 'bg-accent-secondary/10 text-accent-secondary border-accent-secondary/20',
   orange: 'bg-orange-500/10 text-orange-400 border-orange-500/20',
 };
 

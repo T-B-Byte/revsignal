@@ -13,7 +13,7 @@ export function Header({ displayName }: { displayName?: string | null }) {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-border-primary bg-surface-secondary px-6">
+    <header className="flex h-14 items-center justify-between border-b border-white/10 bg-surface-primary px-6">
       <div />
 
       <div className="flex items-center gap-4">

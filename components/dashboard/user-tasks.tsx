@@ -172,14 +172,14 @@ export function UserTasks() {
         <div className="flex items-center gap-2">
           <CardTitle>My Tasks</CardTitle>
           {openTasks.length > 0 && (
-            <span className="rounded bg-accent-primary/10 px-1.5 py-0.5 text-[10px] font-medium text-accent-primary">
+            <span className="rounded bg-brand-500/10 px-1.5 py-0.5 text-[10px] font-medium text-brand-500">
               {openTasks.length}
             </span>
           )}
         </div>
         <button
           onClick={() => setShowForm(true)}
-          className="rounded-md bg-accent-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-primary/90"
+          className="rounded-lg bg-brand-500 px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-brand-600"
         >
           Add Task
         </button>
@@ -193,14 +193,14 @@ export function UserTasks() {
 
         {/* New task form */}
         {showForm && (
-          <div className="mb-4 rounded-md border border-accent-primary/20 bg-surface-secondary p-3 space-y-2">
+          <div className="mb-4 rounded-md border border-brand-500/20 bg-white/5 p-3 space-y-2">
             <input
               ref={inputRef}
               type="text"
               value={newDesc}
               onChange={(e) => setNewDesc(e.target.value)}
               placeholder="What needs to get done?"
-              className="w-full rounded border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+              className="w-full rounded border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-brand-500 focus:outline-none"
               maxLength={2000}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && !e.shiftKey) {
@@ -241,7 +241,7 @@ export function UserTasks() {
                 <button
                   onClick={createTask}
                   disabled={creating || !newDesc.trim()}
-                  className="rounded bg-accent-primary px-2.5 py-1 text-[11px] font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50 transition-colors"
+                  className="rounded bg-brand-500 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-brand-600 disabled:opacity-50 transition-colors"
                 >
                   {creating ? 'Adding...' : 'Add'}
                 </button>
@@ -367,12 +367,12 @@ function TaskRow({
 
   if (isEditing) {
     return (
-      <div className="rounded-md border border-accent-primary/20 bg-surface-secondary p-2.5 space-y-2">
+      <div className="rounded-md border border-brand-500/20 bg-white/5 p-2.5 space-y-2">
         <input
           type="text"
           value={editDesc}
           onChange={(e) => onEditDescChange(e.target.value)}
-          className="w-full rounded border border-border-primary bg-surface-primary px-2.5 py-1.5 text-xs text-text-primary focus:border-accent-primary focus:outline-none"
+          className="w-full rounded border border-border-primary bg-surface-primary px-2.5 py-1.5 text-xs text-text-primary focus:border-brand-500 focus:outline-none"
           maxLength={2000}
           autoFocus
           onKeyDown={(e) => {
@@ -397,7 +397,7 @@ function TaskRow({
             <button
               onClick={onSaveEdit}
               disabled={saving || !editDesc.trim()}
-              className="rounded bg-accent-primary px-2 py-1 text-[11px] font-medium text-white hover:bg-accent-primary/90 disabled:opacity-50"
+              className="rounded bg-brand-500 px-2 py-1 text-[11px] font-medium text-white hover:bg-brand-600 disabled:opacity-50"
             >
               {saving ? 'Saving...' : 'Save'}
             </button>
@@ -419,7 +419,7 @@ function TaskRow({
         className={`mt-0.5 shrink-0 h-4 w-4 rounded border transition-colors flex items-center justify-center ${
           isDone
             ? 'bg-status-green border-status-green'
-            : 'border-border-primary hover:border-accent-primary'
+            : 'border-border-primary hover:border-brand-500'
         }`}
       >
         {isDone && (
@@ -463,7 +463,7 @@ function TaskRow({
         {!isDone && (
           <button
             onClick={onStartEdit}
-            className="rounded p-1 text-text-muted hover:text-accent-primary hover:bg-accent-primary/10 transition-colors"
+            className="rounded p-1 text-text-muted hover:text-brand-500 hover:bg-brand-500/10 transition-colors"
             title="Edit"
           >
             <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5">

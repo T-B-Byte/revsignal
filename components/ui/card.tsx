@@ -4,7 +4,7 @@ const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`bg-surface-card backdrop-blur-xl border border-border-primary rounded-lg ${className}`}
+      className={`glass rounded-xl ${className}`}
       {...props}
     />
   )
@@ -15,7 +15,7 @@ const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`px-6 py-4 border-b border-border-primary ${className}`}
+      className={`px-6 py-4 border-b border-white/10 ${className}`}
       {...props}
     />
   )
@@ -28,7 +28,7 @@ const CardTitle = forwardRef<
 >(({ className = '', ...props }, ref) => (
   <h3
     ref={ref}
-    className={`text-sm font-semibold text-text-primary tracking-wide ${className}`}
+    className={`text-sm font-semibold text-white tracking-wide ${className}`}
     {...props}
   />
 ));
@@ -45,7 +45,7 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`px-6 py-3 border-t border-border-primary ${className}`}
+      className={`px-6 py-3 border-t border-white/10 ${className}`}
       {...props}
     />
   )

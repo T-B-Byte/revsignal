@@ -37,7 +37,7 @@ export function RevenueTracker({ closedRevenue }: RevenueTrackerProps) {
       <CardContent className="space-y-6">
         {/* Big number */}
         <div>
-          <p className="font-data text-4xl font-bold text-accent-primary">
+          <p className="font-data text-4xl font-bold text-brand-500">
             {currencyFmt.format(closedRevenue)}
           </p>
           <p className="mt-1 text-sm text-text-secondary">
@@ -55,9 +55,9 @@ export function RevenueTracker({ closedRevenue }: RevenueTrackerProps) {
                 : `${currencyFmt.format(Math.abs(remaining))} over target`}
             </span>
           </div>
-          <div className="h-3 w-full overflow-hidden rounded-full bg-surface-tertiary">
+          <div className="h-3 w-full overflow-hidden rounded-full bg-white/5">
             <div
-              className="h-full rounded-full bg-accent-primary transition-all duration-500"
+              className="h-full rounded-full bg-brand-500 transition-all duration-500"
               style={{ width: `${progressPercent}%` }}
             />
           </div>
@@ -65,15 +65,15 @@ export function RevenueTracker({ closedRevenue }: RevenueTrackerProps) {
 
         {/* Pacing */}
         <div className="grid grid-cols-2 gap-4">
-          <div className="rounded-lg bg-surface-tertiary p-3">
-            <p className="text-xs text-text-muted">Needed / month</p>
-            <p className="font-data text-lg font-semibold text-text-primary">
+          <div className="metric-card rounded-xl p-4">
+            <p className="text-xs text-text-secondary">Needed / month</p>
+            <p className="font-data text-lg font-semibold text-white">
               {currencyFmt.format(neededPerMonth)}
             </p>
           </div>
-          <div className="rounded-lg bg-surface-tertiary p-3">
-            <p className="text-xs text-text-muted">Months left</p>
-            <p className="font-data text-lg font-semibold text-text-primary">
+          <div className="metric-card rounded-xl p-4">
+            <p className="text-xs text-text-secondary">Months left</p>
+            <p className="font-data text-lg font-semibold text-white">
               {Math.ceil(monthsRemaining)}
             </p>
           </div>

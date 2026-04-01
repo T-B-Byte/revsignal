@@ -71,7 +71,7 @@ export function PipelineSummary({ stages }: PipelineSummaryProps) {
                   </span>
                 </span>
               </div>
-              <div className="h-2 w-full overflow-hidden rounded-full bg-surface-tertiary">
+              <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
                 <div
                   className="h-full rounded-full transition-all duration-500"
                   style={{

@@ -60,14 +60,14 @@ export function DaysSinceContact({ deals }: DaysSinceContactProps) {
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-border-primary text-left text-xs text-text-muted">
+                <tr className="border-b border-white/10 text-left text-xs text-text-secondary">
                   <th className="pb-2 font-medium">Company</th>
                   <th className="pb-2 font-medium">Stage</th>
                   <th className="pb-2 text-right font-medium">ACV</th>
                   <th className="pb-2 text-right font-medium">Days</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-border-primary">
+              <tbody className="divide-y divide-white/5">
                 {sorted.map((deal) => {
                   const actDate = new Date(deal.last_activity_date);
                   const days = isNaN(actDate.getTime())

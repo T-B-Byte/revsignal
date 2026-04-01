@@ -27,7 +27,7 @@ function Skeleton({
 
   return (
     <div
-      className={`animate-pulse bg-surface-tertiary ${width ?? defaults.width} ${height ?? defaults.height} ${defaults.rounded} ${className}`}
+      className={`animate-pulse bg-white/10 ${width ?? defaults.width} ${height ?? defaults.height} ${defaults.rounded} ${className}`}
       {...props}
     />
   );

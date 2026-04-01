@@ -73,7 +73,7 @@ const DialogContent = forwardRef<
 >(({ className = '', ...props }, ref) => (
   <div
     ref={ref}
-    className={`bg-surface-secondary border border-border-primary rounded-lg shadow-xl ${className}`}
+    className={`glass rounded-xl shadow-xl ${className}`}
     {...props}
   />
 ));
@@ -89,7 +89,7 @@ const DialogHeader = forwardRef<
 >(({ className = '', ...props }, ref) => (
   <div
     ref={ref}
-    className={`flex items-center justify-between px-6 py-4 border-b border-border-primary ${className}`}
+    className={`flex items-center justify-between px-6 py-4 border-b border-white/10 ${className}`}
     {...props}
   />
 ));

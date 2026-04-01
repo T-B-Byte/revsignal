@@ -141,7 +141,7 @@ export function FollowUpAlerts({ groups, hasAiAccess }: FollowUpAlertsProps) {
             <button
               onClick={handleRunScan}
               disabled={scanLoading}
-              className="rounded-md bg-accent-primary px-3 py-1.5 text-xs font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
+              className="rounded-md bg-brand-500 px-3 py-1.5 text-xs font-medium text-white rounded-lg transition-colors hover:bg-brand-600 disabled:opacity-50"
             >
               {scanLoading ? 'Scanning...' : 'AI Scan'}
             </button>
@@ -156,8 +156,8 @@ export function FollowUpAlerts({ groups, hasAiAccess }: FollowUpAlertsProps) {
         )}
 
         {scanSummary && (
-          <div className="mb-4 rounded-lg border border-accent-primary/20 bg-accent-primary/5 p-3">
-            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-accent-primary">
+          <div className="mb-4 rounded-lg border border-brand-500/20 bg-brand-500/5 p-3">
+            <p className="mb-1 text-xs font-semibold uppercase tracking-wider text-brand-500">
               AI Scan Results
             </p>
             <div
@@ -193,12 +193,12 @@ export function FollowUpAlerts({ groups, hasAiAccess }: FollowUpAlertsProps) {
                       return (
                         <li
                           key={item.item_id}
-                          className="flex items-start gap-3 rounded-md bg-surface-tertiary px-3 py-2 text-sm"
+                          className="flex items-start gap-3 rounded-lg bg-white/5 px-3 py-2 text-sm"
                         >
                           <button
                             onClick={() => handleComplete(item.item_id)}
                             disabled={savingIds.has(item.item_id)}
-                            className="mt-0.5 shrink-0 flex h-4 w-4 items-center justify-center rounded border border-border-primary text-transparent transition-colors hover:border-accent-primary hover:text-accent-primary disabled:opacity-50"
+                            className="mt-0.5 shrink-0 flex h-4 w-4 items-center justify-center rounded border border-border-primary text-transparent transition-colors hover:border-brand-500 hover:text-brand-500 disabled:opacity-50"
                             title="Mark complete"
                             aria-label={`Mark complete: ${item.description}`}
                           >
@@ -215,7 +215,7 @@ export function FollowUpAlerts({ groups, hasAiAccess }: FollowUpAlertsProps) {
                             <div className="mt-1 flex items-center gap-3 text-xs text-text-muted">
                               {item.deal_company && <span>{item.deal_company}</span>}
                               {displayDate && (
-                                <span className={`font-data ${isRescheduled ? 'text-accent-primary' : ''}`}>
+                                <span className={`font-data ${isRescheduled ? 'text-brand-500' : ''}`}>
                                   {format(new Date(displayDate + 'T00:00:00'), 'MMM d, yyyy')}
                                   {isRescheduled && ' (moved)'}
                                 </span>
