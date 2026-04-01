@@ -35,6 +35,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/marketing", label: "Marketing", icon: MegaphoneIcon, key: "marketing" },
   { href: "/studio", label: "Studio", icon: StudioIcon, key: "studio" },
   { href: "/board-report", label: "Board Report", icon: ClipboardIcon, key: "board-report" },
+  { href: "/deal-rooms", label: "Deal Rooms", icon: DealRoomIcon, key: "deal-rooms" },
   { href: "/docs", label: "Docs", icon: DocsIcon, key: "docs" },
   { href: "/settings", label: "Settings", icon: GearIcon, key: "settings", pinned: true },
 ];
@@ -467,6 +468,14 @@ function ContractIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  );
+}
+
+function DealRoomIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 21v-7.5a.75.75 0 01.75-.75h3a.75.75 0 01.75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349m-16.5 11.65V9.35m0 0a3.001 3.001 0 003.75-.615A2.993 2.993 0 009.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 002.25 1.016c.896 0 1.7-.393 2.25-1.016a3.001 3.001 0 003.75.614m-16.5 0a3.004 3.004 0 01-.621-4.72L4.318 3.44A1.5 1.5 0 015.378 3h13.243a1.5 1.5 0 011.06.44l1.19 1.189a3 3 0 01-.621 4.72" />
     </svg>
   );
 }

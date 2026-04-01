@@ -1237,3 +1237,346 @@ export const BASE_SALARY = 225_000;
 export const REV_SHARE_PERCENT = 0.25;
 export const TARGET_ACV = 100_000;
 export const TARGET_CUSTOMERS = 10;
+
+// ============================================================
+// GTM COMMAND CENTER & DEAL ROOMS
+// ============================================================
+
+export type GtmProductCategory =
+  | "data_feeds"
+  | "intelligence_reports"
+  | "monitoring"
+  | "data_products"
+  | "platform";
+
+export type DealRoomStatus = "draft" | "active" | "expired" | "archived";
+
+export type QuoteStatus = "draft" | "submitted" | "reviewed" | "accepted" | "declined";
+
+export type CompanyTier = "tier_1" | "tier_2" | "tier_3" | "tier_4" | "tier_5";
+
+export type FitStrength = "strong" | "moderate" | "exploratory";
+
+export type DataTestScope = "personas_intent" | "full_schema";
+
+export type DataTestStatus =
+  | "pending_upload"
+  | "domains_uploaded"
+  | "pending_approval"
+  | "processing"
+  | "completed"
+  | "expired"
+  | "denied";
+
+export type DemoType =
+  | "title_expansion"
+  | "icp_analyzer"
+  | "surge_dossier"
+  | "audience_dashboard";
+
+// --- GTM Product ---
+
+export interface KeyStat {
+  stat: string;
+  source?: string;
+}
+
+export interface ProductFeature {
+  name: string;
+  description: string;
+}
+
+export interface ProductBenefit {
+  benefit: string;
+  for_whom?: string;
+}
+
+export interface ProductUseCase {
+  title: string;
+  description: string;
+  persona?: string;
+}
+
+export interface ProductDifferentiator {
+  vs_competitor: string;
+  advantage: string;
+}
+
+export interface LinkedInPost {
+  title: string;
+  body: string;
+  hashtags?: string[];
+}
+
+export interface OutreachSequence {
+  target_type: string;
+  emails: { subject: string; body: string }[];
+}
+
+export interface BattleCard {
+  competitor: string;
+  strengths: string[];
+  weaknesses: string[];
+  our_advantage: string;
+}
+
+export interface TargetPersona {
+  tier: string;
+  persona: string;
+  why_they_buy: string;
+}
+
+export interface GtmProduct {
+  product_id: string;
+  user_id: string;
+  slug: string;
+  name: string;
+  category: GtmProductCategory;
+  tagline: string | null;
+  value_prop: string | null;
+  problem_statement: string | null;
+  key_stats: KeyStat[];
+  features: ProductFeature[];
+  benefits: ProductBenefit[];
+  use_cases: ProductUseCase[];
+  differentiators: ProductDifferentiator[];
+  pricing_tiers: Record<string, { price: string; unit: string; description: string }>;
+  packaging_notes: string | null;
+  linkedin_posts: LinkedInPost[];
+  outreach_sequences: OutreachSequence[];
+  battle_cards: BattleCard[];
+  target_personas: TargetPersona[];
+  demo_type: DemoType | null;
+  demo_config: Record<string, unknown>;
+  api_schema: Record<string, unknown>;
+  data_dictionary: { field: string; type: string; description: string }[];
+  sample_output: Record<string, unknown>;
+  is_active: boolean;
+  display_order: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- GTM Company Profile ---
+
+export interface CompanyContact {
+  name: string;
+  title: string;
+  linkedin?: string;
+  email?: string;
+  why_this_person?: string;
+}
+
+export interface OutreachRecord {
+  date: string;
+  channel: string;
+  subject: string;
+  outcome?: string;
+}
+
+export interface GtmCompanyProfile {
+  company_id: string;
+  user_id: string;
+  slug: string;
+  name: string;
+  logo_url: string | null;
+  description: string | null;
+  hq_location: string | null;
+  employee_count: string | null;
+  annual_revenue: string | null;
+  website: string | null;
+  linkedin_url: string | null;
+  why_they_need_us: string | null;
+  recent_news: string | null;
+  company_tier: CompanyTier;
+  contacts: CompanyContact[];
+  deal_id: string | null;
+  prospect_id: string | null;
+  past_outreach: OutreachRecord[];
+  notes: string | null;
+  tags: string[];
+  is_active: boolean;
+  last_researched: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- GTM Product Recommendation ---
+
+export interface GtmProductRecommendation {
+  recommendation_id: string;
+  user_id: string;
+  company_id: string;
+  product_id: string;
+  fit_strength: FitStrength;
+  custom_angle: string | null;
+  suggested_tier: string | null;
+  suggested_use_cases: { title: string; description: string }[];
+  include_in_deal_room: boolean;
+  display_order: number;
+  custom_features: Record<string, unknown> | null;
+  custom_pricing: Record<string, unknown> | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Recommendation with joined product data for display */
+export interface GtmRecommendationWithProduct extends GtmProductRecommendation {
+  gtm_products?: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type"> | null;
+}
+
+// --- Deal Room ---
+
+export interface DealRoomProductSelection {
+  product_id: string;
+  display_order: number;
+  custom_notes?: string;
+}
+
+export interface DealRoomDemoSelection {
+  demo_type: DemoType;
+  config?: Record<string, unknown>;
+}
+
+export interface DealRoom {
+  room_id: string;
+  user_id: string;
+  company_id: string;
+  slug: string;
+  password_hash: string;
+  status: DealRoomStatus;
+  expires_at: string | null;
+  custom_header: string | null;
+  welcome_message: string | null;
+  selected_products: DealRoomProductSelection[];
+  selected_demos: DealRoomDemoSelection[];
+  show_audience_dashboard: boolean;
+  audience_dashboard_url: string | null;
+  show_quote_builder: boolean;
+  company_logo_url: string | null;
+  accent_color: string | null;
+  view_count: number;
+  last_viewed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+/** Deal room with joined company data */
+export interface DealRoomWithCompany extends DealRoom {
+  gtm_company_profiles?: Pick<GtmCompanyProfile, "company_id" | "name" | "slug" | "logo_url"> | null;
+}
+
+// --- Deal Room Quote ---
+
+export interface QuoteLineItem {
+  product_id: string;
+  product_name: string;
+  tier: string;
+  quantity?: number;
+  unit_price: number;
+  subtotal: number;
+  notes?: string;
+}
+
+export interface DealRoomQuote {
+  quote_id: string;
+  room_id: string;
+  user_id: string;
+  company_id: string;
+  selected_items: QuoteLineItem[];
+  total_price: number | null;
+  currency: string;
+  prospect_name: string | null;
+  prospect_email: string | null;
+  prospect_title: string | null;
+  prospect_notes: string | null;
+  status: QuoteStatus;
+  submitted_at: string | null;
+  reviewed_at: string | null;
+  tina_notified: boolean;
+  tina_notified_at: string | null;
+  calendar_link_shown: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Data Test ---
+
+export interface DealRoomDataTest {
+  test_id: string;
+  room_id: string;
+  user_id: string;
+  company_id: string;
+  scope: DataTestScope;
+  status: DataTestStatus;
+  uploaded_domains: string[];
+  domain_count: number;
+  approval_requested_at: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  denial_reason: string | null;
+  results: Record<string, unknown> | null;
+  match_count: number | null;
+  match_rate: number | null;
+  prospect_name: string | null;
+  prospect_email: string | null;
+  prospect_company: string | null;
+  expires_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// --- Deal Room Access Log ---
+
+export interface DealRoomAccessLog {
+  log_id: string;
+  room_id: string;
+  accessed_at: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  pages_viewed: string[];
+  duration_seconds: number | null;
+}
+
+// --- GTM Constants ---
+
+export const GTM_PRODUCT_CATEGORIES: { value: GtmProductCategory; label: string }[] = [
+  { value: "data_feeds", label: "Data Feeds" },
+  { value: "intelligence_reports", label: "Intelligence Reports" },
+  { value: "monitoring", label: "Monitoring" },
+  { value: "data_products", label: "Data Products" },
+  { value: "platform", label: "Platform" },
+];
+
+export const COMPANY_TIERS: { value: CompanyTier; label: string; description: string }[] = [
+  { value: "tier_1", label: "Tier 1", description: "Strategic platform partners ($500K+ ACV)" },
+  { value: "tier_2", label: "Tier 2", description: "High-value targets ($200-500K ACV)" },
+  { value: "tier_3", label: "Tier 3", description: "Standard targets ($50-200K ACV)" },
+  { value: "tier_4", label: "Tier 4", description: "Emerging / specialist ($25-50K ACV)" },
+  { value: "tier_5", label: "Tier 5", description: "Exploratory / long-term" },
+];
+
+export const FIT_STRENGTHS: { value: FitStrength; label: string; color: string }[] = [
+  { value: "strong", label: "Strong Fit", color: "#22c55e" },
+  { value: "moderate", label: "Moderate Fit", color: "#f59e0b" },
+  { value: "exploratory", label: "Exploratory", color: "#6b7280" },
+];
+
+export const DEAL_ROOM_STATUSES: { value: DealRoomStatus; label: string }[] = [
+  { value: "draft", label: "Draft" },
+  { value: "active", label: "Active" },
+  { value: "expired", label: "Expired" },
+  { value: "archived", label: "Archived" },
+];
+
+export const QUOTE_STATUSES: { value: QuoteStatus; label: string; color: string }[] = [
+  { value: "draft", label: "Draft", color: "#6b7280" },
+  { value: "submitted", label: "Submitted", color: "#3b82f6" },
+  { value: "reviewed", label: "Reviewed", color: "#f59e0b" },
+  { value: "accepted", label: "Accepted", color: "#22c55e" },
+  { value: "declined", label: "Declined", color: "#ef4444" },
+];
+
+/** Tina's calendar booking link for quote follow-ups */
+export const TINA_CALENDAR_URL = "https://outlook.office.com/bookwithme/user/c3813fda06294b0d81253fd6a96f2eea@pharosiq.com/meetingtype/M30u5FcCmk63f4GAJWMCFw2?anonymous&ismsaljsauthenabled&ep=mlink";
