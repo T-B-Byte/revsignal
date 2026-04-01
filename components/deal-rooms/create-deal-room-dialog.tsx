@@ -20,6 +20,7 @@ interface CreateDealRoomDialogProps {
   onClose: () => void;
   companies: Pick<GtmCompanyProfile, "company_id" | "name" | "slug" | "logo_url">[];
   products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type">[];
+  existingRoomCompanyIds?: string[];
 }
 
 function slugify(name: string): string {
@@ -83,6 +84,7 @@ export function CreateDealRoomDialog({
   onClose,
   companies,
   products,
+  existingRoomCompanyIds = [],
 }: CreateDealRoomDialogProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -276,9 +278,10 @@ export function CreateDealRoomDialog({
     }
   }
 
+  const existingSet = new Set(existingRoomCompanyIds);
   const companyOptions = companies.map((c) => ({
     value: c.company_id,
-    label: c.name,
+    label: existingSet.has(c.company_id) ? `✓ ${c.name}` : c.name,
   }));
 
   const accentOptions = ACCENT_COLORS.map((c) => ({

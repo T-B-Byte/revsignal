@@ -356,6 +356,7 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         onClose={() => setShowCreate(false)}
         companies={companies}
         products={products}
+        existingRoomCompanyIds={rooms.map((r) => r.company_id)}
       />
 
       {/* Edit dialog */}
