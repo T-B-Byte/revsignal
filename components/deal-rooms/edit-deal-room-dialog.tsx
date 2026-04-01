@@ -135,7 +135,8 @@ export function EditDealRoomDialog({
           <DialogClose onClose={onClose} />
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="p-6 space-y-5 max-h-[70vh] overflow-y-auto">
+        <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh]">
+         <div className="p-6 space-y-5 overflow-y-auto flex-1">
           {error && (
             <div className="p-3 text-sm text-status-red bg-status-red/10 border border-status-red/20 rounded-md">
               {error}
@@ -273,8 +274,10 @@ export function EditDealRoomDialog({
             </div>
           </div>
 
-          {/* Submit */}
-          <div className="flex items-center justify-end gap-3 pt-3">
+          </div>
+
+          {/* Submit - pinned to bottom */}
+          <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-white/10 shrink-0">
             <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>
               Cancel
             </Button>
