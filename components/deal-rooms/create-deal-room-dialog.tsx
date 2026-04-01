@@ -88,6 +88,13 @@ export function CreateDealRoomDialog({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Quick-add company state
+  const [showAddCompany, setShowAddCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState("");
+  const [newCompanyWebsite, setNewCompanyWebsite] = useState("");
+  const [newCompanyWhy, setNewCompanyWhy] = useState("");
+  const [addingCompany, setAddingCompany] = useState(false);
+
   // Form state
   const [companyId, setCompanyId] = useState("");
   const [slug, setSlug] = useState("");
@@ -119,6 +126,48 @@ export function CreateDealRoomDialog({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [companyId, companies]);
 
+  async function handleAddCompany() {
+    if (!newCompanyName.trim()) return;
+    setAddingCompany(true);
+    try {
+      const slug = newCompanyName
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "");
+      const res = await fetch("/api/gtm/companies", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          name: newCompanyName.trim(),
+          slug,
+          website: newCompanyWebsite.trim() || null,
+          why_they_need_us: newCompanyWhy.trim() || null,
+        }),
+      });
+      if (!res.ok) {
+        const data = await res.json().catch(() => null);
+        setError(data?.error ?? "Failed to add company");
+        setAddingCompany(false);
+        return;
+      }
+      const data = await res.json();
+      const newId = data.company?.company_id;
+      if (newId) {
+        // Add to local list and select it
+        companies.push({ company_id: newId, name: newCompanyName.trim(), slug, logo_url: null });
+        setCompanyId(newId);
+      }
+      setShowAddCompany(false);
+      setNewCompanyName("");
+      setNewCompanyWebsite("");
+      setNewCompanyWhy("");
+    } catch {
+      setError("Failed to add company");
+    } finally {
+      setAddingCompany(false);
+    }
+  }
+
   function resetForm() {
     setCompanyId("");
     setSlug("");
@@ -131,6 +180,10 @@ export function CreateDealRoomDialog({
     setAccentColor("");
     setExpiresAt("");
     setError(null);
+    setShowAddCompany(false);
+    setNewCompanyName("");
+    setNewCompanyWebsite("");
+    setNewCompanyWhy("");
   }
 
   function handleClose() {
@@ -249,15 +302,57 @@ export function CreateDealRoomDialog({
             </div>
           )}
 
-          {/* Company + Slug */}
-          <Select
-            label="Company"
-            options={companyOptions}
-            placeholder="Select a company"
-            value={companyId}
-            onChange={(e) => setCompanyId(e.target.value)}
-            required
-          />
+          {/* Company + Quick Add */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-text-secondary">Company</label>
+              <button
+                type="button"
+                onClick={() => setShowAddCompany(!showAddCompany)}
+                className="text-xs text-brand-400 hover:text-brand-300"
+              >
+                {showAddCompany ? "Cancel" : "+ Add new company"}
+              </button>
+            </div>
+
+            {showAddCompany ? (
+              <div className="space-y-2 rounded-lg border border-brand-500/30 bg-brand-500/5 p-3">
+                <Input
+                  value={newCompanyName}
+                  onChange={(e) => setNewCompanyName(e.target.value)}
+                  placeholder="Company name"
+                  required
+                />
+                <Input
+                  value={newCompanyWebsite}
+                  onChange={(e) => setNewCompanyWebsite(e.target.value)}
+                  placeholder="Website (optional)"
+                />
+                <Input
+                  value={newCompanyWhy}
+                  onChange={(e) => setNewCompanyWhy(e.target.value)}
+                  placeholder="Why they need pharosIQ data (optional)"
+                />
+                <Button
+                  type="button"
+                  size="sm"
+                  onClick={handleAddCompany}
+                  loading={addingCompany}
+                  disabled={!newCompanyName.trim()}
+                >
+                  Add Company
+                </Button>
+              </div>
+            ) : (
+              <Select
+                options={companyOptions}
+                placeholder="Select a company"
+                value={companyId}
+                onChange={(e) => setCompanyId(e.target.value)}
+                required
+              />
+            )}
+          </div>
 
           <Input
             label="Room Slug"
