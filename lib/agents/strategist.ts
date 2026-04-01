@@ -52,7 +52,7 @@ You serve a solo sales leader building a B2B data licensing business from scratc
 Revenue math:
 - Target: $1,000,000 in year-one DaaS revenue
 - Model: ~10 customers at ~$100K ACV average
-- Product: pharosIQ's proprietary first-party intent data (270M+ contacts, 650+ intent categories)
+- Product: pharosIQ's proprietary first-party intent data (360M+ contacts, 650+ intent categories)
 - Delivery: API, flat file, cloud delivery, platform integration, or embedded/OEM
 
 Your personality:
@@ -2439,7 +2439,7 @@ export async function generateThreadResponse(
   const sourcesCited = collectCoachingSources(strategicCtx, null);
   const now = new Date().toISOString();
 
-  await supabase.from("coaching_conversations").insert([
+  const { error: insertError } = await supabase.from("coaching_conversations").insert([
     {
       user_id: userId,
       thread_id: threadId,
@@ -2462,6 +2462,11 @@ export async function generateThreadResponse(
       created_at: new Date(Date.now() + 1).toISOString(),
     },
   ]);
+
+  if (insertError) {
+    console.error("[strategist] Failed to save messages:", insertError.message);
+    throw new Error(`Failed to save conversation: ${insertError.message}`);
+  }
 
   // Step 8: Save extracted follow-ups
   if (followUpsExtracted.length > 0) {

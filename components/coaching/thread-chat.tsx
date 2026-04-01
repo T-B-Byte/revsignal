@@ -423,6 +423,8 @@ export function ThreadChat({
     setError(null);
     // Combine any buffered chunks with the current input
     const combined = [...inputChunks, trimmed].filter(Boolean).join("\n\n");
+    // Keep a snapshot so we can restore on failure
+    const chunksSnapshot = [...inputChunks];
     setInputChunks([]);
     setInput("");
     // Reset textarea height after clearing
@@ -532,6 +534,11 @@ export function ThreadChat({
         setMessages((prev) =>
           prev.filter((m) => m.conversation_id !== userMsg.conversation_id)
         );
+        // Restore queued chunks so the user doesn't lose pasted content
+        if (chunksSnapshot.length > 0) {
+          setInputChunks(chunksSnapshot);
+          setMoreToAdd(true);
+        }
         setInput((prev) => prev || trimmed);
         return;
       }
@@ -596,6 +603,11 @@ export function ThreadChat({
       setMessages((prev) =>
         prev.filter((m) => m.conversation_id !== userMsg.conversation_id)
       );
+      // Restore queued chunks so the user doesn't lose pasted content
+      if (chunksSnapshot.length > 0) {
+        setInputChunks(chunksSnapshot);
+        setMoreToAdd(true);
+      }
       setInput((prev) => prev || trimmed);
     } finally {
       setLoading(false);
