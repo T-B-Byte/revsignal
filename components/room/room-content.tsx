@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ProductShowcase } from "./product-showcase";
 import { QuoteBuilder } from "./quote-builder";
 import { DataTestForm } from "./data-test-form";
+import { DataCoverage } from "./data-coverage";
 import { TINA_CALENDAR_URL } from "@/types/database";
 
 type Tab = "products" | "quote" | "data-test";
@@ -17,6 +18,9 @@ interface RoomContentProps {
 
 export function RoomContent({ room, products, slug, password }: RoomContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("products");
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  const t = (dark: string, light: string) => theme === "dark" ? dark : light;
 
   const company = room.gtm_company_profiles as {
     name: string;
@@ -39,7 +43,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
   ];
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className={`mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 min-h-screen transition-colors ${t("bg-zinc-950 text-zinc-100", "bg-zinc-50 text-zinc-900")}`}>
       {/* Header */}
       <header className="mb-8">
         <div className="flex items-center gap-4">
@@ -58,26 +62,41 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
             </div>
           )}
           <div>
-            <h1 className="text-2xl font-bold text-zinc-100">{header}</h1>
+            <h1 className={`text-2xl font-bold ${t("text-zinc-100", "text-zinc-900")}`}>{header}</h1>
             {welcomeMessage && (
-              <p className="mt-1 text-sm text-zinc-400">{welcomeMessage}</p>
+              <p className={`mt-1 text-sm ${t("text-zinc-400", "text-zinc-500")}`}>{welcomeMessage}</p>
             )}
           </div>
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className={`ml-auto rounded-full p-2 transition ${t("hover:bg-white/10", "hover:bg-black/10")}`}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+          >
+            {theme === "dark" ? (
+              <svg className="h-4 w-4 text-zinc-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            ) : (
+              <svg className="h-4 w-4 text-zinc-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+              </svg>
+            )}
+          </button>
         </div>
       </header>
 
       {/* Tab Navigation */}
-      <nav className="mb-8 flex gap-1 rounded-lg bg-zinc-900 p-1">
+      <nav className={`mb-8 flex gap-1 rounded-lg p-1 ${t("bg-zinc-900", "bg-zinc-200")}`}>
         {tabs
-          .filter((t) => t.show)
+          .filter((tb) => tb.show)
           .map((tab) => (
             <button
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
               className={`flex-1 rounded-md px-4 py-2 text-sm font-medium transition ${
                 activeTab === tab.key
-                  ? "bg-zinc-800 text-zinc-100"
-                  : "text-zinc-400 hover:text-zinc-200"
+                  ? t("bg-zinc-800 text-zinc-100", "bg-white text-zinc-900 shadow-sm")
+                  : t("text-zinc-400 hover:text-zinc-200", "text-zinc-500 hover:text-zinc-700")
               }`}
             >
               {tab.label}
@@ -88,14 +107,16 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
       {/* Tab Content */}
       {activeTab === "products" && (
         <div className="space-y-8">
-          <ProductShowcase products={products} accentColor={accentColor} />
+          <ProductShowcase products={products} accentColor={accentColor} theme={theme} />
+
+          <DataCoverage theme={theme} />
 
           {showAudienceDashboard && audienceDashboardUrl && (
             <section>
-              <h2 className="mb-4 text-lg font-semibold text-zinc-100">
+              <h2 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
                 Audience Intelligence Dashboard
               </h2>
-              <div className="overflow-hidden rounded-xl border border-zinc-800">
+              <div className={`overflow-hidden rounded-xl border ${t("border-zinc-800", "border-zinc-200")}`}>
                 <iframe
                   src={audienceDashboardUrl}
                   className="h-[600px] w-full"
@@ -113,27 +134,28 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
           products={products}
           slug={slug}
           password={password}
+          theme={theme}
         />
       )}
 
       {activeTab === "data-test" && (
-        <DataTestForm slug={slug} password={password} />
+        <DataTestForm slug={slug} password={password} theme={theme} />
       )}
 
       {/* Footer */}
-      <footer className="mt-16 border-t border-zinc-800 pt-8 text-center">
-        <p className="text-sm text-zinc-400">
+      <footer className={`mt-16 border-t pt-8 text-center ${t("border-zinc-800", "border-zinc-200")}`}>
+        <p className={`text-sm ${t("text-zinc-400", "text-zinc-500")}`}>
           Ready to talk?{" "}
           <a
             href={TINA_CALENDAR_URL}
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-green-400 hover:text-green-300"
+            className={`font-medium ${t("text-green-400 hover:text-green-300", "text-green-600 hover:text-green-500")}`}
           >
             Book a call with Tina
           </a>
         </p>
-        <p className="mt-2 text-xs text-zinc-600">
+        <p className={`mt-2 text-xs ${t("text-zinc-600", "text-zinc-400")}`}>
           Powered by pharosIQ Data Solutions
         </p>
       </footer>
