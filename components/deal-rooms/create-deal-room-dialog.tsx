@@ -36,14 +36,27 @@ function slugify(name: string): string {
 }
 
 function generatePassword(): string {
-  const words = [
-    "surge", "signal", "intent", "radar", "pulse", "insight",
-    "spark", "drift", "bloom", "ridge", "crest", "forge",
-    "prism", "vault", "nexus", "orbit", "flare", "swift",
+  const intentWords = [
+    "surge", "intent", "signal", "persona", "funnel", "pipeline",
+    "inmarket", "topical", "firmographic", "technographic",
+    "bombora", "bidstream", "cohort", "propensity", "lookalike",
   ];
-  const w1 = words[Math.floor(Math.random() * words.length)];
-  const w2 = words[Math.floor(Math.random() * words.length)];
-  const num = Math.floor(Math.random() * 90 + 10);
+  const schemaWords = [
+    "contact", "account", "domain", "seniority", "vertical",
+    "taxonomy", "segment", "enrichment", "webhook", "schema",
+    "dataset", "payload", "record", "field", "index",
+  ];
+  const marktechWords = [
+    "nurture", "retarget", "syndicate", "lifecycle", "attribution",
+    "qualified", "MQL", "ABM", "CPL", "TAM", "ICP",
+    "programmatic", "demand", "conversion", "outbound",
+  ];
+  const pools = [intentWords, schemaWords, marktechWords];
+  const pool1 = pools[Math.floor(Math.random() * pools.length)];
+  const pool2 = pools[Math.floor(Math.random() * pools.length)];
+  const w1 = pool1[Math.floor(Math.random() * pool1.length)];
+  const w2 = pool2[Math.floor(Math.random() * pool2.length)];
+  const num = Math.floor(Math.random() * 900 + 100);
   return `${w1}-${w2}-${num}`;
 }
 
