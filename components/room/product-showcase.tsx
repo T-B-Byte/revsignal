@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 const CATEGORY_COLORS: Record<string, string> = {
   data_feeds: "#4f6ef7",
@@ -9,6 +9,168 @@ const CATEGORY_COLORS: Record<string, string> = {
   data_products: "#10b981",
   platform: "#06b6d4",
 };
+
+const CATEGORY_VISUALS: Record<string, { title: string; color: string; bars: { label: string; percent: number }[] }> = {
+  data_feeds: {
+    title: "Signal Coverage by Vertical",
+    color: "#4f6ef7",
+    bars: [
+      { label: "Technology", percent: 89 },
+      { label: "Sales", percent: 82 },
+      { label: "Marketing", percent: 78 },
+      { label: "Finance", percent: 71 },
+      { label: "Healthcare", percent: 64 },
+      { label: "HR", percent: 58 },
+    ],
+  },
+  intelligence_reports: {
+    title: "Report Module Coverage",
+    color: "#7c3aed",
+    bars: [
+      { label: "Buyer Overview", percent: 95 },
+      { label: "Buying Committee", percent: 88 },
+      { label: "Competitive Heat Map", percent: 82 },
+      { label: "Outreach Scripts", percent: 79 },
+      { label: "Call Prep", percent: 75 },
+      { label: "Sentiment Analysis", percent: 68 },
+    ],
+  },
+  monitoring: {
+    title: "Intent Topic Categories",
+    color: "#f59e0b",
+    bars: [
+      { label: "Cloud & Infrastructure", percent: 94 },
+      { label: "Security & Compliance", percent: 91 },
+      { label: "Marketing Technology", percent: 87 },
+      { label: "Sales Technology", percent: 83 },
+      { label: "HR Technology", percent: 76 },
+      { label: "Healthcare IT", percent: 69 },
+    ],
+  },
+  data_products: {
+    title: "Title Variation Coverage by Region",
+    color: "#10b981",
+    bars: [
+      { label: "North America (English)", percent: 97 },
+      { label: "EMEA (12 languages)", percent: 89 },
+      { label: "APAC (8 languages)", percent: 82 },
+      { label: "LATAM (Spanish/Portuguese)", percent: 78 },
+    ],
+  },
+  platform: {
+    title: "Platform Module Readiness",
+    color: "#06b6d4",
+    bars: [
+      { label: "Surge Dossier Generator", percent: 100 },
+      { label: "Surge Trending", percent: 95 },
+      { label: "ICP Analyzer", percent: 90 },
+      { label: "Title Expansion", percent: 88 },
+      { label: "Surge Radar", percent: 85 },
+      { label: "Self-Service Portal", percent: 80 },
+    ],
+  },
+};
+
+const STAGGER_MS = 80;
+const BASE_DELAY_MS = 120;
+
+function ProductVisualBar({
+  label,
+  percent,
+  index,
+  animate,
+  color,
+  theme,
+}: {
+  label: string;
+  percent: number;
+  index: number;
+  animate: boolean;
+  color: string;
+  theme: "dark" | "light";
+}) {
+  const [width, setWidth] = useState(0);
+
+  useEffect(() => {
+    if (!animate) return;
+    const timer = setTimeout(() => {
+      setWidth(percent);
+    }, BASE_DELAY_MS + index * STAGGER_MS);
+    return () => clearTimeout(timer);
+  }, [animate, percent, index]);
+
+  const t = (dark: string, light: string) => theme === "dark" ? dark : light;
+
+  return (
+    <div className="space-y-1">
+      <div className="flex items-baseline justify-between">
+        <span className={`text-xs ${t("text-zinc-300", "text-zinc-600")}`}>{label}</span>
+        <span className={`font-mono text-xs font-semibold ${t("text-zinc-400", "text-zinc-500")}`}>
+          {percent}%
+        </span>
+      </div>
+      <div className={`h-2.5 w-full overflow-hidden rounded-full ${t("bg-white/[0.06]", "bg-zinc-100")}`}>
+        <div
+          className="h-full rounded-full"
+          style={{
+            width: `${width}%`,
+            backgroundColor: color,
+            transition: "width 0.8s cubic-bezier(0.4, 0, 0.2, 1)",
+          }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ProductVisuals({
+  category,
+  theme,
+}: {
+  category: string;
+  theme: "dark" | "light";
+}) {
+  const [animate, setAnimate] = useState(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setAnimate(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const visuals = CATEGORY_VISUALS[category];
+  if (!visuals) return null;
+
+  const t = (dark: string, light: string) => theme === "dark" ? dark : light;
+
+  return (
+    <div
+      className={`mb-6 rounded-lg border p-4 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}
+      style={{ borderTopColor: visuals.color, borderTopWidth: "2px" }}
+    >
+      <div className="flex items-center gap-2 mb-3">
+        <div
+          className="h-2.5 w-2.5 rounded-full shrink-0"
+          style={{ backgroundColor: visuals.color }}
+        />
+        <h4 className={`text-sm font-semibold ${t("text-zinc-200", "text-zinc-800")}`}>
+          {visuals.title}
+        </h4>
+      </div>
+      <div className="space-y-2.5">
+        {visuals.bars.map((bar, i) => (
+          <ProductVisualBar
+            key={bar.label}
+            label={bar.label}
+            percent={bar.percent}
+            index={i}
+            animate={animate}
+            color={visuals.color}
+            theme={theme}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
 
 interface ProductShowcaseProps {
   products: Record<string, unknown>[];
@@ -98,6 +260,9 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
             {/* Expanded Details */}
             {isExpanded && (
               <div className={`border-t p-6 pt-4 ${t("border-zinc-800", "border-zinc-200")}`}>
+                {/* Data Highlights Visualization */}
+                {category && <ProductVisuals category={category} theme={theme} />}
+
                 {/* Key Stats */}
                 {keyStats.length > 0 && (
                   <div className="mb-6">
@@ -106,6 +271,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                         <div
                           key={i}
                           className={`rounded-lg border p-3 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}
+                          style={categoryColor ? { borderLeftColor: categoryColor, borderLeftWidth: "3px" } : undefined}
                         >
                           <p className={`text-sm font-medium ${t("text-zinc-100", "text-zinc-900")}`}>{stat.stat}</p>
                           {stat.source && (
@@ -157,6 +323,9 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {useCases.map((uc, i) => (
                         <div key={i} className={`rounded-lg border p-3 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}>
+                          {categoryColor && (
+                            <div className="mb-2 h-2 w-2 rounded-full" style={{ backgroundColor: categoryColor }} />
+                          )}
                           <p className={`text-sm font-medium ${t("text-zinc-200", "text-zinc-800")}`}>{uc.title}</p>
                           <p className={`mt-1 text-xs ${t("text-zinc-500", "text-zinc-400")}`}>{uc.description}</p>
                           {uc.persona && (
@@ -199,7 +368,10 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                     <div className="space-y-2">
                       {differentiators.map((d, i) => (
                         <div key={i} className={`rounded-lg border p-3 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}>
-                          <p className={`text-xs font-medium ${t("text-zinc-500", "text-zinc-400")}`}>vs. {d.vs_competitor}</p>
+                          <p
+                            className="text-xs font-medium"
+                            style={categoryColor ? { color: categoryColor } : undefined}
+                          >vs. {d.vs_competitor}</p>
                           <p className={`mt-1 text-sm ${t("text-zinc-300", "text-zinc-700")}`}>{d.advantage}</p>
                         </div>
                       ))}
@@ -220,7 +392,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                           className={`rounded-lg border p-4 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}
                         >
                           <p className={`text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>{tierName}</p>
-                          <p className="mt-1 text-lg font-bold" style={{ color: accentColor }}>
+                          <p className="mt-1 text-lg font-bold" style={{ color: categoryColor || accentColor }}>
                             {tier.price}
                             <span className={`text-sm font-normal ${t("text-zinc-500", "text-zinc-400")}`}>
                               {tier.unit}
