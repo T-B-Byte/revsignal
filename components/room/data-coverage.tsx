@@ -104,7 +104,7 @@ function AnimatedBar({
     return () => clearTimeout(timer);
   }, [animate, bar.percentage, index, maxPercentage]);
 
-  const barBg = theme === "dark" ? "bg-white/[0.06]" : "bg-zinc-100";
+  const barBg = theme === "dark" ? "bg-white/[0.08]" : "bg-zinc-100";
 
   return (
     <div className="space-y-1.5">
@@ -161,7 +161,7 @@ function BarSection({
     <div
       ref={ref}
       className={t(
-        "rounded-xl border border-zinc-800 bg-zinc-900/60 p-6",
+        "rounded-xl border border-slate-700 bg-slate-800/60 p-6",
         "rounded-xl border border-zinc-200 bg-white p-6 shadow-sm"
       )}
     >
@@ -205,7 +205,7 @@ export function DataCoverage({ theme = "dark" }: DataCoverageProps) {
           <div
             key={stat.label}
             className={t(
-              "flex flex-col items-center rounded-xl border border-zinc-800 bg-zinc-900/60 px-4 py-5",
+              "flex flex-col items-center rounded-xl border border-slate-700 bg-slate-800/60 px-4 py-5",
               "flex flex-col items-center rounded-xl border border-zinc-200 bg-white px-4 py-5 shadow-sm"
             )}
           >

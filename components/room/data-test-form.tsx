@@ -70,7 +70,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
 
   if (submitted && result) {
     return (
-      <div className={`rounded-xl border p-8 text-center ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+      <div className={`rounded-xl border p-8 text-center ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-600/20 text-green-400">
           <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -98,7 +98,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Explainer */}
-      <div className={`rounded-xl border p-6 ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+      <div className={`rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
         <h2 className={`text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>Request a Data Test</h2>
         <p className={`mt-2 text-sm ${t("text-zinc-400", "text-zinc-500")}`}>
           Upload up to 100 company domains and we&apos;ll show you what our data looks like for your
@@ -107,7 +107,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
       </div>
 
       {/* Domain Input */}
-      <div className={`rounded-xl border p-6 ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+      <div className={`rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
         <label className={`mb-2 block text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>
           Company Domains
           <span className={`ml-2 text-xs ${t("text-zinc-500", "text-zinc-400")}`}>
@@ -119,7 +119,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
           onChange={(e) => setDomainsText(e.target.value)}
           rows={8}
           placeholder={"acme.com\nglobex.corp\ninitec.com\nsoylent.co"}
-          className={`w-full rounded-lg border px-4 py-3 font-mono text-sm focus:border-green-500 focus:outline-none ${t("border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-600", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
+          className={`w-full rounded-lg border px-4 py-3 font-mono text-sm focus:border-green-500 focus:outline-none ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-600", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
         />
         {domainCount > 100 && (
           <p className="mt-1 text-sm text-red-400">Maximum 100 domains. You have {domainCount}.</p>
@@ -127,10 +127,10 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
       </div>
 
       {/* Scope Selection */}
-      <div className={`rounded-xl border p-6 ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+      <div className={`rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
         <label className={`mb-3 block text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>Test Scope</label>
         <div className="space-y-3">
-          <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${t("border-zinc-800 bg-zinc-950 hover:border-zinc-700", "border-zinc-200 bg-zinc-50 hover:border-zinc-300")}`}>
+          <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${t("border-slate-700 bg-slate-900 hover:border-slate-600", "border-zinc-200 bg-zinc-50 hover:border-zinc-300")}`}>
             <input
               type="radio"
               name="scope"
@@ -146,7 +146,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
               </p>
             </div>
           </label>
-          <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${t("border-zinc-800 bg-zinc-950 hover:border-zinc-700", "border-zinc-200 bg-zinc-50 hover:border-zinc-300")}`}>
+          <label className={`flex cursor-pointer items-start gap-3 rounded-lg border p-4 transition ${t("border-slate-700 bg-slate-900 hover:border-slate-600", "border-zinc-200 bg-zinc-50 hover:border-zinc-300")}`}>
             <input
               type="radio"
               name="scope"
@@ -166,7 +166,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
       </div>
 
       {/* Contact Info */}
-      <div className={`rounded-xl border p-6 ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+      <div className={`rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
         <label className={`mb-3 block text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>
           Your Information (Optional)
         </label>
@@ -177,7 +177,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
             value={prospectName}
             onChange={(e) => setProspectName(e.target.value)}
             maxLength={200}
-            className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
+            className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
           />
           <input
             type="email"
@@ -185,7 +185,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
             value={prospectEmail}
             onChange={(e) => setProspectEmail(e.target.value)}
             maxLength={200}
-            className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
+            className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
           />
           <input
             type="text"
@@ -193,7 +193,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
             value={prospectCompany}
             onChange={(e) => setProspectCompany(e.target.value)}
             maxLength={200}
-            className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
+            className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
           />
         </div>
       </div>

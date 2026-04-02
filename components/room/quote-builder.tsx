@@ -97,7 +97,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
 
   if (submitted) {
     return (
-      <div className={`rounded-xl border p-8 text-center ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+      <div className={`rounded-xl border p-8 text-center ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
         <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-600/20 text-green-400">
           <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
@@ -140,7 +140,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
           return (
             <div
               key={product.product_id as string}
-              className={`rounded-xl border overflow-hidden ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}
+              className={`rounded-xl border overflow-hidden ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}
             >
               {/* Product header */}
               <div className="p-5">
@@ -167,7 +167,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
               </div>
 
               {/* Tier selection */}
-              <div className={`border-t px-5 py-4 ${t("border-zinc-800 bg-zinc-950/50", "border-zinc-100 bg-zinc-50")}`}>
+              <div className={`border-t px-5 py-4 ${t("border-slate-700 bg-slate-900/50", "border-zinc-100 bg-zinc-50")}`}>
                 <p className={`text-xs font-medium uppercase tracking-wider mb-3 ${t("text-zinc-500", "text-zinc-400")}`}>
                   Select a tier to add
                 </p>
@@ -183,7 +183,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
                           isAdded
                             ? "border-green-500/30 bg-green-500/10 cursor-default"
                             : t(
-                                "border-zinc-700 bg-zinc-900 hover:border-green-500 hover:bg-green-500/5 cursor-pointer",
+                                "border-slate-600 bg-slate-800 hover:border-green-500 hover:bg-green-500/5 cursor-pointer",
                                 "border-zinc-300 bg-white hover:border-green-500 hover:bg-green-50 cursor-pointer"
                               )
                         }`}
@@ -212,11 +212,11 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
 
       {/* Quote Summary */}
       {items.length > 0 && (
-        <div className={`rounded-xl border p-6 ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+        <div className={`rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
           <h2 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>Your Quote</h2>
           <div className="space-y-2">
             {items.map((item, i) => (
-              <div key={i} className={`flex items-center justify-between rounded-lg border px-4 py-3 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}>
+              <div key={i} className={`flex items-center justify-between rounded-lg border px-4 py-3 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}>
                 <div>
                   <p className={`text-sm font-medium ${t("text-zinc-200", "text-zinc-800")}`}>{item.product_name}</p>
                   <p className={`text-xs ${t("text-zinc-500", "text-zinc-400")}`}>{item.tier}</p>
@@ -238,7 +238,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
             ))}
           </div>
 
-          <div className={`mt-4 flex items-center justify-between border-t pt-4 ${t("border-zinc-800", "border-zinc-200")}`}>
+          <div className={`mt-4 flex items-center justify-between border-t pt-4 ${t("border-slate-700", "border-zinc-200")}`}>
             <p className={`text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>Estimated Total</p>
             <p className="text-lg font-mono font-bold text-green-400">
               ${total.toLocaleString()}
@@ -249,7 +249,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
 
       {/* Contact Info + Submit */}
       {items.length > 0 && (
-        <div className={`rounded-xl border p-6 ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+        <div className={`rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
           <h2 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>Your Information (Optional)</h2>
           <div className="grid gap-4 sm:grid-cols-2">
             <input
@@ -258,7 +258,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
               value={prospectName}
               onChange={(e) => setProspectName(e.target.value)}
               maxLength={200}
-              className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
+              className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
             />
             <input
               type="email"
@@ -266,7 +266,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
               value={prospectEmail}
               onChange={(e) => setProspectEmail(e.target.value)}
               maxLength={200}
-              className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
+              className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
             />
             <input
               type="text"
@@ -274,7 +274,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
               value={prospectTitle}
               onChange={(e) => setProspectTitle(e.target.value)}
               maxLength={200}
-              className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
+              className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
             />
             <textarea
               placeholder="Notes (e.g., interested in a pilot, specific use case)"
@@ -282,7 +282,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
               onChange={(e) => setProspectNotes(e.target.value)}
               maxLength={2000}
               rows={2}
-              className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none sm:col-span-2 ${t("border-zinc-700 bg-zinc-950 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
+              className={`rounded-lg border px-4 py-2.5 text-sm focus:border-green-500 focus:outline-none sm:col-span-2 ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-500", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
             />
           </div>
 

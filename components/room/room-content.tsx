@@ -52,7 +52,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
   ];
 
   return (
-    <div className={`mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 min-h-screen transition-colors ${t("bg-zinc-950 text-zinc-100", "bg-zinc-50 text-zinc-900")}`}>
+    <div className={`mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8 min-h-screen transition-colors ${t("bg-slate-900 text-zinc-100", "bg-zinc-50 text-zinc-900")}`}>
       {/* Header */}
       <header className="mb-8">
         <div className="flex items-center gap-4">
@@ -95,7 +95,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
       </header>
 
       {/* Tab Navigation */}
-      <nav className={`mb-8 flex gap-1 overflow-x-auto rounded-lg p-1 scrollbar-none ${t("bg-zinc-900", "bg-zinc-200")}`}>
+      <nav className={`mb-8 flex gap-1 overflow-x-auto rounded-lg p-1 scrollbar-none ${t("bg-slate-800", "bg-zinc-200")}`}>
         {tabs
           .filter((tb) => tb.show)
           .map((tab) => (

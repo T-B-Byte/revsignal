@@ -109,7 +109,7 @@ function ProductVisualBar({
           {percent}%
         </span>
       </div>
-      <div className={`h-2.5 w-full overflow-hidden rounded-full ${t("bg-white/[0.06]", "bg-zinc-100")}`}>
+      <div className={`h-2.5 w-full overflow-hidden rounded-full ${t("bg-white/[0.08]", "bg-zinc-100")}`}>
         <div
           className="h-full rounded-full"
           style={{
@@ -143,7 +143,7 @@ function ProductVisuals({
 
   return (
     <div
-      className={`mb-6 rounded-lg border p-4 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}
+      className={`mb-6 rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}
       style={{ borderTopColor: visuals.color, borderTopWidth: "2px" }}
     >
       <div className="flex items-center gap-2 mb-3">
@@ -184,7 +184,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
 
   if (products.length === 0) {
     return (
-      <div className={`rounded-xl border p-8 text-center ${t("border-zinc-800 bg-zinc-900", "border-zinc-200 bg-white shadow-sm")}`}>
+      <div className={`rounded-xl border p-8 text-center ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
         <p className={t("text-zinc-400", "text-zinc-500")}>No products configured for this deal room yet.</p>
       </div>
     );
@@ -207,7 +207,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
         return (
           <div
             key={id}
-            className={`overflow-hidden rounded-xl border transition ${t("border-zinc-800 bg-zinc-900 hover:border-zinc-700", "border-zinc-200 bg-white hover:border-zinc-300 shadow-sm")}`}
+            className={`overflow-hidden rounded-xl border transition ${t("border-slate-700 bg-slate-800 hover:border-slate-600", "border-zinc-200 bg-white hover:border-zinc-300 shadow-sm")}`}
             style={{ borderLeftColor: accentColor, borderLeftWidth: '3px' }}
           >
             {/* Product Header (always visible) */}
@@ -259,7 +259,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
 
             {/* Expanded Details */}
             {isExpanded && (
-              <div className={`border-t p-6 pt-4 ${t("border-zinc-800", "border-zinc-200")}`}>
+              <div className={`border-t p-6 pt-4 ${t("border-slate-700", "border-zinc-200")}`}>
                 {/* Data Highlights Visualization */}
                 {category && <ProductVisuals category={category} theme={theme} />}
 
@@ -270,7 +270,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                       {keyStats.map((stat, i) => (
                         <div
                           key={i}
-                          className={`rounded-lg border p-3 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}
+                          className={`rounded-lg border p-3 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}
                           style={categoryColor ? { borderLeftColor: categoryColor, borderLeftWidth: "3px" } : undefined}
                         >
                           <p className={`text-sm font-medium ${t("text-zinc-100", "text-zinc-900")}`}>{stat.stat}</p>
@@ -322,7 +322,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                     </h4>
                     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                       {useCases.map((uc, i) => (
-                        <div key={i} className={`rounded-lg border p-3 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}>
+                        <div key={i} className={`rounded-lg border p-3 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}>
                           {categoryColor && (
                             <div className="mb-2 h-2 w-2 rounded-full" style={{ backgroundColor: categoryColor }} />
                           )}
@@ -367,7 +367,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                     </h4>
                     <div className="space-y-2">
                       {differentiators.map((d, i) => (
-                        <div key={i} className={`rounded-lg border p-3 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}>
+                        <div key={i} className={`rounded-lg border p-3 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}>
                           <p
                             className="text-xs font-medium"
                             style={categoryColor ? { color: categoryColor } : undefined}
@@ -389,7 +389,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                       {Object.entries(pricingTiers).map(([tierName, tier]) => (
                         <div
                           key={tierName}
-                          className={`rounded-lg border p-4 ${t("border-zinc-800 bg-zinc-950", "border-zinc-200 bg-zinc-50")}`}
+                          className={`rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}
                         >
                           <p className={`text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>{tierName}</p>
                           <p className="mt-1 text-lg font-bold" style={{ color: categoryColor || accentColor }}>

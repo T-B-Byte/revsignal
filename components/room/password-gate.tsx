@@ -88,7 +88,7 @@ export function PasswordGate({ slug, onUnlock }: PasswordGateProps) {
               placeholder="Enter password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-zinc-700 bg-zinc-900 px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-zinc-100 placeholder-zinc-500 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
             />
           </div>
 
