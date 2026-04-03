@@ -234,6 +234,8 @@ export async function POST(request: NextRequest, context: RouteContext) {
         tokensUsed: result.tokensUsed,
         followUpsExtracted: result.followUpsExtracted ?? [],
         meetingDetected: result.meetingDetected ?? null,
+        userConversationId: result.userConversationId ?? null,
+        assistantConversationId: result.assistantConversationId ?? null,
       });
     } catch (err) {
       lastError = err;

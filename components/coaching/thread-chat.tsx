@@ -546,9 +546,20 @@ export function ThreadChat({
       const data = await res.json();
 
       if (interactionType === "coaching") {
-        // AI response — add assistant message
+        // Replace optimistic user message with real conversation_id from server
+        if (data.userConversationId) {
+          setMessages((prev) =>
+            prev.map((m) =>
+              m.conversation_id === userMsg.conversation_id
+                ? { ...m, conversation_id: data.userConversationId }
+                : m
+            )
+          );
+        }
+
+        // AI response — add assistant message with real conversation_id
         const assistantMsg: CoachingMessage = {
-          conversation_id: crypto.randomUUID(),
+          conversation_id: data.assistantConversationId || crypto.randomUUID(),
           user_id: "",
           thread_id: thread.thread_id,
           role: "assistant",

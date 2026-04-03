@@ -2072,6 +2072,8 @@ export interface ThreadResponseResult {
   followUpsExtracted: { description: string; due_date: string | null }[];
   meetingDetected: MeetingDetectedData | null;
   projectsDetected: ProjectDetectedData[];
+  userConversationId: string | null;
+  assistantConversationId: string | null;
 }
 
 /**
@@ -2439,34 +2441,40 @@ export async function generateThreadResponse(
   const sourcesCited = collectCoachingSources(strategicCtx, null);
   const now = new Date().toISOString();
 
-  const { error: insertError } = await supabase.from("coaching_conversations").insert([
-    {
-      user_id: userId,
-      thread_id: threadId,
-      role: "user",
-      content: userMessage,
-      created_at: now,
-    },
-    {
-      user_id: userId,
-      thread_id: threadId,
-      role: "assistant",
-      content: cleanResponse,
-      context_used: {
-        dealId: options?.dealId ?? null,
-        threadBrief: !!options?.threadBrief,
-        followUpsExtracted: followUpsExtracted.length,
+  const { data: savedMessages, error: insertError } = await supabase
+    .from("coaching_conversations")
+    .insert([
+      {
+        user_id: userId,
+        thread_id: threadId,
+        role: "user",
+        content: userMessage,
+        created_at: now,
       },
-      sources_cited: sourcesCited,
-      tokens_used: tokensUsed,
-      created_at: new Date(Date.now() + 1).toISOString(),
-    },
-  ]);
+      {
+        user_id: userId,
+        thread_id: threadId,
+        role: "assistant",
+        content: cleanResponse,
+        context_used: {
+          dealId: options?.dealId ?? null,
+          threadBrief: !!options?.threadBrief,
+          followUpsExtracted: followUpsExtracted.length,
+        },
+        sources_cited: sourcesCited,
+        tokens_used: tokensUsed,
+        created_at: new Date(Date.now() + 1).toISOString(),
+      },
+    ])
+    .select("conversation_id, role");
 
   if (insertError) {
     console.error("[strategist] Failed to save messages:", insertError.message);
     throw new Error(`Failed to save conversation: ${insertError.message}`);
   }
+
+  const userConversationId = savedMessages?.find((m) => m.role === "user")?.conversation_id ?? null;
+  const assistantConversationId = savedMessages?.find((m) => m.role === "assistant")?.conversation_id ?? null;
 
   // Step 8: Save extracted follow-ups
   if (followUpsExtracted.length > 0) {
@@ -2537,6 +2545,8 @@ export async function generateThreadResponse(
     followUpsExtracted,
     meetingDetected,
     projectsDetected,
+    userConversationId,
+    assistantConversationId,
   };
 }
 
