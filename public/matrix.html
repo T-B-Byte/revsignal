@@ -1,0 +1,552 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Martech Target Accounts: Authorization Matrix</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --t1: #2d7a4f; --t1-light: #e6f5ee; --t1-border: #7dd3a8;
+      --t2: #2a5fa5; --t2-light: #e0edfa; --t2-border: #93b4f4;
+      --t3: #9333ea; --t3-light: #f3e8ff; --t3-border: #c084fc;
+      --t4: #dc2626; --t4-light: #fef2f2; --t4-border: #fca5a5;
+      --gray-900: #111827; --gray-700: #374151; --gray-500: #6b7280;
+      --gray-300: #d1d5db; --gray-100: #f3f4f6;
+      --amber-600: #d97706; --amber-50: #fffbeb; --amber-border: #fcd34d;
+      --red-600: #dc2626; --red-50: #fef2f2; --red-border: #fca5a5;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-900); line-height: 1.5; background: #fff;
+    }
+
+    @media print {
+      body { font-size: 10px; }
+      .page { box-shadow: none; padding: 32px; }
+      .save-banner, .password-overlay { display: none; }
+      select.cell-dropdown { display: none; }
+      .print-value { display: block !important; }
+    }
+
+    .page { max-width: none; margin: 0 auto; padding: 48px 24px; background: #fff; }
+    .header { border-bottom: 3px solid var(--gray-900); padding-bottom: 16px; margin-bottom: 32px; }
+    .header h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.5px; color: var(--gray-900); margin-bottom: 4px; }
+    .header-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-500); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+    .context-box { background: var(--gray-100); border-left: 4px solid var(--gray-500); padding: 14px 18px; margin-bottom: 28px; font-size: 13px; color: var(--gray-700); }
+    .context-box strong { color: var(--gray-900); }
+    .save-banner { position: fixed; top: 0; left: 0; right: 0; background: var(--t1); color: #fff; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; transform: translateY(-100%); transition: transform 0.3s ease; z-index: 100; }
+    .save-banner.visible { transform: translateY(0); }
+
+    /* ACCOUNT MATRIX */
+    .accounts-table { width: 100%; table-layout: auto; border-collapse: collapse; font-size: 12px; margin-bottom: 24px; }
+    .accounts-table thead th { padding: 8px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-100); color: var(--gray-700); text-align: left; border-bottom: 2px solid var(--gray-300); }
+    .accounts-table thead th:nth-child(1) { width: 24px; }
+    .accounts-table thead th:nth-child(2) { width: 180px; white-space: nowrap; }
+    .accounts-table thead th.check-col { text-align: center; }
+    .accounts-table thead th.check-col.t1-header { background: var(--t1-light); color: var(--t1); }
+    .accounts-table thead th.check-col.t2-header { background: var(--t2-light); color: var(--t2); }
+    .accounts-table thead th.check-col.t3-header { background: var(--t3-light); color: var(--t3); }
+    .accounts-table thead th.check-col.t4-header { background: var(--t4-light); color: var(--t4); }
+    .accounts-table thead th.stage-col { text-align: center; background: #fef3c7; color: #92400e; font-size: 7px; line-height: 1.3; padding: 4px 1px; width: 52px; min-width: 52px; max-width: 52px; white-space: normal; overflow-wrap: break-word; hyphens: none; }
+    .accounts-table tbody td { padding: 5px 6px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .accounts-table tbody td:nth-child(1) { padding-right: 2px; width: 24px; }
+    .accounts-table tbody td:nth-child(2) { white-space: nowrap; font-size: 12px; font-weight: 700; padding-left: 2px; text-align: left; }
+    .accounts-table tbody td.check-cell { text-align: center; }
+    .accounts-table tbody td.stage-cell { text-align: center; }
+    .accounts-table tbody td.dropdown-cell { text-align: center; padding: 4px 3px; width: 1%; white-space: nowrap; }
+    .accounts-table tbody td.acv-display-cell { text-align: right; padding: 4px 6px; width: 1%; white-space: nowrap; }
+    .acv-value { font-size: 12px; font-weight: 700; color: var(--gray-900); }
+    .accounts-table tbody tr:hover { background: var(--gray-100); }
+    .accounts-table tbody tr.highlight { background: #fffbeb; }
+    .accounts-table tbody tr.highlight td { font-weight: 600; }
+    .totals-row td { font-weight: 700 !important; border-top: 2px solid var(--gray-900); border-bottom: none !important; padding-top: 10px; }
+
+    .auth-check, .cpl-check { width: 18px; height: 18px; cursor: pointer; accent-color: var(--t1); border-radius: 3px; }
+    .cpl-check { accent-color: var(--t2); }
+    .auth-check.t2-check { accent-color: var(--t2); }
+    .auth-check.t3-check { accent-color: var(--t3); }
+    .auth-check.t4-check { accent-color: var(--t4); }
+    .auth-check:disabled { cursor: not-allowed; opacity: 0.4; }
+    .stage-check { width: 16px; height: 16px; cursor: pointer; accent-color: #d97706; border-radius: 3px; }
+
+    select.cell-dropdown { width: auto; padding: 3px 2px; border: 1px solid var(--gray-300); border-radius: 4px; font-family: inherit; font-size: 11px; background: #fff; color: var(--gray-900); cursor: pointer; }
+    select.cell-dropdown:focus { outline: none; border-color: var(--t2); }
+    .print-value { display: none; font-size: 11px; font-weight: 600; text-align: center; }
+
+    .cat-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
+    .cat-crm { background: #dbeafe; color: #1e40af; }
+    .cat-abm { background: #ede9fe; color: #5b21b6; }
+    .cat-intent { background: #fce7f3; color: #9d174d; }
+    .cat-data { background: #d1fae5; color: #065f46; }
+    .cat-map { background: #fef3c7; color: #92400e; }
+    .cat-sales { background: #e0e7ff; color: #3730a3; }
+    .cat-content { background: #f3e8ff; color: #6b21a8; }
+    .cat-mail { background: #ffe4e6; color: #9f1239; }
+    .cat-demand { background: #cffafe; color: #155e75; }
+    .cat-abm-conv { background: #fdf2f8; color: #831843; }
+    .cat-identity { background: #ccfbf1; color: #134e4a; }
+    .cat-enrichment { background: #dcfce7; color: #166534; }
+    .cat-agency { background: #fef3c7; color: #78350f; }
+    .cat-visitor { background: #fce7f3; color: #831843; }
+    .cat-distrib { background: #e0f2fe; color: #075985; }
+    .restricted-flag { font-size: 9px; font-weight: 700; color: var(--red-600); text-transform: uppercase; margin-left: 4px; }
+    .approval-note { background: var(--amber-50); border: 1px solid var(--amber-border); border-left: 4px solid var(--amber-600); padding: 14px 18px; font-size: 13px; color: var(--gray-700); }
+    .approval-note strong { color: var(--amber-600); }
+    .auth-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; padding: 12px 18px; background: var(--gray-100); border-radius: 6px; font-size: 13px; font-weight: 600; }
+    .auth-summary .t1-count { color: var(--t1); }
+    .auth-summary .t2-count { color: var(--t2); }
+    .auth-summary .t3-count { color: var(--t3); }
+    .auth-summary .t4-count { color: var(--t4); }
+    .auth-summary .total-count { color: var(--gray-700); margin-left: auto; }
+
+    /* PASSWORD GATE */
+    .password-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: #fff; z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .password-form { text-align: center; max-width: 360px; width: 100%; padding: 0 24px; }
+    .password-form h1 { font-size: 22px; font-weight: 800; color: var(--gray-900); margin-bottom: 6px; }
+    .password-form p { font-size: 13px; color: var(--gray-500); margin-bottom: 28px; }
+    .password-form input[type="password"] {
+      width: 100%; padding: 12px 16px; border: 2px solid var(--gray-300); border-radius: 8px;
+      font-family: inherit; font-size: 14px; outline: none;
+    }
+    .password-form input[type="password"]:focus { border-color: #dc2626; }
+    .password-form button {
+      margin-top: 14px; width: 100%; padding: 12px; background: #dc2626; color: #fff;
+      border: none; border-radius: 8px; font-family: inherit; font-size: 14px; font-weight: 600;
+      cursor: pointer;
+    }
+    .password-form button:hover { background: #b91c1c; }
+    .password-error { color: #dc2626; font-size: 12px; margin-top: 8px; display: none; }
+  </style>
+</head>
+<body>
+
+<!-- PASSWORD GATE -->
+<div class="password-overlay" id="passwordOverlay">
+  <div class="password-form">
+    <h1>pharosIQ Confidential</h1>
+    <p>Enter the access code to view this document.</p>
+    <form id="passwordForm">
+      <input type="password" id="passwordInput" placeholder="Access code" autofocus>
+      <div class="password-error" id="passwordError">Invalid access code.</div>
+      <button type="submit">Access Document</button>
+    </form>
+  </div>
+</div>
+
+<div class="save-banner" id="saveBanner">Saved</div>
+
+<!-- ACCOUNT MATRIX -->
+<div class="page" id="mainContent" style="display:none;">
+  <div class="header">
+    <h1>Martech Target Accounts: Authorization Matrix</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential</span>
+      <span>April 2026</span>
+    </div>
+  </div>
+
+  <div class="context-box">
+    <strong>Purpose:</strong> For each target account, assign the authorized tier, estimated ACV, who makes the intro, and the buyer type. Track pipeline stage. All selections persist automatically.
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;font-size:11px;">
+    <div style="background:var(--t1-light);border-left:3px solid var(--t1);padding:8px 10px;">
+      <div style="font-weight:700;color:var(--t1);margin-bottom:4px;">T1: Persona + Intent</div>
+      <div style="color:var(--gray-700);line-height:1.4;">No PII. Account/persona signals, intent topics, seniority bands. Any buyer. <strong>$60K-$96K</strong></div>
+    </div>
+    <div style="background:var(--t2-light);border-left:3px solid var(--t2);padding:8px 10px;">
+      <div style="font-weight:700;color:var(--t2);margin-bottom:4px;">T2: Contacts + Intent</div>
+      <div style="color:var(--gray-700);line-height:1.4;">Named contacts: name, title, email, company, intent topic. Brand Direct only. <strong>$144K-$300K</strong></div>
+    </div>
+    <div style="background:var(--t3-light);border-left:3px solid var(--t3);padding:8px 10px;">
+      <div style="font-weight:700;color:var(--t3);margin-bottom:4px;">T3: Contacts + Intent (OEM)</div>
+      <div style="color:var(--gray-700);line-height:1.4;">Contact records + intent, embedded into buyer's platform via OEM/API. Martech platforms. <strong>$300K-$504K</strong></div>
+    </div>
+    <div style="background:var(--t4-light);border-left:3px solid var(--t4);padding:8px 10px;">
+      <div style="font-weight:700;color:var(--t4);margin-bottom:4px;">T4: Contacts + Content</div>
+      <div style="color:var(--gray-700);line-height:1.4;">Everything: contacts, content consumed, full behavioral fingerprint. Enterprise platforms only. <strong>$1.2M+</strong></div>
+    </div>
+  </div>
+
+  <div class="auth-summary">
+    <span class="t1-count">T1: <span id="t1Count">0</span></span>
+    <span class="t2-count">T2: <span id="t2Count">0</span></span>
+    <span class="t3-count">T3: <span id="t3Count">0</span></span>
+    <span class="t4-count">T4: <span id="t4Count">0</span></span>
+    <span class="total-count">Accounts: <span id="totalAccounts">0</span> | Total ACV: <span id="totalAcv">$0</span></span>
+  </div>
+
+  <table class="accounts-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Account</th>
+        <th>Category</th>
+        <th class="check-col">CPL</th>
+        <th class="check-col t1-header">T1</th>
+        <th class="check-col t2-header">T2</th>
+        <th class="check-col t3-header">T3</th>
+        <th class="check-col t4-header">T4</th>
+        <th>Current Customer Type</th>
+        <th>ACV</th>
+        <th>Intro</th>
+        <th class="stage-col">Made<br>Contact</th>
+        <th class="stage-col">Meeting<br>Set</th>
+        <th class="stage-col">Qualified</th>
+        <th class="stage-col">Data<br>Test</th>
+        <th class="stage-col">Negoti-<br>ation</th>
+        <th class="stage-col">Closed</th>
+      </tr>
+    </thead>
+    <tbody id="accountsBody">
+    </tbody>
+  </table>
+
+  <div class="context-box" style="border-left-color: var(--red-600); margin-bottom: 20px;">
+    <strong>Excluded:</strong> Intentsify excluded entirely per Jeff. Triblio (acquired by IDG/Foundry, 2020), Terminus (acquired by DemandScience, 2023), and N.Rich (too small) removed from targets.
+  </div>
+
+  <div class="approval-note">
+    <strong>Requesting:</strong> Jeff's approval on tier assignments for all accounts on this list. Tina will coordinate with Marty on any accounts where pharosIQ has existing relationships.
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ============================================================
+// Password gate
+// ============================================================
+var PASSWORD = 'revenue2026';
+(function() {
+  if (sessionStorage.getItem('matrix-authed') === '1') {
+    document.getElementById('passwordOverlay').style.display = 'none';
+    document.getElementById('mainContent').style.display = 'block';
+    return;
+  }
+  document.getElementById('passwordForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    var val = document.getElementById('passwordInput').value.trim().toLowerCase();
+    if (val === PASSWORD) {
+      sessionStorage.setItem('matrix-authed', '1');
+      document.getElementById('passwordOverlay').style.display = 'none';
+      document.getElementById('mainContent').style.display = 'block';
+    } else {
+      document.getElementById('passwordError').style.display = 'block';
+    }
+  });
+})();
+
+// ============================================================
+// State persistence: Supabase API (primary) + localStorage (cache)
+// ============================================================
+var API_URL = '/api/daas-framework';
+var PREFIX = 'daasfw-';
+
+var TIERS = ['t1', 't2', 't3', 't4'];
+var STAGES = ['made_contact', 'meeting_set', 'interested', 'data_test', 'negotiation', 'closed'];
+
+var LEADS_OPTIONS = ['', 'Current Direct', 'Wholesale', 'Through Agency'];
+var INTRO_OPTIONS = ['', 'Chris', 'Jeff', 'Marty', 'Raj', 'Singh', 'Tina'];
+var TIER_ACV_RANGES = { t1: '$60K-$96K', t2: '$144K-$300K', t3: '$300K-$504K', t4: '$1.2M+' };
+var TIER_ACV_DEFAULTS = { t1: '$60,000', t2: '$144,000', t3: '$300,000', t4: '$1,200,000' };
+
+var state = { checks: {}, acvs: {}, leads: {}, intros: {}, stages: {}, decisions: {}, cpl_values: {} };
+
+var accounts = [
+  { name: 'HubSpot', cat: 'CRM/MAP', catClass: 'cat-crm', restricted: false },
+  { name: 'Salesforce (AppExchange)', cat: 'CRM/MAP', catClass: 'cat-crm', restricted: false },
+  { name: 'Madison Logic', cat: 'Intent Data (Competitor)', catClass: 'cat-intent', restricted: false },
+  { name: '6sense', cat: 'ABM Platform', catClass: 'cat-abm', restricted: false },
+  { name: 'Demandbase', cat: 'ABM Platform', catClass: 'cat-abm', restricted: false },
+  { name: 'TechTarget', cat: 'Intent Data (Competitor)', catClass: 'cat-intent', restricted: false },
+  { name: 'Foundry (IDG)', cat: 'Intent/Demand Gen', catClass: 'cat-demand', restricted: false },
+  { name: 'ZoomInfo', cat: 'Data/Intelligence', catClass: 'cat-data', restricted: false },
+  { name: 'Bombora', cat: 'Intent Data (Competitor)', catClass: 'cat-intent', restricted: false },
+  { name: 'Clearbit (Breeze/HubSpot)', cat: 'Data Enrichment', catClass: 'cat-enrichment', restricted: false },
+  { name: 'LiveRamp', cat: 'Data/Identity', catClass: 'cat-identity', restricted: false },
+  { name: 'Eloqua (Oracle)', cat: 'MAP', catClass: 'cat-map', restricted: false },
+  { name: 'Clay', cat: 'Data/Intelligence', catClass: 'cat-data', restricted: false },
+  { name: 'Apollo.io', cat: 'Sales Intelligence', catClass: 'cat-sales', restricted: false },
+  { name: 'Integrate', cat: 'Lead Routing', catClass: 'cat-demand', restricted: false, added: true },
+  { name: 'WPP', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'Publicis Groupe', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'Omnicom', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'IPG (Interpublic)', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'Dentsu', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'LeadScale', cat: 'Lead Routing', catClass: 'cat-demand', restricted: false, added: true },
+  { name: 'Enhancio', cat: 'Lead Routing', catClass: 'cat-demand', restricted: false, added: true },
+  { name: 'Converter', cat: 'Lead Routing', catClass: 'cat-demand', restricted: false, added: true },
+  { name: 'Lusha', cat: 'Data/Intelligence', catClass: 'cat-data', restricted: false },
+  { name: 'DemandScience', cat: 'Intent/Demand Gen', catClass: 'cat-demand', restricted: false },
+  { name: 'LeadIQ', cat: 'Sales Intelligence', catClass: 'cat-sales', restricted: false },
+  { name: 'Metadata.io', cat: 'ABM/Demand Gen', catClass: 'cat-abm', restricted: false },
+  { name: 'RollWorks', cat: 'ABM Platform', catClass: 'cat-abm', restricted: false },
+  { name: 'Qualified', cat: 'Conversational ABM', catClass: 'cat-abm-conv', restricted: false },
+  { name: '6signal', cat: 'Data/Intelligence', catClass: 'cat-data', restricted: false },
+  { name: 'NetLine', cat: 'Content/Demand Gen', catClass: 'cat-demand', restricted: false },
+  { name: 'Postal.io', cat: 'Direct Mail/ABM', catClass: 'cat-mail', restricted: false },
+  { name: 'Reachdesk', cat: 'Direct Mail/ABM', catClass: 'cat-mail', restricted: false },
+  { name: 'Sendoso', cat: 'Direct Mail/ABM', catClass: 'cat-mail', restricted: false },
+  { name: 'Alyce', cat: 'Direct Mail/ABM', catClass: 'cat-mail', restricted: false },
+  { name: 'PathFactory', cat: 'Content Intelligence', catClass: 'cat-content', restricted: false },
+  { name: 'Uberflip', cat: 'Content Intelligence', catClass: 'cat-content', restricted: false },
+  { name: 'Warmly', cat: 'Visitor ID / Rev Orch', catClass: 'cat-visitor', restricted: false },
+  { name: 'RB2B', cat: 'Visitor ID / Rev Orch', catClass: 'cat-visitor', restricted: false },
+  { name: 'Breakout', cat: 'Visitor ID / Rev Orch', catClass: 'cat-visitor', restricted: false },
+  { name: 'TD SYNNEX', cat: 'IT Distribution / Channel', catClass: 'cat-distrib', restricted: false },
+  { name: 'Ingram Micro', cat: 'IT Distribution / Channel', catClass: 'cat-distrib', restricted: false },
+  { name: 'Arrow Electronics', cat: 'IT Distribution / Channel', catClass: 'cat-distrib', restricted: false },
+];
+
+function loadLocal(key) { try { return JSON.parse(localStorage.getItem(key)) || {}; } catch(e) { return {}; } }
+function showSave() { var b = document.getElementById('saveBanner'); b.classList.add('visible'); setTimeout(function() { b.classList.remove('visible'); }, 1500); }
+
+var _pendingSync = {};
+var _syncTimer = null;
+var _lastWriteTime = 0;
+function syncToServer(column, data) {
+  localStorage.setItem(PREFIX + column, JSON.stringify(data));
+  _pendingSync[column] = data;
+  if (_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(function() {
+    var payload = Object.assign({}, _pendingSync);
+    _pendingSync = {};
+    _lastWriteTime = Date.now();
+    fetch(API_URL, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).catch(function(err) { console.warn('Server sync failed:', err); });
+  }, 500);
+  showSave();
+}
+
+function save(column, data) { state[column] = data; syncToServer(column, data); }
+function acvNum(s) { if (!s) return 0; return parseInt(s.replace(/[$,]/g, ''), 10) || 0; }
+function fmtTotal(n) { if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M'; if (n >= 1000) return '$' + (n / 1000).toFixed(0) + 'K'; return '$' + n; }
+function fmtAcv(s) { if (!s) return '\u2014'; var n = acvNum(s); if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M'; return '$' + n.toLocaleString(); }
+
+function makeDropdown(options, stateObj, key) {
+  var saved = stateObj[key] || '';
+  var html = '<select class="cell-dropdown" data-storekey="' + key + '">';
+  for (var i = 0; i < options.length; i++) {
+    var o = options[i]; var sel = o === saved ? ' selected' : ''; var label = o === '' ? '\u2014' : o;
+    html += '<option value="' + o + '"' + sel + '>' + label + '</option>';
+  }
+  html += '</select><span class="print-value" style="display:none">' + (saved || '\u2014') + '</span>';
+  return html;
+}
+
+function updateCounts() {
+  var counts = {t1:0,t2:0,t3:0,t4:0}; var total = 0;
+  for (var i = 0; i < accounts.length; i++) {
+    var k = i.toString();
+    for (var t = 0; t < TIERS.length; t++) { if (state.checks[k + '-' + TIERS[t]]) counts[TIERS[t]]++; }
+    total += acvNum(state.acvs[k] || '');
+  }
+  document.getElementById('t1Count').textContent = counts.t1;
+  document.getElementById('t2Count').textContent = counts.t2;
+  document.getElementById('t3Count').textContent = counts.t3;
+  document.getElementById('t4Count').textContent = counts.t4;
+  document.getElementById('totalAccounts').textContent = accounts.length;
+  document.getElementById('totalAcv').textContent = fmtTotal(total);
+}
+
+function render() {
+  var tbody = document.getElementById('accountsBody'); tbody.innerHTML = '';
+
+  for (var i = 0; i < accounts.length; i++) {
+    var a = accounts[i]; var k = i.toString(); var row = document.createElement('tr');
+    if (a.added) row.className = 'highlight';
+    var flags = '';
+    if (a.restricted) flags += '<span class="restricted-flag">T1 only</span>';
+
+    var tierCells = '';
+    for (var t = 0; t < TIERS.length; t++) {
+      var tierKey = k + '-' + TIERS[t];
+      var checked = state.checks[tierKey] ? ' checked' : '';
+      var disabled = (a.restricted && TIERS[t] !== 't1') ? ' disabled title="Restricted to Tier 1"' : '';
+      var cls = t > 0 ? ' ' + TIERS[t] + '-check' : '';
+      tierCells += '<td class="check-cell"><input type="checkbox" class="auth-check' + cls + '" data-idx="' + k + '" data-tier="' + TIERS[t] + '"' + checked + disabled + '></td>';
+    }
+
+    var stageCells = '';
+    for (var s = 0; s < STAGES.length; s++) {
+      var stageChecked = state.stages[k + '-' + STAGES[s]] ? ' checked' : '';
+      stageCells += '<td class="stage-cell"><input type="checkbox" class="stage-check" data-idx="' + k + '" data-stage="' + STAGES[s] + '"' + stageChecked + '></td>';
+    }
+
+    var savedAcv = state.acvs[k] || '';
+    var acvDisplay = '<span class="acv-value" data-idx="' + k + '">' + (savedAcv ? fmtAcv(savedAcv) : '\u2014') + '</span>';
+    var acvRangeHtml = '';
+    for (var t2 = 0; t2 < TIERS.length; t2++) {
+      if (state.checks[k + '-' + TIERS[t2]]) {
+        acvRangeHtml = ' <span class="acv-range" style="font-size:10px;font-weight:400;font-style:italic;color:var(--gray-500);">(' + TIER_ACV_RANGES[TIERS[t2]] + ')</span>';
+        break;
+      }
+    }
+
+    var isLeadRouting = a.cat === 'Lead Routing';
+    var cplCell = '<td class="check-cell">';
+    if (isLeadRouting) {
+      var cplChecked = state.checks[k + '-cpl'] ? ' checked' : '';
+      cplCell += '<input type="checkbox" class="cpl-check auth-check-style" data-idx="' + k + '"' + cplChecked + '>';
+    }
+    cplCell += '</td>';
+
+    row.innerHTML =
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + a.name + flags + '</td>' +
+      '<td><span class="cat-badge ' + a.catClass + '">' + a.cat + '</span></td>' +
+      cplCell +
+      tierCells +
+      '<td class="dropdown-cell">' + makeDropdown(LEADS_OPTIONS, state.leads, k) + '</td>' +
+      '<td class="acv-display-cell">' + acvDisplay + acvRangeHtml + '</td>' +
+      '<td class="dropdown-cell">' + makeDropdown(INTRO_OPTIONS, state.intros, k) + '</td>' +
+      stageCells;
+
+    tbody.appendChild(row);
+  }
+
+  var totalsRow = document.createElement('tr'); totalsRow.className = 'totals-row';
+  totalsRow.innerHTML = '<td></td><td>Total: ' + accounts.length + ' Accounts</td><td></td>' +
+    '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>' +
+    '<td></td><td></td><td></td><td></td><td></td><td></td>';
+  tbody.appendChild(totalsRow);
+
+  // Event listeners
+  tbody.querySelectorAll('.auth-check').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var idx = this.dataset.idx;
+      var tier = this.dataset.tier;
+      var row = this.closest('tr');
+      var acvValueSpan = row.querySelector('.acv-value');
+      var acvCell = row.querySelector('.acv-display-cell');
+      var rangeSpan = acvCell ? acvCell.querySelector('.acv-range') : null;
+
+      if (this.checked) {
+        for (var t = 0; t < TIERS.length; t++) {
+          if (TIERS[t] !== tier) {
+            state.checks[idx + '-' + TIERS[t]] = false;
+            var other = tbody.querySelector('.auth-check[data-idx="' + idx + '"][data-tier="' + TIERS[t] + '"]');
+            if (other) other.checked = false;
+          }
+        }
+      }
+      state.checks[idx + '-' + tier] = this.checked;
+      save('checks', state.checks);
+
+      if (this.checked) {
+        var defaultAcv = TIER_ACV_DEFAULTS[tier] || '';
+        state.acvs[idx] = defaultAcv;
+        save('acvs', state.acvs);
+        if (acvValueSpan) acvValueSpan.textContent = defaultAcv ? fmtAcv(defaultAcv) : '\u2014';
+        if (!rangeSpan && acvCell) {
+          rangeSpan = document.createElement('span');
+          rangeSpan.className = 'acv-range';
+          acvCell.appendChild(rangeSpan);
+        }
+        if (rangeSpan) {
+          rangeSpan.style.cssText = 'font-size:10px;font-weight:400;font-style:italic;color:var(--gray-500);margin-left:4px;';
+          rangeSpan.textContent = '(' + TIER_ACV_RANGES[tier] + ')';
+        }
+      } else {
+        var anyChecked = false;
+        for (var t2 = 0; t2 < TIERS.length; t2++) {
+          if (state.checks[idx + '-' + TIERS[t2]]) anyChecked = true;
+        }
+        if (!anyChecked) {
+          state.acvs[idx] = '';
+          save('acvs', state.acvs);
+          if (acvValueSpan) acvValueSpan.textContent = '\u2014';
+          if (rangeSpan) rangeSpan.textContent = '';
+        }
+      }
+      updateCounts();
+    });
+  });
+
+  tbody.querySelectorAll('.cpl-check').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      state.checks[this.dataset.idx + '-cpl'] = this.checked;
+      save('checks', state.checks);
+    });
+  });
+
+  tbody.querySelectorAll('.stage-check').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      state.stages[this.dataset.idx + '-' + this.dataset.stage] = this.checked;
+      save('stages', state.stages);
+    });
+  });
+
+  tbody.querySelectorAll('.cell-dropdown').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+      var storeKey = this.dataset.storekey;
+      var pv = this.parentNode.querySelector('.print-value');
+      if (pv) pv.textContent = this.value || '\u2014';
+      var cell = this.parentNode; var row = cell.parentNode; var cells = row.children;
+      var cellIdx = Array.prototype.indexOf.call(cells, cell);
+      if (cellIdx === 8) { state.leads[storeKey] = this.value; save('leads', state.leads); }
+      else if (cellIdx === 10) { state.intros[storeKey] = this.value; save('intros', state.intros); }
+    });
+  });
+
+  updateCounts();
+}
+
+// Realtime sync
+function startRealtime(url, anonKey) {
+  if (!url || !anonKey || typeof supabase === 'undefined') return;
+  var sb = supabase.createClient(url, anonKey);
+  sb.channel('daas-matrix')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'daas_framework_state', filter: 'id=eq.default' }, function(payload) {
+      if (Date.now() - _lastWriteTime < 3000) return;
+      var d = payload.new;
+      state.checks = d.checks || {};
+      state.acvs = d.acvs || {};
+      state.leads = d.leads || {};
+      state.intros = d.intros || {};
+      state.stages = d.stages || {};
+      render();
+    })
+    .subscribe();
+}
+
+// Boot
+(function boot() {
+  fetch(API_URL)
+    .then(function(r) { return r.ok ? r.json() : Promise.reject('API error'); })
+    .then(function(data) {
+      state.checks = data.checks || {};
+      state.acvs = data.acvs || {};
+      state.leads = data.leads || {};
+      state.intros = data.intros || {};
+      state.stages = data.stages || {};
+      state.decisions = data.decisions || {};
+      state.cpl_values = data.cpl_values || {};
+      render();
+      if (data._realtime) startRealtime(data._realtime.url, data._realtime.anonKey);
+    })
+    .catch(function(err) {
+      console.warn('Server load failed, using localStorage:', err);
+      state.checks = loadLocal(PREFIX + 'checks-v4');
+      state.acvs = loadLocal(PREFIX + 'acvs-v4');
+      state.leads = loadLocal(PREFIX + 'leads-v4');
+      state.intros = loadLocal(PREFIX + 'intros-v4');
+      state.stages = loadLocal(PREFIX + 'stages-v4');
+      render();
+    });
+})();
+</script>
+</body>
+</html>

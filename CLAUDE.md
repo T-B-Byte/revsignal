@@ -144,6 +144,23 @@ If environment-specific, document why a test isn't feasible.
 
 ---
 
+## Shareable Documents
+
+Shareable documents live in two locations depending on format:
+
+- **React pages** go in `app/frameworks/<company>/` with `page.tsx` + `layout.tsx`. Public, unauthenticated, designed for clean presentation and print.
+- **Static HTML docs** go in `public/`. Accessible at `/<filename>.html`.
+
+After creating or updating a document, log its URL in `reference_live_documents.md`.
+
+| Route | Description |
+|-------|-------------|
+| `/frameworks/ibm` | IBM: DaaS Tiered Licensing Model |
+| `/daas-framework.html` | DaaS Product Framework (tiers, surge products, account matrix) |
+| `/matrix.html` | Account matrix standalone (shared Supabase state with daas-framework) |
+
+---
+
 ## Key Reference Files
 
 | File | Purpose |
