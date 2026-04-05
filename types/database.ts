@@ -1610,5 +1610,72 @@ export const QUOTE_STATUSES: { value: QuoteStatus; label: string; color: string 
   { value: "declined", label: "Declined", color: "#ef4444" },
 ];
 
+// ── Contradiction Detection ───────────────────────────────────────────
+
+export type ContradictionSeverity = "low" | "medium" | "high";
+
+export interface DealContradiction {
+  contradiction_id: string;
+  user_id: string;
+  deal_id: string;
+  thread_a_id: string | null;
+  thread_b_id: string | null;
+  description: string;
+  category: string;
+  severity: ContradictionSeverity;
+  resolved: boolean;
+  resolved_at: string | null;
+  detected_at: string;
+  created_at: string;
+}
+
+/** Contradiction with thread titles resolved for display. */
+export interface DealContradictionWithThreads extends DealContradiction {
+  thread_a_title: string | null;
+  thread_b_title: string | null;
+}
+
+// ── Deal Insights (Karpathy Wiki Knowledge Pages) ──────────────────────
+
+export type InsightType =
+  | "analysis"
+  | "decision"
+  | "objection_handling"
+  | "timeline"
+  | "pricing"
+  | "competitive"
+  | "stakeholder_map"
+  | "risk_assessment";
+
+export const INSIGHT_TYPE_LABELS: Record<InsightType, string> = {
+  analysis: "Analysis",
+  decision: "Decision",
+  objection_handling: "Objection Handling",
+  timeline: "Timeline",
+  pricing: "Pricing",
+  competitive: "Competitive",
+  stakeholder_map: "Stakeholder Map",
+  risk_assessment: "Risk Assessment",
+};
+
+export interface DealInsight {
+  insight_id: string;
+  user_id: string;
+  deal_id: string | null;
+  thread_id: string | null;
+  source_message_id: string | null;
+  title: string;
+  content: string;
+  insight_type: InsightType;
+  superseded_by: string | null;
+  is_active: boolean;
+  created_at: string;
+}
+
+/** Insight with thread title resolved for display. */
+export interface DealInsightWithThread extends DealInsight {
+  thread_title: string | null;
+}
+
 /** Tina's calendar booking link for quote follow-ups */
 export const TINA_CALENDAR_URL = "https://outlook.office.com/bookwithme/user/c3813fda06294b0d81253fd6a96f2eea@pharosiq.com/meetingtype/M30u5FcCmk63f4GAJWMCFw2?anonymous&ismsaljsauthenabled&ep=mlink";

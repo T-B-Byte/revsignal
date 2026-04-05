@@ -21,6 +21,7 @@ import {
   type SubscriptionTier,
   type UserTaskWithDeal,
   type CoachingThread,
+  type DealInsightWithThread,
 } from "@/types/database";
 
 interface DealDetailPageProps {
@@ -103,8 +104,8 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
     contacts = (contactData as Contact[]) ?? [];
   }
 
-  // Fetch deal brief, subscription, threads (with briefs), tasks, and active deals in parallel
-  const [dealBriefResult, subscriptionResult, threadsResult, tasksResult, activeDealsResult] = await Promise.all([
+  // Fetch deal brief, subscription, threads (with briefs), tasks, active deals, and insights in parallel
+  const [dealBriefResult, subscriptionResult, threadsResult, tasksResult, activeDealsResult, insightsResult] = await Promise.all([
     supabase
       .from("deal_briefs")
       .select("*")
@@ -141,17 +142,80 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
       .eq("user_id", user.id)
       .not("stage", "in", "(closed_won,closed_lost)")
       .order("company", { ascending: true }),
+    // Deal insights (Karpathy wiki knowledge pages)
+    supabase
+      .from("deal_insights")
+      .select("*, coaching_threads(thread_id, title)")
+      .eq("deal_id", dealId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false }),
   ]);
 
   const dealBrief = dealBriefResult.data;
   const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasAiAccess = PLANS[userTier].limits.aiBriefings;
-  const linkedThreads = (threadsResult.data ?? []) as Pick<
+  const rawThreads = (threadsResult.data ?? []) as Pick<
     CoachingThread,
     "thread_id" | "title" | "last_message_at" | "message_count" | "is_archived" | "thread_brief" | "participants"
   >[];
   const dealTasks = (tasksResult.data as UserTaskWithDeal[]) ?? [];
   const activeDeals = (activeDealsResult.data as Pick<Deal, "deal_id" | "company" | "stage">[]) ?? [];
+
+  // Flatten thread title for insights
+  const dealInsights: DealInsightWithThread[] = (insightsResult.data ?? []).map((row) => {
+    const thread = row.coaching_threads as { thread_id: string; title: string } | null;
+    return {
+      ...row,
+      coaching_threads: undefined,
+      thread_title: thread?.title ?? null,
+    } as DealInsightWithThread;
+  });
+
+  // Enrich threads with follow-up counts and open task counts for ranking
+  const threadIds = rawThreads.map((t) => t.thread_id);
+  let followUpMap: Record<string, { count: number; has_overdue: boolean }> = {};
+  let taskCountMap: Record<string, number> = {};
+
+  if (threadIds.length > 0) {
+    const [followUpsResult, threadTasksResult] = await Promise.all([
+      supabase
+        .from("thread_follow_ups")
+        .select("thread_id, due_date")
+        .eq("user_id", user.id)
+        .eq("status", "open")
+        .in("thread_id", threadIds),
+      supabase
+        .from("user_tasks")
+        .select("thread_id")
+        .eq("user_id", user.id)
+        .eq("status", "open")
+        .in("thread_id", threadIds),
+    ]);
+
+    const today = new Date().toISOString().split("T")[0];
+    for (const fu of followUpsResult.data ?? []) {
+      if (!followUpMap[fu.thread_id]) {
+        followUpMap[fu.thread_id] = { count: 0, has_overdue: false };
+      }
+      followUpMap[fu.thread_id].count++;
+      if (fu.due_date && fu.due_date < today) {
+        followUpMap[fu.thread_id].has_overdue = true;
+      }
+    }
+
+    for (const task of threadTasksResult.data ?? []) {
+      if (task.thread_id) {
+        taskCountMap[task.thread_id] = (taskCountMap[task.thread_id] ?? 0) + 1;
+      }
+    }
+  }
+
+  const linkedThreads = rawThreads.map((t) => ({
+    ...t,
+    open_follow_up_count: followUpMap[t.thread_id]?.count ?? 0,
+    has_overdue: followUpMap[t.thread_id]?.has_overdue ?? false,
+    open_task_count: taskCountMap[t.thread_id] ?? 0,
+  }));
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -177,6 +241,7 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
         threads={linkedThreads}
         tasks={dealTasks}
         deals={activeDeals}
+        insights={dealInsights}
       >
         {/* Overview tab content (original layout) */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

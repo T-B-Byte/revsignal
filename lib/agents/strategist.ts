@@ -29,12 +29,14 @@ import {
   retrieveGlobalThreadBriefs,
   retrieveDealThreadBriefs,
   retrieveMeetingContext,
+  retrieveDealInsights,
   type BriefingContext,
   type DealContext,
   type StrategicContextResult,
   type StakeholderContextResult,
   type MeetingPrepContextResult,
 } from "@/lib/rag/retriever";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { logAgentCall, timed } from "./log";
 import {
   REVENUE_TARGET,
@@ -42,6 +44,7 @@ import {
   type Deal,
   type PlaybookItem,
   type NoteCategory,
+  type InsightType,
 } from "@/types/database";
 
 // ── System Prompts ─────────────────────────────────────────────────────
@@ -494,6 +497,17 @@ function buildBriefingContextDoc(ctx: BriefingContext): string {
     });
     sections.push(
       `STRATEGYGPT THREAD SUMMARIES (coaching conversations, call notes, strategy sessions):\n${briefLines.join("\n\n")}`
+    );
+  }
+
+  // Deal contradictions: conflicting information detected across threads
+  if (ctx.dealContradictions && ctx.dealContradictions.length > 0) {
+    const contradictionLines = ctx.dealContradictions.map((c) => {
+      const sources = [c.thread_a_title, c.thread_b_title].filter(Boolean).join(" vs. ");
+      return `- [${c.severity.toUpperCase()}] ${c.deal_company}: ${c.description}${sources ? ` (sources: ${sources})` : ""}`;
+    });
+    sections.push(
+      `CONTRADICTIONS DETECTED (conflicting facts across threads, flag these to the user):\n${contradictionLines.join("\n")}`
     );
   }
 
@@ -2116,8 +2130,8 @@ export async function generateThreadResponse(
     })
   );
 
-  // Fetch deal context, global thread briefs, deal-specific briefs, and recent meeting notes in parallel
-  const [dealContext, globalBriefs, dealThreadBriefs, recentMeetings] = await Promise.all([
+  // Fetch deal context, global thread briefs, deal-specific briefs, meeting notes, and deal insights in parallel
+  const [dealContext, globalBriefs, dealThreadBriefs, recentMeetings, dealInsights] = await Promise.all([
     options?.dealId
       ? retrieveDealContext(supabase, userId, options.dealId)
       : Promise.resolve(null),
@@ -2126,6 +2140,9 @@ export async function generateThreadResponse(
       ? retrieveDealThreadBriefs(supabase, userId, options.dealId, threadId)
       : Promise.resolve([]),
     retrieveMeetingContext(supabase, userId, { limit: 15 }),
+    options?.dealId
+      ? retrieveDealInsights(supabase, userId, options.dealId)
+      : Promise.resolve([]),
   ]);
 
   // M&A entity context: fetch entity details, contacts, notes, and documents
@@ -2226,6 +2243,16 @@ export async function generateThreadResponse(
     });
     contextSections.push(
       `SAME-DEAL THREAD BRIEFS (other threads for this deal. Read carefully for contradictions in pricing, timelines, commitments, or contact info. If you detect conflicts between threads, flag them explicitly: "CONTRADICTION: Thread A says X, Thread B says Y. Please clarify which is current."):\n${dealBriefLines.join("\n")}`
+    );
+  }
+
+  // Deal knowledge (persistent insights from prior analysis)
+  if (dealInsights.length > 0) {
+    const insightLines = dealInsights.map((i) =>
+      `- [${i.insight_type.toUpperCase()}] ${i.title} (${i.created_at.split("T")[0]}): ${i.content.length > 500 ? i.content.slice(0, 500) + " [...]" : i.content}`
+    );
+    contextSections.push(
+      `DEAL KNOWLEDGE (persistent insights from prior analysis, reference these to build on past synthesis):\n${insightLines.join("\n")}`
     );
   }
 
@@ -2523,6 +2550,17 @@ export async function generateThreadResponse(
     );
   }
 
+  // Step 8c: Extract persistent deal insight (fire-and-forget)
+  maybeExtractInsight({
+    userId,
+    dealId: options?.dealId,
+    threadId,
+    sourceMessageId: assistantConversationId,
+    responseText: cleanResponse,
+  }).catch((err) =>
+    console.error("[strategist] Insight extraction failed:", err)
+  );
+
   // Step 9: Check if thread brief needs generation or regeneration
   // Generate first brief early (after 3 messages) so the thread becomes
   // visible to other threads via global briefs. Regenerate periodically.
@@ -2639,13 +2677,16 @@ export function streamThreadResponse(
           retrieveStrategicContext(supabase, userId, { dealId: options?.dealId })
         );
 
-        const [dealContext, globalBriefs, dealThreadBriefs] = await Promise.all([
+        const [dealContext, globalBriefs, dealThreadBriefs, dealInsights] = await Promise.all([
           options?.dealId
             ? retrieveDealContext(supabase, userId, options.dealId)
             : Promise.resolve(null),
           retrieveGlobalThreadBriefs(supabase, userId, threadId),
           options?.dealId
             ? retrieveDealThreadBriefs(supabase, userId, options.dealId, threadId)
+            : Promise.resolve([]),
+          options?.dealId
+            ? retrieveDealInsights(supabase, userId, options.dealId)
             : Promise.resolve([]),
         ]);
 
@@ -2705,6 +2746,16 @@ export function streamThreadResponse(
           });
           contextSections.push(
             `SAME-DEAL THREAD BRIEFS (other threads for this deal. Flag contradictions in pricing, timelines, commitments, or contact info.):\n${dealBriefLines.join("\n")}`
+          );
+        }
+
+        // Deal knowledge (persistent insights from prior analysis)
+        if (dealInsights.length > 0) {
+          const insightLines = dealInsights.map((i) =>
+            `- [${i.insight_type.toUpperCase()}] ${i.title} (${i.created_at.split("T")[0]}): ${i.content.length > 500 ? i.content.slice(0, 500) + " [...]" : i.content}`
+          );
+          contextSections.push(
+            `DEAL KNOWLEDGE (persistent insights from prior analysis, reference these to build on past synthesis):\n${insightLines.join("\n")}`
           );
         }
 
@@ -2892,6 +2943,17 @@ export function streamThreadResponse(
             console.error("[strategist/stream] Project upsert failed:", err)
           );
         }
+
+        // ── Step 9b: Extract persistent deal insight (fire-and-forget) ─
+        maybeExtractInsight({
+          userId,
+          dealId: options?.dealId,
+          threadId,
+          sourceMessageId: savedMsg?.conversation_id ?? null,
+          responseText: cleanResponse,
+        }).catch(err =>
+          console.error("[strategist/stream] Insight extraction failed:", err)
+        );
 
         // ── Step 10: Thread brief + thread metadata (fire-and-forget) ─
         const currentMessageCount = (options?.messageCount ?? 0) + 2;
@@ -3124,6 +3186,148 @@ export async function generateThreadBrief(
       })
       .eq("thread_id", threadId)
       .eq("user_id", userId);
+  }
+}
+
+// ── Deal Insight Extraction (Karpathy Wiki) ──────────────────────────
+
+const INSIGHT_TYPES: InsightType[] = [
+  "analysis", "decision", "objection_handling", "timeline",
+  "pricing", "competitive", "stakeholder_map", "risk_assessment",
+];
+
+/**
+ * Classify a Strategist response and extract a persistent insight if it
+ * contains significant synthesis. Runs as a lightweight Claude call.
+ * Fire-and-forget: never blocks the user response.
+ */
+async function maybeExtractInsight(params: {
+  userId: string;
+  dealId: string | undefined;
+  threadId: string;
+  sourceMessageId: string | null;
+  responseText: string;
+}): Promise<void> {
+  const { userId, dealId, threadId, sourceMessageId, responseText } = params;
+
+  // Skip very short responses (unlikely to be meaningful synthesis)
+  if (responseText.length < 400) return;
+
+  try {
+    const anthropic = getAnthropic();
+    const classificationResponse = await anthropic.messages.create({
+      model: MODEL,
+      max_tokens: 600,
+      system: `You classify sales coaching responses. Determine if the response contains significant strategic synthesis worth persisting as a referenceable insight. Only extract insights from genuine analysis, strategy recommendations, risk assessments, pricing rationale, stakeholder mapping, competitive positioning, timeline analysis, or key decisions. Do NOT extract insights from simple Q&A, status updates, greetings, or factual lookups.
+
+If the response IS worth persisting, respond with EXACTLY this JSON (no other text):
+{"extract": true, "title": "<concise title, max 80 chars>", "content": "<summary of the insight, max 300 words, capturing the key synthesis>", "insight_type": "<one of: analysis, decision, objection_handling, timeline, pricing, competitive, stakeholder_map, risk_assessment>"}
+
+If the response is NOT worth persisting, respond with exactly:
+{"extract": false}`,
+      messages: [
+        {
+          role: "user",
+          content: `Classify this Strategist response:\n\n${responseText.slice(0, 3000)}`,
+        },
+      ],
+    });
+
+    const classText =
+      classificationResponse.content[0]?.type === "text"
+        ? classificationResponse.content[0].text.trim()
+        : "";
+
+    // Parse JSON from response (handle potential markdown wrapping)
+    const jsonStr = classText.replace(/^```json?\n?/, "").replace(/\n?```$/, "").trim();
+    let parsed: {
+      extract: boolean;
+      title?: string;
+      content?: string;
+      insight_type?: string;
+    };
+    try {
+      parsed = JSON.parse(jsonStr);
+    } catch {
+      console.error("[strategist/insight] Failed to parse classification JSON:", jsonStr.slice(0, 200));
+      return;
+    }
+
+    if (!parsed.extract || !parsed.title || !parsed.content || !parsed.insight_type) return;
+
+    // Validate insight_type
+    const insightType = INSIGHT_TYPES.includes(parsed.insight_type as InsightType)
+      ? (parsed.insight_type as InsightType)
+      : "analysis";
+
+    const admin = createAdminClient();
+
+    // Supersession check: if same deal + same insight_type has an active insight,
+    // check if the new one updates/contradicts it
+    if (dealId) {
+      const { data: existing } = await admin
+        .from("deal_insights")
+        .select("insight_id, title, content")
+        .eq("user_id", userId)
+        .eq("deal_id", dealId)
+        .eq("insight_type", insightType)
+        .eq("is_active", true)
+        .order("created_at", { ascending: false })
+        .limit(1);
+
+      if (existing && existing.length > 0) {
+        // Quick similarity check: if the titles are very different, it's likely
+        // a new topic within the same type. If similar, supersede.
+        const oldTitle = existing[0].title.toLowerCase();
+        const newTitle = parsed.title.toLowerCase();
+        const overlap = oldTitle.split(" ").filter((w: string) => newTitle.includes(w)).length;
+        const similarity = overlap / Math.max(oldTitle.split(" ").length, 1);
+
+        if (similarity > 0.3) {
+          // Insert new insight first, then deactivate old in one step
+          const { data: newInsight } = await admin
+            .from("deal_insights")
+            .insert({
+              user_id: userId,
+              deal_id: dealId,
+              thread_id: threadId,
+              source_message_id: sourceMessageId,
+              title: parsed.title,
+              content: parsed.content,
+              insight_type: insightType,
+            })
+            .select("insight_id")
+            .single();
+
+          if (newInsight) {
+            await admin
+              .from("deal_insights")
+              .update({ is_active: false, superseded_by: newInsight.insight_id })
+              .eq("insight_id", existing[0].insight_id);
+          }
+
+          console.log(`[strategist/insight] Superseded insight "${existing[0].title}" with "${parsed.title}"`);
+          return;
+        }
+      }
+    }
+
+    // No supersession needed, just insert
+    await admin
+      .from("deal_insights")
+      .insert({
+        user_id: userId,
+        deal_id: dealId ?? null,
+        thread_id: threadId,
+        source_message_id: sourceMessageId,
+        title: parsed.title,
+        content: parsed.content,
+        insight_type: insightType,
+      });
+
+    console.log(`[strategist/insight] Extracted insight: "${parsed.title}" (${insightType})`);
+  } catch (err) {
+    console.error("[strategist/insight] Extraction failed:", err);
   }
 }
 

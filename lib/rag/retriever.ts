@@ -113,6 +113,15 @@ export interface ThreadBriefSummary {
   last_message_at: string;
 }
 
+/** Summary of a contradiction for agent context. */
+export interface ContradictionSummary {
+  deal_company: string;
+  description: string;
+  severity: string;
+  thread_a_title: string | null;
+  thread_b_title: string | null;
+}
+
 export interface BriefingContext {
   pipeline: PipelineContext;
   dealBriefs: { deal: Deal; brief: DealBrief }[];
@@ -125,6 +134,7 @@ export interface BriefingContext {
   userTasks?: UserTask[];
   threadAlerts?: ThreadAlertSummary[];
   threadBriefs?: ThreadBriefSummary[];
+  dealContradictions?: ContradictionSummary[];
 }
 
 /** Strategic context for The Strategist's coaching mode. */
@@ -677,6 +687,53 @@ export async function retrieveBriefingContext(
     console.error("[rag/retriever] Error fetching thread alerts:", err);
   }
 
+  // Fetch unresolved deal contradictions
+  let dealContradictions: ContradictionSummary[] = [];
+  try {
+    const { data: contradictionRows } = await supabase
+      .from("deal_contradictions")
+      .select(`
+        description, severity, thread_a_id, thread_b_id,
+        deals:deal_id (company)
+      `)
+      .eq("user_id", userId)
+      .eq("resolved", false)
+      .order("severity", { ascending: false })
+      .limit(20);
+
+    if (contradictionRows && contradictionRows.length > 0) {
+      // Resolve thread titles
+      const threadIds = new Set<string>();
+      for (const r of contradictionRows) {
+        if (r.thread_a_id) threadIds.add(r.thread_a_id as string);
+        if (r.thread_b_id) threadIds.add(r.thread_b_id as string);
+      }
+      const titleMap = new Map<string, string>();
+      if (threadIds.size > 0) {
+        const { data: titles } = await supabase
+          .from("coaching_threads")
+          .select("thread_id, title")
+          .in("thread_id", Array.from(threadIds));
+        for (const t of titles ?? []) {
+          titleMap.set(t.thread_id, t.title ?? "Untitled");
+        }
+      }
+
+      dealContradictions = contradictionRows.map((r) => {
+        const dealsArr = r.deals as unknown as { company: string }[] | null;
+        return {
+          deal_company: dealsArr?.[0]?.company ?? "Unknown",
+          description: r.description as string,
+          severity: r.severity as string,
+          thread_a_title: r.thread_a_id ? titleMap.get(r.thread_a_id as string) ?? null : null,
+          thread_b_title: r.thread_b_id ? titleMap.get(r.thread_b_id as string) ?? null : null,
+        };
+      });
+    }
+  } catch (err) {
+    console.error("[rag/retriever] Error fetching deal contradictions:", err);
+  }
+
   // Map thread briefs for context
   const threadBriefs: ThreadBriefSummary[] = (threadBriefsResult.data ?? []).map(
     (t: Record<string, unknown>) => {
@@ -704,6 +761,7 @@ export async function retrieveBriefingContext(
     userTasks: (userTasksResult.data as UserTask[]) || [],
     threadAlerts,
     threadBriefs,
+    dealContradictions,
   };
 }
 
@@ -1593,4 +1651,41 @@ export async function retrieveDealThreadBriefs(
   }
 
   return (data ?? []) as GlobalThreadBrief[];
+}
+
+// ── Deal Insights (Karpathy Wiki) ───────────────────────────────────
+
+export interface DealInsightSummary {
+  insight_id: string;
+  title: string;
+  content: string;
+  insight_type: string;
+  created_at: string;
+}
+
+/**
+ * Retrieves active deal insights for RAG injection into Strategist context.
+ * Returns insights ordered newest-first so the Strategist sees the most
+ * current synthesis first.
+ */
+export async function retrieveDealInsights(
+  supabase: SupabaseClient,
+  userId: string,
+  dealId: string
+): Promise<DealInsightSummary[]> {
+  const { data, error } = await supabase
+    .from("deal_insights")
+    .select("insight_id, title, content, insight_type, created_at")
+    .eq("user_id", userId)
+    .eq("deal_id", dealId)
+    .eq("is_active", true)
+    .order("created_at", { ascending: false })
+    .limit(20);
+
+  if (error) {
+    console.error("[rag/retriever] Error fetching deal insights:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as DealInsightSummary[];
 }

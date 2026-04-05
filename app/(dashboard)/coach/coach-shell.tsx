@@ -4,15 +4,19 @@ import { useState, useCallback, useMemo, useEffect } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ThreadSidebar } from "@/components/coaching/thread-sidebar";
 import { NewThreadDialog } from "@/components/coaching/new-thread-dialog";
-import type { CoachingThreadWithDeal, Deal, ThreadParticipant } from "@/types/database";
+import { DealLandingView } from "@/components/coaching/deal-landing-view";
+import type { CoachingThreadWithDeal, Deal, Project, Contact, ThreadParticipant } from "@/types/database";
 
 interface CoachShellProps {
   threads: CoachingThreadWithDeal[];
   activeDeals: Pick<Deal, "deal_id" | "company" | "stage">[];
-  children: React.ReactNode;
+  projects?: Pick<Project, "project_id" | "name" | "status" | "category">[];
+  contacts?: Pick<Contact, "contact_id" | "name" | "company" | "role">[];
+  children?: React.ReactNode;
+  isLanding?: boolean;
 }
 
-export function CoachShell({ threads: initialThreads, activeDeals: initialDeals, children }: CoachShellProps) {
+export function CoachShell({ threads: initialThreads, activeDeals: initialDeals, projects: initialProjects = [], contacts: initialContacts = [], children, isLanding }: CoachShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -134,6 +138,12 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
     }
   }, [threads, pathname, router]);
 
+  function handleNewConversation(prefillDeal?: string, prefillComp?: string) {
+    if (prefillDeal) setPrefillDealId(prefillDeal);
+    if (prefillComp) setPrefillCompany(prefillComp);
+    setDialogOpen(true);
+  }
+
   return (
     <>
       {/* Thread sidebar */}
@@ -146,9 +156,28 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
         />
       </div>
 
-      {/* Chat area */}
+      {/* Chat area or landing view */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {children}
+        {isLanding ? (
+          <div className="h-full overflow-hidden p-6">
+            <div className="mb-4">
+              <h2 className="text-lg font-semibold text-text-primary">StrategyGPT</h2>
+              <p className="text-xs text-text-muted">
+                Your strategy hub. Every conversation rolls up to a deal or project.
+              </p>
+            </div>
+            <div className="h-[calc(100%-3.5rem)]">
+              <DealLandingView
+                threads={threads}
+                activeDeals={deals}
+                projects={initialProjects}
+                onNewConversation={handleNewConversation}
+              />
+            </div>
+          </div>
+        ) : (
+          children
+        )}
       </div>
 
       {/* New thread dialog */}
@@ -161,6 +190,8 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
         }}
         onCreated={handleThreadCreated}
         activeDeals={deals}
+        projects={initialProjects}
+        contacts={initialContacts}
         onDealCreated={(deal) => setDeals((prev) => [deal, ...prev])}
         knownCompanies={knownCompanies}
         existingThreads={threads}

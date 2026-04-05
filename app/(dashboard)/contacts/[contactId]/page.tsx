@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ContactHeader } from "@/components/contacts/contact-header";
 import { ConversationTimeline } from "@/components/deals/conversation-timeline";
 import { LogConversationForContact } from "@/components/contacts/log-conversation-for-contact";
+import { ContactThreads, type ContactThread } from "@/components/contacts/contact-threads";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Badge, type BadgeVariant } from "@/components/ui/badge";
 import { TalkingPointsCard } from "@/components/contacts/talking-points-card";
@@ -122,8 +123,8 @@ export default async function ContactDetailPage({
     notFound();
   }
 
-  // Parallel fetch: conversations, action items, deals, talking points
-  const [conversationsResult, actionItemsResult, dealsResult, talkingPointsResult] =
+  // Parallel fetch: conversations, action items, deals, talking points, coaching threads
+  const [conversationsResult, actionItemsResult, dealsResult, talkingPointsResult, threadsByContactResult, threadsByParticipantResult] =
     await Promise.all([
       supabase
         .from("conversations")
@@ -155,11 +156,41 @@ export default async function ContactDetailPage({
         .order("is_completed", { ascending: true })
         .order("priority", { ascending: true })
         .order("created_at", { ascending: false }),
+
+      // Threads linked via contact_id FK
+      supabase
+        .from("coaching_threads")
+        .select("thread_id, title, thread_brief, last_message_at, message_count, deal_id, deals:deal_id (deal_id, company, stage)")
+        .eq("contact_id", contactId)
+        .eq("user_id", user.id)
+        .eq("is_archived", false)
+        .order("last_message_at", { ascending: false }),
+
+      // Threads where contact appears in participants JSONB
+      supabase
+        .from("coaching_threads")
+        .select("thread_id, title, thread_brief, last_message_at, message_count, deal_id, deals:deal_id (deal_id, company, stage)")
+        .eq("user_id", user.id)
+        .eq("is_archived", false)
+        .contains("participants", JSON.stringify([{ contact_id: contactId }]))
+        .order("last_message_at", { ascending: false }),
     ]);
 
   const conversations = (conversationsResult.data as Conversation[]) ?? [];
   const actionItems = (actionItemsResult.data as ActionItem[]) ?? [];
   const talkingPoints = (talkingPointsResult.data as TalkingPointWithThread[]) ?? [];
+
+  // Deduplicate threads from both queries, normalize Supabase join shape
+  const threadMap = new Map<string, ContactThread>();
+  for (const t of [...(threadsByContactResult.data ?? []), ...(threadsByParticipantResult.data ?? [])]) {
+    if (!threadMap.has(t.thread_id)) {
+      // Supabase FK join returns object (singular) or array depending on query shape
+      const deals = Array.isArray(t.deals) ? (t.deals[0] ?? null) : (t.deals ?? null);
+      threadMap.set(t.thread_id, { ...t, deals } as unknown as ContactThread);
+    }
+  }
+  const contactThreads = Array.from(threadMap.values())
+    .sort((a, b) => new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime());
 
   // Filter deals that reference this contact in their JSONB contacts array
   const relatedDeals = ((dealsResult.data as Deal[]) ?? []).filter((d) =>
@@ -216,6 +247,12 @@ export default async function ContactDetailPage({
           <TalkingPointsCard
             contactId={contactId}
             initialPoints={talkingPoints}
+          />
+
+          {/* Coaching Threads */}
+          <ContactThreads
+            threads={contactThreads}
+            contactName={(contact as Contact).name}
           />
 
           {/* Linked Deals */}

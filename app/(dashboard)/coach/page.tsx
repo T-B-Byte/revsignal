@@ -2,13 +2,12 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PLANS } from "@/lib/stripe/config";
 import { CoachShell } from "./coach-shell";
-import { ThreadCards } from "@/components/coaching/thread-cards";
-import type { SubscriptionTier, CoachingThreadWithDeal, Deal } from "@/types/database";
+import type { SubscriptionTier, CoachingThreadWithDeal, Deal, Project, Contact } from "@/types/database";
 import { ACTIVE_STAGES } from "@/types/database";
 
 export const metadata = {
   title: "StrategyGPT | RevSignal",
-  description: "Your AI-powered intelligence hub for every prospect and account.",
+  description: "Your AI-powered strategy hub for every deal and project.",
 };
 
 export default async function CoachPage() {
@@ -49,8 +48,8 @@ export default async function CoachPage() {
     );
   }
 
-  // Parallel fetch: threads + active deals
-  const [threadsResult, dealsResult] = await Promise.all([
+  // Parallel fetch: threads + active deals + active projects
+  const [threadsResult, dealsResult, projectsResult, contactsResult] = await Promise.all([
     supabase
       .from("coaching_threads")
       .select(`
@@ -68,6 +67,17 @@ export default async function CoachPage() {
       .eq("user_id", user.id)
       .in("stage", ACTIVE_STAGES)
       .order("last_activity_date", { ascending: false }),
+    supabase
+      .from("projects")
+      .select("project_id, name, status, category")
+      .eq("user_id", user.id)
+      .in("status", ["active", "paused"])
+      .order("updated_at", { ascending: false }),
+    supabase
+      .from("contacts")
+      .select("contact_id, name, company, role")
+      .eq("user_id", user.id)
+      .order("name", { ascending: true }),
   ]);
 
   // Fetch follow-up counts
@@ -102,23 +112,10 @@ export default async function CoachPage() {
   }
 
   const activeDeals = (dealsResult.data as Pick<Deal, "deal_id" | "company" | "stage">[]) || [];
+  const activeProjects = (projectsResult.data as Pick<Project, "project_id" | "name" | "status" | "category">[]) || [];
+  const contacts = (contactsResult.data as Pick<Contact, "contact_id" | "name" | "company" | "role">[]) || [];
 
   return (
-    <CoachShell threads={threads} activeDeals={activeDeals}>
-      {/* Thread cards view as the default landing state */}
-      <div className="h-full overflow-hidden p-6">
-        <div className="mb-4">
-          <h2 className="text-lg font-semibold text-text-primary">
-            StrategyGPT Threads
-          </h2>
-          <p className="text-xs text-text-muted">
-            Click any card to pick up where you left off. Each thread is your intelligence hub for one person or topic.
-          </p>
-        </div>
-        <div className="h-[calc(100%-3.5rem)]">
-          <ThreadCards threads={threads} />
-        </div>
-      </div>
-    </CoachShell>
+    <CoachShell threads={threads} activeDeals={activeDeals} projects={activeProjects} contacts={contacts} isLanding />
   );
 }

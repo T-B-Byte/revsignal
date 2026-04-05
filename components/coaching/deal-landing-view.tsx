@@ -6,6 +6,7 @@ import { formatDistanceToNow } from "date-fns";
 import type { CoachingThreadWithDeal, Deal, Project } from "@/types/database";
 import { DEAL_STAGES } from "@/types/database";
 import { LandingBrief } from "./landing-brief";
+import { useContradictionCounts } from "./contradiction-alert";
 
 // --- Types ---
 
@@ -107,6 +108,7 @@ export function DealLandingView({ threads, activeDeals, projects, onNewConversat
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [expandedIds, setExpandedIds] = useState<Set<string>>(new Set());
+  const { counts: contradictionCounts } = useContradictionCounts();
 
   const activeThreads = useMemo(
     () => threads.filter((t) => !t.is_archived),
@@ -257,11 +259,16 @@ export function DealLandingView({ threads, activeDeals, projects, onNewConversat
     return { dealGroups: dGroups, projectGroups: pGroups, standalone: standaloneList };
   }, [filtered, activeDeals, projects, search]);
 
-  // Attention needed: deals/projects with overdue follow-ups or stale threads
+  // Attention needed: deals/projects with overdue follow-ups, stale threads, or contradictions
   const attentionGroups = useMemo(() => {
     const all: EntityGroup[] = [...dealGroups, ...projectGroups];
-    return all.filter((g) => g.hasOverdue && g.threads.length > 0);
-  }, [dealGroups, projectGroups]);
+    return all.filter((g) => {
+      if (g.hasOverdue && g.threads.length > 0) return true;
+      // Include deals with unresolved contradictions
+      if (g.type === "deal" && contradictionCounts.get(g.id)) return true;
+      return false;
+    });
+  }, [dealGroups, projectGroups, contradictionCounts]);
 
   function toggleExpand(id: string) {
     setExpandedIds((prev) => {
@@ -355,10 +362,14 @@ export function DealLandingView({ threads, activeDeals, projects, onNewConversat
 
         {/* Attention needed */}
         {attentionGroups.length > 0 && !search && (
-          <AttentionStrip groups={attentionGroups} onNavigate={(id) => {
-            setExpandedIds((prev) => new Set([...prev, id]));
-            document.getElementById(`group-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
-          }} />
+          <AttentionStrip
+            groups={attentionGroups}
+            contradictionCounts={contradictionCounts}
+            onNavigate={(id) => {
+              setExpandedIds((prev) => new Set([...prev, id]));
+              document.getElementById(`group-${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+            }}
+          />
         )}
 
         {/* Deals section */}
@@ -372,6 +383,7 @@ export function DealLandingView({ threads, activeDeals, projects, onNewConversat
                 <DealRow
                   key={group.id}
                   group={group}
+                  contradictionCount={contradictionCounts.get(group.id)?.total ?? 0}
                   isExpanded={expandedIds.has(group.id)}
                   onToggle={() => toggleExpand(group.id)}
                   onOpenThread={(id) => router.push(`/coach/${id}`)}
@@ -417,7 +429,15 @@ export function DealLandingView({ threads, activeDeals, projects, onNewConversat
 
 // --- Attention Strip ---
 
-function AttentionStrip({ groups, onNavigate }: { groups: EntityGroup[]; onNavigate: (id: string) => void }) {
+function AttentionStrip({
+  groups,
+  contradictionCounts,
+  onNavigate,
+}: {
+  groups: EntityGroup[];
+  contradictionCounts: Map<string, { total: number; high: number }>;
+  onNavigate: (id: string) => void;
+}) {
   const [expanded, setExpanded] = useState(false);
   return (
     <div className="mb-4 rounded-lg border border-status-red/30 bg-status-red/5 px-4 py-2.5">
@@ -438,16 +458,29 @@ function AttentionStrip({ groups, onNavigate }: { groups: EntityGroup[]; onNavig
       </button>
       {expanded && (
         <div className="mt-2 space-y-1">
-          {groups.map((g) => (
-            <button
-              key={g.id}
-              onClick={() => onNavigate(g.id)}
-              className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs text-text-secondary hover:bg-surface-tertiary transition-colors"
-            >
-              <span className="font-medium text-text-primary">{g.label}</span>
-              <span className="text-status-red text-[10px] font-semibold">Overdue follow-ups</span>
-            </button>
-          ))}
+          {groups.map((g) => {
+            const cc = g.type === "deal" ? contradictionCounts.get(g.id) : undefined;
+            return (
+              <button
+                key={g.id}
+                onClick={() => onNavigate(g.id)}
+                className="flex w-full items-center gap-2 rounded px-2 py-1 text-left text-xs text-text-secondary hover:bg-surface-tertiary transition-colors"
+              >
+                <span className="font-medium text-text-primary">{g.label}</span>
+                {g.hasOverdue && (
+                  <span className="text-status-red text-[10px] font-semibold">Overdue follow-ups</span>
+                )}
+                {cc && cc.total > 0 && (
+                  <span className="flex items-center gap-1 text-[10px] font-semibold text-status-red">
+                    <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                    </svg>
+                    {cc.total} contradiction{cc.total !== 1 ? "s" : ""}
+                  </span>
+                )}
+              </button>
+            );
+          })}
         </div>
       )}
     </div>
@@ -458,12 +491,14 @@ function AttentionStrip({ groups, onNavigate }: { groups: EntityGroup[]; onNavig
 
 function DealRow({
   group,
+  contradictionCount = 0,
   isExpanded,
   onToggle,
   onOpenThread,
   onNewConversation,
 }: {
   group: DealGroup;
+  contradictionCount?: number;
   isExpanded: boolean;
   onToggle: () => void;
   onOpenThread: (threadId: string) => void;
@@ -521,6 +556,14 @@ function DealRow({
 
         {/* Stats */}
         <div className="flex items-center gap-3 shrink-0">
+          {contradictionCount > 0 && (
+            <span className="flex items-center gap-1 rounded-full bg-status-red/10 px-1.5 py-0.5 text-[10px] font-semibold text-status-red" title={`${contradictionCount} contradiction${contradictionCount !== 1 ? "s" : ""}`}>
+              <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+              </svg>
+              {contradictionCount}
+            </span>
+          )}
           {group.hasOverdue && (
             <span className="h-2 w-2 rounded-full bg-status-red" title="Overdue follow-up" />
           )}
@@ -550,7 +593,7 @@ function DealRow({
       {/* Expanded: conversation rows */}
       {isExpanded && hasThreads && (
         <div className="border-t border-border-primary">
-          {group.threads
+          {[...group.threads]
             .sort((a, b) => (b.last_message_at ?? "").localeCompare(a.last_message_at ?? ""))
             .map((thread) => (
               <ConversationRow key={thread.thread_id} thread={thread} onOpen={() => onOpenThread(thread.thread_id)} />
@@ -660,7 +703,7 @@ function ProjectRow({
 
       {isExpanded && hasThreads && (
         <div className="border-t border-border-primary">
-          {group.threads
+          {[...group.threads]
             .sort((a, b) => (b.last_message_at ?? "").localeCompare(a.last_message_at ?? ""))
             .map((thread) => (
               <ConversationRow key={thread.thread_id} thread={thread} onOpen={() => onOpenThread(thread.thread_id)} />
@@ -768,7 +811,7 @@ function StandaloneSection({
       </button>
       {expanded && (
         <div className="rounded-lg border border-border-primary bg-surface-secondary overflow-hidden">
-          {threads
+          {[...threads]
             .sort((a, b) => (b.last_message_at ?? "").localeCompare(a.last_message_at ?? ""))
             .map((thread) => (
               <ConversationRow key={thread.thread_id} thread={thread} onOpen={() => onOpenThread(thread.thread_id)} />

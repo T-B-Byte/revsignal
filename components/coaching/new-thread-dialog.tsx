@@ -9,7 +9,7 @@ import {
   DialogClose,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
-import type { Deal, ThreadParticipant } from "@/types/database";
+import type { Deal, Project, Contact, ThreadParticipant } from "@/types/database";
 
 interface ExistingThread {
   thread_id: string;
@@ -30,31 +30,35 @@ interface NewThreadDialogProps {
     participants: ThreadParticipant[];
   }) => void;
   activeDeals: Pick<Deal, "deal_id" | "company" | "stage">[];
+  projects?: Pick<Project, "project_id" | "name" | "status" | "category">[];
+  contacts?: Pick<Contact, "contact_id" | "name" | "company" | "role">[];
   onDealCreated?: (deal: Pick<Deal, "deal_id" | "company" | "stage">) => void;
-  /** Known company names from existing threads/deals for autocomplete */
   knownCompanies?: string[];
-  /** Existing threads for duplicate detection */
   existingThreads?: ExistingThread[];
-  /** Pre-fill deal_id when creating from a deal page */
   prefillDealId?: string | null;
-  /** Pre-fill company when creating from a deal page */
   prefillCompany?: string | null;
 }
+
+type LinkType = "deal" | "project" | "none";
 
 export function NewThreadDialog({
   open,
   onClose,
   onCreated,
   activeDeals,
+  projects = [],
+  contacts = [],
   onDealCreated,
   knownCompanies = [],
   existingThreads = [],
   prefillDealId,
   prefillCompany,
 }: NewThreadDialogProps) {
-  const [projectName, setProjectName] = useState("");
-  const [company, setCompany] = useState("");
+  const [linkType, setLinkType] = useState<LinkType>("none");
   const [dealId, setDealId] = useState("");
+  const [projectId, setProjectId] = useState("");
+  const [topic, setTopic] = useState("");
+  const [company, setCompany] = useState("");
   const [participants, setParticipants] = useState<ThreadParticipant[]>([]);
   const [newParticipantName, setNewParticipantName] = useState("");
   const [newParticipantRole, setNewParticipantRole] = useState("");
@@ -67,19 +71,28 @@ export function NewThreadDialog({
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const participantNameRef = useRef<HTMLInputElement>(null);
 
-  // Apply prefill values when dialog opens with them
+  // Apply prefill values when dialog opens
   useEffect(() => {
+    if (open && prefillDealId) {
+      setDealId(prefillDealId);
+      setLinkType("deal");
+    }
     if (open && prefillCompany) {
       setCompany(prefillCompany);
     }
-    if (open && prefillDealId) {
-      setDealId(prefillDealId);
-    }
   }, [open, prefillCompany, prefillDealId]);
 
-  // Detect duplicate thread as user types
+  // When selecting a deal, auto-fill company
+  useEffect(() => {
+    if (dealId) {
+      const deal = activeDeals.find((d) => d.deal_id === dealId);
+      if (deal) setCompany(deal.company);
+    }
+  }, [dealId, activeDeals]);
+
+  // Detect duplicate
   const duplicateThread = useMemo(() => {
-    const title = projectName.trim().toLowerCase();
+    const title = topic.trim().toLowerCase();
     const comp = company.trim().toLowerCase();
     if (!title) return null;
     return existingThreads.find(
@@ -87,7 +100,7 @@ export function NewThreadDialog({
         (t.title?.toLowerCase() === title || t.contact_name?.toLowerCase() === title) &&
         (!comp || t.company?.toLowerCase() === comp)
     ) ?? null;
-  }, [projectName, company, existingThreads]);
+  }, [topic, company, existingThreads]);
 
   const companySuggestions = useMemo(() => {
     if (!company.trim()) return [];
@@ -121,23 +134,28 @@ export function NewThreadDialog({
     const matchingDeal = activeDeals.find(
       (d) => d.company.toLowerCase() === value.toLowerCase()
     );
-    if (matchingDeal) setDealId(matchingDeal.deal_id);
+    if (matchingDeal) {
+      setDealId(matchingDeal.deal_id);
+      setLinkType("deal");
+    }
   }
 
   function resetForm() {
-    setProjectName("");
-    setCompany("");
+    setLinkType("none");
     setDealId("");
+    setProjectId("");
+    setTopic("");
+    setCompany("");
     setParticipants([]);
     setNewParticipantName("");
     setNewParticipantRole("");
     setError(null);
+    setAutoCreateDeal(false);
   }
 
   function addParticipant() {
     const name = newParticipantName.trim();
     if (!name) return;
-    // Avoid duplicates
     if (participants.some((p) => p.name.toLowerCase() === name.toLowerCase())) return;
     setParticipants((prev) => [
       ...prev,
@@ -145,7 +163,6 @@ export function NewThreadDialog({
     ]);
     setNewParticipantName("");
     setNewParticipantRole("");
-    // Keep focus on participant name input
     participantNameRef.current?.focus();
   }
 
@@ -178,6 +195,7 @@ export function NewThreadDialog({
 
       const { deal } = await res.json();
       setDealId(deal.deal_id);
+      setLinkType("deal");
       onDealCreated?.({ deal_id: deal.deal_id, company: deal.company, stage: deal.stage });
     } catch {
       setError("Network error creating deal.");
@@ -188,35 +206,32 @@ export function NewThreadDialog({
 
   // Suggest creating a deal when company + participant are set and no deal is linked
   const shouldSuggestDeal = useMemo(() => {
-    if (dealId) return false;
+    if (linkType === "deal" && dealId) return false;
     if (!company.trim()) return false;
     if (participants.length === 0) return false;
-    // Check if a deal already exists for this company
     const companyLower = company.trim().toLowerCase();
     return !activeDeals.some((d) => d.company.toLowerCase() === companyLower);
-  }, [company, participants, dealId, activeDeals]);
+  }, [company, participants, linkType, dealId, activeDeals]);
 
   const [autoCreateDeal, setAutoCreateDeal] = useState(false);
 
   function handleClose() {
     resetForm();
-    setAutoCreateDeal(false);
     onClose();
   }
 
   async function handleCreate() {
-    const title = projectName.trim();
-    if (!title) return;
+    const title = topic.trim();
+    if (!title || loading) return;
 
     setLoading(true);
     setError(null);
 
-    // Build backward-compatible contact_name from first participant
     const primaryParticipant = participants[0] ?? null;
 
-    // Auto-create deal at "conversation" stage if user opted in
-    let finalDealId = dealId;
-    if (autoCreateDeal && !dealId && company.trim()) {
+    // Auto-create deal if user opted in
+    let finalDealId = linkType === "deal" ? dealId : "";
+    if (autoCreateDeal && !finalDealId && company.trim()) {
       try {
         const dealRes = await fetch("/api/deals", {
           method: "POST",
@@ -233,7 +248,7 @@ export function NewThreadDialog({
           onDealCreated?.({ deal_id: deal.deal_id, company: deal.company, stage: deal.stage });
         }
       } catch {
-        // Non-fatal: thread creation continues without deal
+        // Non-fatal
       }
     }
 
@@ -247,13 +262,14 @@ export function NewThreadDialog({
           contact_role: primaryParticipant?.role || undefined,
           company: company.trim() || undefined,
           deal_id: finalDealId || undefined,
+          project_id: linkType === "project" ? projectId || undefined : undefined,
           participants,
         }),
       });
 
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
-        setError(data.error || "Failed to create thread.");
+        setError(data.error || "Failed to create conversation.");
         return;
       }
 
@@ -278,114 +294,191 @@ export function NewThreadDialog({
     <Dialog open={open} onClose={handleClose}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>New StrategyGPT Thread</DialogTitle>
+          <DialogTitle>New Conversation</DialogTitle>
           <DialogClose onClose={handleClose} />
         </DialogHeader>
 
         <div className="space-y-4 px-6 py-4">
-          {/* Project / Thread name */}
+          {/* 1. Link to deal or project (first field) */}
           <div>
-            <label
-              htmlFor="project-name"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              Project / Topic
+            <label className="mb-1.5 block text-xs font-medium text-text-secondary">
+              Link to
             </label>
-            <input
-              id="project-name"
-              type="text"
-              value={projectName}
-              onChange={(e) => setProjectName(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder="e.g. Apollo DaaS Pilot, Midmarket Packaging, Weekly Sync"
-              maxLength={200}
-              autoFocus
-              className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
-            />
-          </div>
+            {/* Link type selector */}
+            <div className="flex gap-1 mb-2">
+              {(["deal", "project", "none"] as LinkType[]).map((type) => (
+                <button
+                  key={type}
+                  type="button"
+                  onClick={() => setLinkType(type)}
+                  className={`rounded-md px-3 py-1.5 text-xs font-medium transition-colors ${
+                    linkType === type
+                      ? "bg-accent-primary text-white"
+                      : "bg-surface-tertiary text-text-muted hover:text-text-secondary"
+                  }`}
+                >
+                  {type === "deal" ? "Deal" : type === "project" ? "Project" : "Standalone"}
+                </button>
+              ))}
+            </div>
 
-          {/* Account / Company */}
-          <div className="relative">
-            <label
-              htmlFor="company"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              Account / Company (optional)
-            </label>
-            <input
-              ref={companyInputRef}
-              id="company"
-              type="text"
-              value={company}
-              onChange={(e) => {
-                setCompany(e.target.value);
-                setShowCompanySuggestions(true);
-                setHighlightedIndex(-1);
-              }}
-              onFocus={() => setShowCompanySuggestions(true)}
-              onKeyDown={(e) => {
-                if (showCompanySuggestions && companySuggestions.length > 0) {
-                  if (e.key === "ArrowDown") {
-                    e.preventDefault();
-                    setHighlightedIndex((i) =>
-                      i < companySuggestions.length - 1 ? i + 1 : 0
-                    );
-                  } else if (e.key === "ArrowUp") {
-                    e.preventDefault();
-                    setHighlightedIndex((i) =>
-                      i > 0 ? i - 1 : companySuggestions.length - 1
-                    );
-                  } else if (e.key === "Enter" && highlightedIndex >= 0) {
-                    e.preventDefault();
-                    selectCompany(companySuggestions[highlightedIndex]);
-                    return;
-                  } else if (e.key === "Escape") {
-                    setShowCompanySuggestions(false);
-                    return;
-                  }
-                }
-                handleKeyDown(e);
-              }}
-              placeholder="e.g. pharosIQ"
-              maxLength={200}
-              autoComplete="off"
-              className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
-            />
-            {showCompanySuggestions && companySuggestions.length > 0 && (
-              <div
-                ref={suggestionsRef}
-                className="absolute left-0 right-0 top-full z-50 mt-1 max-h-40 overflow-y-auto rounded-md border border-border-primary bg-surface-secondary shadow-lg"
-              >
-                {companySuggestions.map((c, i) => (
-                  <button
-                    key={c}
-                    type="button"
-                    onClick={() => selectCompany(c)}
-                    className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
-                      i === highlightedIndex
-                        ? "bg-accent-primary/15 text-accent-primary"
-                        : "text-text-primary hover:bg-surface-tertiary"
-                    }`}
-                  >
-                    {c}
-                  </button>
-                ))}
+            {/* Deal selector */}
+            {linkType === "deal" && (
+              <div className="flex gap-2">
+                <select
+                  value={dealId}
+                  onChange={(e) => setDealId(e.target.value)}
+                  autoFocus
+                  className="flex-1 rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+                >
+                  <option value="">Select a deal...</option>
+                  {activeDeals.map((d) => (
+                    <option key={d.deal_id} value={d.deal_id}>
+                      {d.company} ({d.stage.replace(/_/g, " ")})
+                    </option>
+                  ))}
+                </select>
+                <Button
+                  variant="secondary"
+                  size="sm"
+                  onClick={handleCreateDeal}
+                  loading={creatingDeal}
+                  disabled={!company.trim()}
+                  title={company.trim() ? `Create "${company.trim()}" as a new lead` : "Enter a company name below first"}
+                >
+                  + New Deal
+                </Button>
               </div>
+            )}
+
+            {/* Project selector */}
+            {linkType === "project" && (
+              <select
+                value={projectId}
+                onChange={(e) => setProjectId(e.target.value)}
+                autoFocus
+                className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+              >
+                <option value="">Select a project...</option>
+                {projects.map((p) => (
+                  <option key={p.project_id} value={p.project_id}>
+                    {p.name} ({p.status}{p.category ? `, ${p.category}` : ""})
+                  </option>
+                ))}
+              </select>
             )}
           </div>
 
-          {/* Participants */}
+          {/* 2. What do you want to discuss? */}
+          <div>
+            <label
+              htmlFor="conv-topic"
+              className="mb-1 block text-xs font-medium text-text-secondary"
+            >
+              What do you want to discuss?
+            </label>
+            <input
+              id="conv-topic"
+              type="text"
+              value={topic}
+              onChange={(e) => setTopic(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder="e.g. Pricing strategy, Account plan, Competitive positioning"
+              maxLength={200}
+              autoFocus={linkType === "none"}
+              className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+            />
+          </div>
+
+          {/* 3. Account / Company (shown when not linked to a deal, or for context) */}
+          {linkType !== "deal" && (
+            <div className="relative">
+              <label
+                htmlFor="company"
+                className="mb-1 block text-xs font-medium text-text-secondary"
+              >
+                Company (optional)
+              </label>
+              <input
+                ref={companyInputRef}
+                id="company"
+                type="text"
+                value={company}
+                onChange={(e) => {
+                  setCompany(e.target.value);
+                  setShowCompanySuggestions(true);
+                  setHighlightedIndex(-1);
+                }}
+                onFocus={() => setShowCompanySuggestions(true)}
+                onKeyDown={(e) => {
+                  if (showCompanySuggestions && companySuggestions.length > 0) {
+                    if (e.key === "ArrowDown") {
+                      e.preventDefault();
+                      setHighlightedIndex((i) =>
+                        i < companySuggestions.length - 1 ? i + 1 : 0
+                      );
+                      return;
+                    } else if (e.key === "ArrowUp") {
+                      e.preventDefault();
+                      setHighlightedIndex((i) =>
+                        i > 0 ? i - 1 : companySuggestions.length - 1
+                      );
+                      return;
+                    } else if (e.key === "Enter") {
+                      e.preventDefault();
+                      if (highlightedIndex >= 0) {
+                        selectCompany(companySuggestions[highlightedIndex]);
+                      } else {
+                        setShowCompanySuggestions(false);
+                      }
+                      return;
+                    } else if (e.key === "Escape") {
+                      setShowCompanySuggestions(false);
+                      return;
+                    }
+                  }
+                  handleKeyDown(e);
+                }}
+                placeholder="e.g. pharosIQ"
+                maxLength={200}
+                autoComplete="off"
+                className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
+              />
+              {showCompanySuggestions && companySuggestions.length > 0 && (
+                <div
+                  ref={suggestionsRef}
+                  className="absolute left-0 right-0 top-full z-50 mt-1 max-h-40 overflow-y-auto rounded-md border border-border-primary bg-surface-secondary shadow-lg"
+                >
+                  {companySuggestions.map((c, i) => (
+                    <button
+                      key={c}
+                      type="button"
+                      onClick={() => selectCompany(c)}
+                      className={`w-full text-left px-3 py-1.5 text-sm transition-colors ${
+                        i === highlightedIndex
+                          ? "bg-accent-primary/15 text-accent-primary"
+                          : "text-text-primary hover:bg-surface-tertiary"
+                      }`}
+                    >
+                      {c}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* 4. People involved */}
           <div>
             <label className="mb-1 block text-xs font-medium text-text-secondary">
-              People Involved (optional)
+              People involved (optional)
             </label>
 
-            {/* Existing participants */}
             {participants.length > 0 && (
               <div className="mb-2 flex flex-wrap gap-1.5">
                 {participants.map((p, i) => (
                   <span
-                    key={i}
+                    key={p.name}
                     className="inline-flex items-center gap-1 rounded-full bg-accent-primary/10 px-2.5 py-1 text-xs font-medium text-accent-primary"
                   >
                     {p.name}
@@ -405,7 +498,35 @@ export function NewThreadDialog({
               </div>
             )}
 
-            {/* Add participant inline */}
+            {/* Contact dropdown */}
+            {contacts.length > 0 && (
+              <div className="mb-2">
+                <select
+                  value=""
+                  onChange={(e) => {
+                    const contact = contacts.find((c) => c.contact_id === e.target.value);
+                    if (contact && !participants.some((p) => p.name.toLowerCase() === contact.name.toLowerCase())) {
+                      setParticipants((prev) => [
+                        ...prev,
+                        { name: contact.name, role: contact.role ?? undefined, company: contact.company ?? undefined },
+                      ]);
+                    }
+                  }}
+                  className="w-full rounded-md border border-border-primary bg-surface-primary px-3 py-1.5 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
+                >
+                  <option value="">Add from contacts...</option>
+                  {contacts
+                    .filter((c) => !participants.some((p) => p.name.toLowerCase() === c.name.toLowerCase()))
+                    .map((c) => (
+                      <option key={c.contact_id} value={c.contact_id}>
+                        {c.name}{c.role ? ` (${c.role})` : ""}{c.company ? ` · ${c.company}` : ""}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+
+            {/* Manual add */}
             <div className="flex gap-2">
               <input
                 ref={participantNameRef}
@@ -418,7 +539,7 @@ export function NewThreadDialog({
                     addParticipant();
                   }
                 }}
-                placeholder="Name"
+                placeholder="Or type a name"
                 maxLength={200}
                 className="flex-1 rounded-md border border-border-primary bg-surface-primary px-3 py-1.5 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none"
               />
@@ -447,41 +568,6 @@ export function NewThreadDialog({
             </div>
           </div>
 
-          {/* Deal association */}
-          <div>
-            <label
-              htmlFor="thread-deal"
-              className="mb-1 block text-xs font-medium text-text-secondary"
-            >
-              Link to deal (optional)
-            </label>
-            <div className="flex gap-2">
-              <select
-                id="thread-deal"
-                value={dealId}
-                onChange={(e) => setDealId(e.target.value)}
-                className="flex-1 rounded-md border border-border-primary bg-surface-primary px-3 py-2 text-sm text-text-primary focus:border-accent-primary focus:outline-none"
-              >
-                <option value="">No deal</option>
-                {activeDeals.map((d) => (
-                  <option key={d.deal_id} value={d.deal_id}>
-                    {d.company} ({d.stage.replace(/_/g, " ")})
-                  </option>
-                ))}
-              </select>
-              <Button
-                variant="secondary"
-                size="sm"
-                onClick={handleCreateDeal}
-                loading={creatingDeal}
-                disabled={!company.trim()}
-                title={company.trim() ? `Create "${company.trim()}" as a new lead` : "Enter a company name first"}
-              >
-                + New Deal
-              </Button>
-            </div>
-          </div>
-
           {/* Auto-deal suggestion */}
           {shouldSuggestDeal && (
             <label className="flex items-start gap-2 rounded-lg border border-brand-500/20 bg-brand-500/5 px-3 py-2.5 cursor-pointer">
@@ -501,7 +587,7 @@ export function NewThreadDialog({
           {duplicateThread && (
             <div className="rounded-md border border-status-yellow/40 bg-status-yellow/10 px-3 py-2">
               <p className="text-xs font-medium text-status-yellow">
-                A thread named &ldquo;{duplicateThread.title || duplicateThread.contact_name}&rdquo; already exists.
+                A conversation named &ldquo;{duplicateThread.title || duplicateThread.contact_name}&rdquo; already exists.
               </p>
             </div>
           )}
@@ -518,9 +604,9 @@ export function NewThreadDialog({
               size="sm"
               onClick={handleCreate}
               loading={loading}
-              disabled={!projectName.trim() || !!duplicateThread}
+              disabled={!topic.trim() || !!duplicateThread}
             >
-              Create Thread
+              Start Conversation
             </Button>
           </div>
         </div>

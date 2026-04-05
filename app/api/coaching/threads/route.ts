@@ -16,6 +16,7 @@ const createThreadSchema = z.object({
   company: z.string().min(1).max(200).nullable().optional(),
   contact_id: z.string().uuid().optional(),
   deal_id: z.string().uuid().optional(),
+  project_id: z.string().uuid().optional(),
   ma_entity_id: z.string().uuid().optional(),
   prospect_id: z.string().uuid().optional(),
   meeting_note_id: z.string().uuid().optional(),
@@ -133,6 +134,20 @@ export async function POST(request: NextRequest) {
     }
   }
 
+  // If project_id provided, verify it belongs to the user
+  if (parsed.data.project_id) {
+    const { data: project } = await supabase
+      .from("projects")
+      .select("project_id")
+      .eq("project_id", parsed.data.project_id)
+      .eq("user_id", user.id)
+      .maybeSingle();
+
+    if (!project) {
+      return NextResponse.json({ error: "Project not found" }, { status: 404 });
+    }
+  }
+
   // If ma_entity_id provided, verify it belongs to the user
   if (parsed.data.ma_entity_id) {
     const { data: entity } = await supabase
@@ -208,6 +223,7 @@ export async function POST(request: NextRequest) {
       company: parsed.data.company ?? null,
       contact_id: parsed.data.contact_id ?? null,
       deal_id: parsed.data.deal_id ?? null,
+      project_id: parsed.data.project_id ?? null,
       ma_entity_id: parsed.data.ma_entity_id ?? null,
       prospect_id: parsed.data.prospect_id ?? null,
       meeting_note_id: parsed.data.meeting_note_id ?? null,

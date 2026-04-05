@@ -5,7 +5,7 @@ import { useRouter, usePathname } from "next/navigation";
 import { format, isToday, isYesterday, isThisYear } from "date-fns";
 import type { CoachingThreadWithDeal } from "@/types/database";
 
-type ViewMode = "companies" | "projects" | "people";
+type ViewMode = "deals" | "projects" | "people";
 
 interface ThreadSidebarProps {
   threads: CoachingThreadWithDeal[];
@@ -17,7 +17,7 @@ interface ThreadSidebarProps {
 export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: ThreadSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
-  const [viewMode, setViewMode] = useState<ViewMode>("companies");
+  const [viewMode, setViewMode] = useState<ViewMode>("deals");
   const [showArchived, setShowArchived] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [contentMatchIds, setContentMatchIds] = useState<Set<string>>(new Set());
@@ -96,8 +96,8 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
     switch (viewMode) {
       case "projects": return groupByProject(activeThreads);
       case "people": return groupByPerson(activeThreads);
-      case "companies":
-      default: return groupByCompany(activeThreads);
+      case "deals":
+      default: return groupByDeal(activeThreads);
     }
   }, [viewMode, activeThreads]);
 
@@ -138,8 +138,8 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
 
   const VIEW_TABS: { key: ViewMode; label: string; icon: React.ReactNode }[] = [
     {
-      key: "companies",
-      label: "Companies",
+      key: "deals",
+      label: "Deals",
       icon: (
         <svg className="h-3.5 w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path strokeLinecap="round" strokeLinejoin="round" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
@@ -193,7 +193,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
           </svg>
           <input
             type="text"
-            placeholder="Search threads & messages..."
+            placeholder="Search conversations..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full rounded-md border border-border-primary bg-surface-secondary py-1.5 pl-8 pr-8 text-xs text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none focus:ring-1 focus:ring-accent-primary"
@@ -241,16 +241,16 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
           <div className="px-4 py-8 text-center">
             {searchQuery ? (
               <p className="text-xs text-text-muted">
-                {isSearching ? "Searching messages..." : "No matching threads or messages."}
+                {isSearching ? "Searching..." : "No matching conversations."}
               </p>
             ) : (
               <>
-                <p className="text-xs text-text-muted">No threads yet.</p>
+                <p className="text-xs text-text-muted">No conversations yet.</p>
                 <button
                   onClick={onNewThread}
                   className="mt-2 text-xs font-medium text-accent-primary hover:underline"
                 >
-                  Start your first thread
+                  Start your first conversation
                 </button>
               </>
             )}
@@ -432,7 +432,7 @@ function ThreadItem({
           )}
           {/* Show linked entities as small chips */}
           <div className="flex flex-wrap gap-1 mt-0.5">
-            {viewMode !== "companies" && thread.company && (
+            {viewMode !== "deals" && thread.company && (
               <span className="text-[9px] text-text-muted bg-surface-tertiary rounded px-1 py-0.5">
                 {thread.company}
               </span>
@@ -515,24 +515,32 @@ const PROJECT_STATUS_COLORS: Record<string, string> = {
   completed: "#6b7280",
 };
 
-/** Group threads by company (default, enhanced from original) */
-function groupByCompany(threads: CoachingThreadWithDeal[]): ThreadGroup[] {
-  const map = new Map<string, CoachingThreadWithDeal[]>();
+/** Group threads by linked deal (default) */
+function groupByDeal(threads: CoachingThreadWithDeal[]): ThreadGroup[] {
+  const map = new Map<string, { threads: CoachingThreadWithDeal[]; stage?: string }>();
+
   for (const t of threads) {
-    const key = t.company || "General";
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(t);
+    if (t.deal_id && t.deals) {
+      const key = t.deals.company;
+      if (!map.has(key)) map.set(key, { threads: [], stage: t.deals.stage });
+      map.get(key)!.threads.push(t);
+    } else {
+      const key = t.company || "Standalone";
+      if (!map.has(key)) map.set(key, { threads: [] });
+      map.get(key)!.threads.push(t);
+    }
   }
 
   return Array.from(map.entries())
     .sort(([a], [b]) => {
-      if (a === "General") return 1;
-      if (b === "General") return -1;
+      if (a === "Standalone") return 1;
+      if (b === "Standalone") return -1;
       return a.localeCompare(b);
     })
-    .map(([company, threads]) => ({
-      label: company,
-      threads,
+    .map(([label, data]) => ({
+      label,
+      sublabel: data.stage ? data.stage.replace(/_/g, " ") : undefined,
+      threads: data.threads,
     }));
 }
 
@@ -626,8 +634,8 @@ function getPeopleFromThread(t: CoachingThreadWithDeal): { name: string; role?: 
 /** Get contextual subtitle for a thread based on active view mode */
 function getThreadSubtitle(thread: CoachingThreadWithDeal, viewMode: ViewMode): string | null {
   switch (viewMode) {
-    case "companies": {
-      // Show participants/contact under company view
+    case "deals": {
+      // Show participants/contact under deal view
       if (thread.participants && thread.participants.length > 0) {
         return thread.participants.map((p) => p.name).join(", ");
       }

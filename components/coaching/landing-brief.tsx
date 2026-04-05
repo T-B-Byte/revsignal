@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { formatDistanceToNow } from "date-fns";
 
 interface LandingBriefData {
@@ -19,15 +19,23 @@ export function LandingBrief() {
   const [data, setData] = useState<LandingBriefData | null>(null);
   const [state, setState] = useState<LoadState>("loading");
   const [collapsed, setCollapsed] = useState(false);
+  const abortRef = useRef<AbortController | null>(null);
 
   const fetchBrief = useCallback(async () => {
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
+    setState("loading");
     try {
-      const res = await fetch("/api/coaching/landing-brief");
+      const res = await fetch("/api/coaching/landing-brief", { signal: controller.signal });
       if (!res.ok) throw new Error("Failed to fetch");
       const json: LandingBriefData = await res.json();
-      setData(json);
-      setState("loaded");
-    } catch {
+      if (!controller.signal.aborted) {
+        setData(json);
+        setState("loaded");
+      }
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
       setState("error");
     }
   }, []);
@@ -37,20 +45,16 @@ export function LandingBrief() {
     try {
       const res = await fetch("/api/agents/briefing", { method: "POST" });
       if (!res.ok) throw new Error("Failed to generate");
-      // Refetch from landing-brief to get parsed sections
-      try {
-        await fetchBrief();
-      } catch {
-        // Generation succeeded but refetch failed, restore previous state
-        setState(data?.briefing ? "loaded" : "error");
-      }
-    } catch {
+      await fetchBrief();
+    } catch (e) {
+      if (e instanceof DOMException && e.name === "AbortError") return;
       setState("error");
     }
-  }, [fetchBrief, data]);
+  }, [fetchBrief]);
 
   useEffect(() => {
     fetchBrief();
+    return () => abortRef.current?.abort();
   }, [fetchBrief]);
 
   // --- Skeleton ---
