@@ -5,8 +5,10 @@ import { DealHeader } from "@/components/deals/deal-header";
 import { ConversationTimeline } from "@/components/deals/conversation-timeline";
 import { LogConversation } from "@/components/deals/log-conversation";
 import { DealActionItems } from "@/components/deals/deal-action-items";
+import { DealThreads } from "@/components/deals/deal-threads";
 import { DealStrategy } from "@/components/deals/deal-strategy";
 import { TranscriptAnalysis } from "@/components/deals/transcript-analysis";
+import { DealHub } from "@/components/deals/deal-hub";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { PLANS } from "@/lib/stripe/config";
 import {
@@ -17,6 +19,8 @@ import {
   type Contact,
   type DealBrief,
   type SubscriptionTier,
+  type UserTaskWithDeal,
+  type CoachingThread,
 } from "@/types/database";
 
 interface DealDetailPageProps {
@@ -99,8 +103,8 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
     contacts = (contactData as Contact[]) ?? [];
   }
 
-  // Fetch deal brief and subscription in parallel
-  const [dealBriefResult, subscriptionResult] = await Promise.all([
+  // Fetch deal brief, subscription, threads (with briefs), tasks, and active deals in parallel
+  const [dealBriefResult, subscriptionResult, threadsResult, tasksResult, activeDealsResult] = await Promise.all([
     supabase
       .from("deal_briefs")
       .select("*")
@@ -115,12 +119,39 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
       .eq("user_id", user.id)
       .eq("status", "active")
       .maybeSingle(),
+    // Enhanced: include thread_brief and participants for the hub
+    supabase
+      .from("coaching_threads")
+      .select("thread_id, title, last_message_at, message_count, is_archived, thread_brief, participants")
+      .eq("deal_id", dealId)
+      .eq("user_id", user.id)
+      .order("last_message_at", { ascending: false }),
+    // Tasks for this deal
+    supabase
+      .from("user_tasks")
+      .select("*, deals(deal_id, company, stage), coaching_threads(thread_id, title)")
+      .eq("deal_id", dealId)
+      .eq("user_id", user.id)
+      .order("status", { ascending: true })
+      .order("due_date", { ascending: true, nullsFirst: false }),
+    // Active deals for task creation dropdown
+    supabase
+      .from("deals")
+      .select("deal_id, company, stage")
+      .eq("user_id", user.id)
+      .not("stage", "in", "(closed_won,closed_lost)")
+      .order("company", { ascending: true }),
   ]);
 
   const dealBrief = dealBriefResult.data;
   const userTier: SubscriptionTier = subscriptionResult.data?.tier ?? 'power';
   const hasAiAccess = PLANS[userTier].limits.aiBriefings;
-
+  const linkedThreads = (threadsResult.data ?? []) as Pick<
+    CoachingThread,
+    "thread_id" | "title" | "last_message_at" | "message_count" | "is_archived" | "thread_brief" | "participants"
+  >[];
+  const dealTasks = (tasksResult.data as UserTaskWithDeal[]) ?? [];
+  const activeDeals = (activeDealsResult.data as Pick<Deal, "deal_id" | "company" | "stage">[]) ?? [];
 
   return (
     <div className="space-y-6 max-w-5xl">
@@ -139,131 +170,147 @@ export default async function DealDetailPage({ params }: DealDetailPageProps) {
       {/* Deal Header */}
       <DealHeader deal={deal as Deal} />
 
-      {/* Two column layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Main content - 2/3 */}
-        <div className="lg:col-span-2 space-y-6">
-          {/* Log conversation button + timeline */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">
-                Conversations
-              </h2>
-              <LogConversation
-                dealId={dealId}
-                contacts={contacts}
+      {/* Tabbed Hub */}
+      <DealHub
+        dealId={dealId}
+        company={(deal as Deal).company}
+        threads={linkedThreads}
+        tasks={dealTasks}
+        deals={activeDeals}
+      >
+        {/* Overview tab content (original layout) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Main content - 2/3 */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Log conversation button + timeline */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider">
+                  Conversations
+                </h2>
+                <LogConversation
+                  dealId={dealId}
+                  contacts={contacts}
+                />
+              </div>
+              <ConversationTimeline
+                conversations={(conversations as Conversation[]) ?? []}
               />
             </div>
-            <ConversationTimeline
-              conversations={(conversations as Conversation[]) ?? []}
+          </div>
+
+          {/* Sidebar - 1/3 */}
+          <div className="space-y-6">
+            {/* StrategyGPT Threads */}
+            <DealThreads
+              threads={linkedThreads}
+              dealId={dealId}
+              company={(deal as Deal).company}
             />
+
+            {/* Action Items */}
+            <DealActionItems
+              actionItems={(actionItems as ActionItem[]) ?? []}
+              dealId={dealId}
+            />
+
+            {/* Contacts */}
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  Contacts
+                  {contacts.length > 0 && (
+                    <span className="ml-2 text-xs font-normal text-text-muted">
+                      ({contacts.length})
+                    </span>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {contacts.length === 0 ? (
+                  <p className="text-sm text-text-muted py-4 text-center">
+                    No contacts linked to this deal yet.
+                  </p>
+                ) : (
+                  <ul className="space-y-3">
+                    {contacts.map((contact) => (
+                      <li key={contact.contact_id} className="flex items-start gap-3">
+                        <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent-primary/10 flex items-center justify-center text-xs font-bold text-accent-primary">
+                          {contact.name
+                            .split(" ")
+                            .map((n) => n[0])
+                            .join("")
+                            .slice(0, 2)
+                            .toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-text-primary truncate">
+                            {contact.name}
+                          </p>
+                          {contact.role && (
+                            <p className="text-xs text-text-muted">{contact.role}</p>
+                          )}
+                          {contact.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email) && (
+                            <a
+                              href={`mailto:${encodeURIComponent(contact.email)}`}
+                              className="text-xs text-accent-primary hover:underline"
+                            >
+                              {contact.email}
+                            </a>
+                          )}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Deal Brief */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Deal Brief</CardTitle>
+              </CardHeader>
+              <CardContent>
+                {dealBrief ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-text-secondary leading-relaxed">
+                      {(dealBrief as DealBrief).brief_text}
+                    </p>
+                    <p className="text-xs text-text-muted">
+                      Last updated:{" "}
+                      {new Date(
+                        (dealBrief as DealBrief).last_updated
+                      ).toLocaleDateString()}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="text-center py-6">
+                    <p className="text-sm text-text-muted">
+                      No AI-generated deal brief yet.
+                    </p>
+                    <p className="text-xs text-text-muted mt-1">
+                      The Strategist will generate a brief once there are enough
+                      conversations to analyze.
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Deal Strategy */}
+            <DealStrategy dealId={dealId} hasAiAccess={hasAiAccess} />
+
+            {/* Transcript Analysis */}
+            <TranscriptAnalysis
+              dealId={dealId}
+              hasAiAccess={hasAiAccess}
+              company={(deal as Deal).company}
+            />
+
           </div>
         </div>
-
-        {/* Sidebar - 1/3 */}
-        <div className="space-y-6">
-          {/* Action Items */}
-          <DealActionItems
-            actionItems={(actionItems as ActionItem[]) ?? []}
-            dealId={dealId}
-          />
-
-          {/* Contacts */}
-          <Card>
-            <CardHeader>
-              <CardTitle>
-                Contacts
-                {contacts.length > 0 && (
-                  <span className="ml-2 text-xs font-normal text-text-muted">
-                    ({contacts.length})
-                  </span>
-                )}
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              {contacts.length === 0 ? (
-                <p className="text-sm text-text-muted py-4 text-center">
-                  No contacts linked to this deal yet.
-                </p>
-              ) : (
-                <ul className="space-y-3">
-                  {contacts.map((contact) => (
-                    <li key={contact.contact_id} className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-accent-primary/10 flex items-center justify-center text-xs font-bold text-accent-primary">
-                        {contact.name
-                          .split(" ")
-                          .map((n) => n[0])
-                          .join("")
-                          .slice(0, 2)
-                          .toUpperCase()}
-                      </div>
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-text-primary truncate">
-                          {contact.name}
-                        </p>
-                        {contact.role && (
-                          <p className="text-xs text-text-muted">{contact.role}</p>
-                        )}
-                        {contact.email && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email) && (
-                          <a
-                            href={`mailto:${encodeURIComponent(contact.email)}`}
-                            className="text-xs text-accent-primary hover:underline"
-                          >
-                            {contact.email}
-                          </a>
-                        )}
-                      </div>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Deal Brief */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Deal Brief</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {dealBrief ? (
-                <div className="space-y-2">
-                  <p className="text-sm text-text-secondary leading-relaxed">
-                    {(dealBrief as DealBrief).brief_text}
-                  </p>
-                  <p className="text-xs text-text-muted">
-                    Last updated:{" "}
-                    {new Date(
-                      (dealBrief as DealBrief).last_updated
-                    ).toLocaleDateString()}
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <p className="text-sm text-text-muted">
-                    No AI-generated deal brief yet.
-                  </p>
-                  <p className="text-xs text-text-muted mt-1">
-                    The Strategist will generate a brief once there are enough
-                    conversations to analyze.
-                  </p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
-
-          {/* Deal Strategy */}
-          <DealStrategy dealId={dealId} hasAiAccess={hasAiAccess} />
-
-          {/* Transcript Analysis */}
-          <TranscriptAnalysis
-            dealId={dealId}
-            hasAiAccess={hasAiAccess}
-            company={(deal as Deal).company}
-          />
-
-        </div>
-      </div>
+      </DealHub>
     </div>
   );
 }

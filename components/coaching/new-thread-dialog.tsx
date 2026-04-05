@@ -35,6 +35,10 @@ interface NewThreadDialogProps {
   knownCompanies?: string[];
   /** Existing threads for duplicate detection */
   existingThreads?: ExistingThread[];
+  /** Pre-fill deal_id when creating from a deal page */
+  prefillDealId?: string | null;
+  /** Pre-fill company when creating from a deal page */
+  prefillCompany?: string | null;
 }
 
 export function NewThreadDialog({
@@ -45,6 +49,8 @@ export function NewThreadDialog({
   onDealCreated,
   knownCompanies = [],
   existingThreads = [],
+  prefillDealId,
+  prefillCompany,
 }: NewThreadDialogProps) {
   const [projectName, setProjectName] = useState("");
   const [company, setCompany] = useState("");
@@ -60,6 +66,16 @@ export function NewThreadDialog({
   const companyInputRef = useRef<HTMLInputElement>(null);
   const suggestionsRef = useRef<HTMLDivElement>(null);
   const participantNameRef = useRef<HTMLInputElement>(null);
+
+  // Apply prefill values when dialog opens with them
+  useEffect(() => {
+    if (open && prefillCompany) {
+      setCompany(prefillCompany);
+    }
+    if (open && prefillDealId) {
+      setDealId(prefillDealId);
+    }
+  }, [open, prefillCompany, prefillDealId]);
 
   // Detect duplicate thread as user types
   const duplicateThread = useMemo(() => {
@@ -170,8 +186,21 @@ export function NewThreadDialog({
     }
   }
 
+  // Suggest creating a deal when company + participant are set and no deal is linked
+  const shouldSuggestDeal = useMemo(() => {
+    if (dealId) return false;
+    if (!company.trim()) return false;
+    if (participants.length === 0) return false;
+    // Check if a deal already exists for this company
+    const companyLower = company.trim().toLowerCase();
+    return !activeDeals.some((d) => d.company.toLowerCase() === companyLower);
+  }, [company, participants, dealId, activeDeals]);
+
+  const [autoCreateDeal, setAutoCreateDeal] = useState(false);
+
   function handleClose() {
     resetForm();
+    setAutoCreateDeal(false);
     onClose();
   }
 
@@ -185,6 +214,29 @@ export function NewThreadDialog({
     // Build backward-compatible contact_name from first participant
     const primaryParticipant = participants[0] ?? null;
 
+    // Auto-create deal at "conversation" stage if user opted in
+    let finalDealId = dealId;
+    if (autoCreateDeal && !dealId && company.trim()) {
+      try {
+        const dealRes = await fetch("/api/deals", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            company: company.trim(),
+            stage: "conversation",
+            win_probability: 0,
+          }),
+        });
+        if (dealRes.ok) {
+          const { deal } = await dealRes.json();
+          finalDealId = deal.deal_id;
+          onDealCreated?.({ deal_id: deal.deal_id, company: deal.company, stage: deal.stage });
+        }
+      } catch {
+        // Non-fatal: thread creation continues without deal
+      }
+    }
+
     try {
       const res = await fetch("/api/coaching/threads", {
         method: "POST",
@@ -194,7 +246,7 @@ export function NewThreadDialog({
           contact_name: primaryParticipant?.name || undefined,
           contact_role: primaryParticipant?.role || undefined,
           company: company.trim() || undefined,
-          deal_id: dealId || undefined,
+          deal_id: finalDealId || undefined,
           participants,
         }),
       });
@@ -429,6 +481,22 @@ export function NewThreadDialog({
               </Button>
             </div>
           </div>
+
+          {/* Auto-deal suggestion */}
+          {shouldSuggestDeal && (
+            <label className="flex items-start gap-2 rounded-lg border border-brand-500/20 bg-brand-500/5 px-3 py-2.5 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={autoCreateDeal}
+                onChange={(e) => setAutoCreateDeal(e.target.checked)}
+                className="mt-0.5 h-4 w-4 rounded border-border-primary accent-brand-500"
+              />
+              <span className="text-xs text-text-secondary">
+                Create a deal card for <strong className="text-text-primary">{company.trim()}</strong>?
+                <span className="text-text-muted"> Starting stage: Conversation (0%)</span>
+              </span>
+            </label>
+          )}
 
           {duplicateThread && (
             <div className="rounded-md border border-status-yellow/40 bg-status-yellow/10 px-3 py-2">

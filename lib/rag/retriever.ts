@@ -1560,3 +1560,37 @@ export async function retrieveGlobalThreadBriefs(
 
   return (data ?? []) as GlobalThreadBrief[];
 }
+
+/**
+ * Retrieves FULL thread briefs for all threads sharing the same deal_id.
+ * Unlike retrieveGlobalThreadBriefs (which covers all threads with truncation),
+ * this returns complete briefs since deal-scoped threads are few (typically 4-8)
+ * and full context is critical for contradiction detection.
+ */
+export async function retrieveDealThreadBriefs(
+  supabase: SupabaseClient,
+  userId: string,
+  dealId: string,
+  excludeThreadId?: string
+): Promise<GlobalThreadBrief[]> {
+  let query = supabase
+    .from("coaching_threads")
+    .select("thread_id, title, company, contact_name, thread_brief, last_message_at")
+    .eq("user_id", userId)
+    .eq("deal_id", dealId)
+    .eq("is_archived", false)
+    .order("last_message_at", { ascending: false });
+
+  if (excludeThreadId) {
+    query = query.neq("thread_id", excludeThreadId);
+  }
+
+  const { data, error } = await query;
+
+  if (error) {
+    console.error("[rag/retriever] Error fetching deal thread briefs:", error.message);
+    return [];
+  }
+
+  return (data ?? []) as GlobalThreadBrief[];
+}

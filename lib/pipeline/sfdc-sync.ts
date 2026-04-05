@@ -62,6 +62,7 @@ const SFDC_TO_LOCAL_STAGE: Record<string, DealStage> = {
 };
 
 const LOCAL_TO_SFDC_STAGE: Record<DealStage, string> = {
+  conversation: "Initial Contact",
   lead: "Prospecting",
   qualified: "Qualification",
   discovery: "Needs Analysis",

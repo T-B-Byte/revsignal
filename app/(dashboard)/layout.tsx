@@ -26,9 +26,9 @@ export default async function DashboardLayout({
 
   return (
     <SidebarProvider>
-      <div className="flex h-screen overflow-hidden bg-surface-primary">
+      <div className="bg-atmosphere flex h-screen overflow-hidden">
         <Sidebar />
-        <div className="flex flex-1 flex-col overflow-hidden">
+        <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
           <Header displayName={profile?.display_name} />
           <main className="flex-1 overflow-y-auto p-6">{children}</main>
         </div>

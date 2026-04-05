@@ -2,6 +2,7 @@
 // These match the Supabase schema exactly.
 
 export type DealStage =
+  | "conversation"
   | "lead"
   | "qualified"
   | "discovery"
@@ -498,6 +499,33 @@ export interface ThreadFollowUp {
   completed_at: string | null;
 }
 
+export type TaskOwner = "me" | "them";
+export type TaskSource = "manual" | "strategist" | "action_item";
+
+export interface UserTask {
+  task_id: string;
+  user_id: string;
+  description: string;
+  due_date: string | null;
+  status: "open" | "done";
+  deal_id: string | null;
+  thread_id: string | null;
+  contact_id: string | null;
+  owner: TaskOwner;
+  source: TaskSource;
+  escalation_level: EscalationLevel;
+  source_message_id: string | null;
+  source_text: string | null;
+  created_at: string;
+  completed_at: string | null;
+}
+
+/** UserTask with joined deal info for display */
+export interface UserTaskWithDeal extends UserTask {
+  deals?: Pick<Deal, "deal_id" | "company" | "stage"> | null;
+  coaching_threads?: Pick<CoachingThread, "thread_id" | "title"> | null;
+}
+
 /** Thread with joined deal/M&A/contact info for sidebar display */
 export interface CoachingThreadWithDeal extends CoachingThread {
   deals?: Pick<Deal, "deal_id" | "company" | "stage"> | null;
@@ -607,6 +635,7 @@ export const STAKEHOLDER_RELATIONSHIPS: {
 // --- Pipeline Stage Config ---
 
 export const DEAL_STAGES: { value: DealStage; label: string; color: string }[] = [
+  { value: "conversation", label: "Conversation", color: "#94a3b8" },
   { value: "lead", label: "Lead", color: "#6b7280" },
   { value: "qualified", label: "Qualified", color: "#8b5cf6" },
   { value: "discovery", label: "Discovery", color: "#3b82f6" },
@@ -619,6 +648,7 @@ export const DEAL_STAGES: { value: DealStage; label: string; color: string }[] =
 ];
 
 export const ACTIVE_STAGES: DealStage[] = [
+  "conversation",
   "lead",
   "qualified",
   "discovery",
@@ -631,6 +661,7 @@ export const ACTIVE_STAGES: DealStage[] = [
 // --- SFDC Stage Mapping ---
 
 export const SFDC_STAGE_MAP: Record<DealStage, string> = {
+  conversation: "Initial Contact",
   lead: "Prospecting",
   qualified: "Qualification",
   discovery: "Needs Analysis",

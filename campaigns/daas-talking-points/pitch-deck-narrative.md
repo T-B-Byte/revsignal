@@ -100,13 +100,13 @@ score: null
 
 ## Slide 5: The Asset
 
-**Headline:** 270M+ contacts. 650+ intent categories. Scored 1-99.
+**Headline:** 360M+ contacts. 650+ intent categories. Scored 1-99.
 
 **Visual:** Data asset infographic.
 
 | Asset | Scale |
 |---|---|
-| Total contacts | 270M+ across 25M+ companies |
+| Total contacts | 360M+ across 25M+ companies |
 | B2B inboxable | 50M |
 | Active engagers (90-day) | 1.5M |
 | Monthly signals | 3-6M |

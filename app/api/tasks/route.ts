@@ -4,8 +4,8 @@ import { createClient } from "@/lib/supabase/server";
 
 /**
  * GET /api/tasks
- * List all tasks for the current user, open first then done.
- * Optional: ?source_message_ids=id1,id2 to filter by source message.
+ * List all tasks for the current user.
+ * Optional filters: ?status=open, ?deal_id=uuid, ?source_message_ids=id1,id2
  */
 export async function GET(request: NextRequest) {
   const supabase = await createClient();
@@ -16,16 +16,33 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  const sourceParam = request.nextUrl.searchParams.get("source_message_ids");
+  const params = request.nextUrl.searchParams;
+  const sourceParam = params.get("source_message_ids");
+  const statusParam = params.get("status");
+  const dealIdParam = params.get("deal_id");
+  const threadIdParam = params.get("thread_id");
+  const ownerParam = params.get("owner");
 
   let query = supabase
     .from("user_tasks")
-    .select("*")
+    .select("*, deals(deal_id, company, stage), coaching_threads(thread_id, title)")
     .eq("user_id", user.id);
 
   if (sourceParam) {
     const ids = sourceParam.split(",").filter(Boolean);
     query = query.in("source_message_id", ids);
+  }
+  if (statusParam) {
+    query = query.eq("status", statusParam);
+  }
+  if (dealIdParam) {
+    query = query.eq("deal_id", dealIdParam);
+  }
+  if (threadIdParam) {
+    query = query.eq("thread_id", threadIdParam);
+  }
+  if (ownerParam) {
+    query = query.eq("owner", ownerParam);
   }
 
   const { data: tasks, error } = await query
@@ -45,6 +62,11 @@ const createSchema = z.object({
   due_date: z.string().max(20).optional(),
   source_message_id: z.uuid().optional(),
   source_text: z.string().max(2000).optional(),
+  deal_id: z.uuid().optional(),
+  thread_id: z.uuid().optional(),
+  contact_id: z.uuid().optional(),
+  owner: z.enum(["me", "them"]).optional(),
+  source: z.enum(["manual", "strategist", "action_item"]).optional(),
 });
 
 /**
@@ -77,14 +99,19 @@ export async function POST(request: NextRequest) {
 
   const trimmedDescription = parsed.data.description.trim();
 
-  // Dedup: if an open task with the same description already exists, return it
-  const { data: existing } = await supabase
+  // Dedup: if an open task with same description (and same deal) already exists, return it
+  let dedupQuery = supabase
     .from("user_tasks")
     .select("*")
     .eq("user_id", user.id)
     .eq("status", "open")
-    .eq("description", trimmedDescription)
-    .maybeSingle();
+    .eq("description", trimmedDescription);
+
+  if (parsed.data.deal_id) {
+    dedupQuery = dedupQuery.eq("deal_id", parsed.data.deal_id);
+  }
+
+  const { data: existing } = await dedupQuery.maybeSingle();
 
   if (existing) {
     return NextResponse.json({ task: existing, duplicate: true }, { status: 200 });
@@ -98,6 +125,11 @@ export async function POST(request: NextRequest) {
       due_date: parsed.data.due_date || null,
       source_message_id: parsed.data.source_message_id || null,
       source_text: parsed.data.source_text || null,
+      deal_id: parsed.data.deal_id || null,
+      thread_id: parsed.data.thread_id || null,
+      contact_id: parsed.data.contact_id || null,
+      owner: parsed.data.owner || "me",
+      source: parsed.data.source || "manual",
     })
     .select()
     .single();
@@ -114,11 +146,13 @@ const updateSchema = z.object({
   description: z.string().min(1).max(2000).optional(),
   due_date: z.string().max(20).nullable().optional(),
   status: z.enum(["open", "done"]).optional(),
+  owner: z.enum(["me", "them"]).optional(),
+  deal_id: z.uuid().nullable().optional(),
 });
 
 /**
  * PATCH /api/tasks
- * Update a task (description, due_date, status).
+ * Update a task (description, due_date, status, owner, deal_id).
  */
 export async function PATCH(request: NextRequest) {
   const supabase = await createClient();
@@ -155,6 +189,12 @@ export async function PATCH(request: NextRequest) {
     updates.status = parsed.data.status;
     updates.completed_at =
       parsed.data.status === "done" ? new Date().toISOString() : null;
+  }
+  if (parsed.data.owner !== undefined) {
+    updates.owner = parsed.data.owner;
+  }
+  if (parsed.data.deal_id !== undefined) {
+    updates.deal_id = parsed.data.deal_id;
   }
 
   const { error } = await supabase

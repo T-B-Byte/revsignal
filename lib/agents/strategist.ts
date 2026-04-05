@@ -27,6 +27,7 @@ import {
   retrieveStakeholderContext,
   retrieveMeetingPrepContext,
   retrieveGlobalThreadBriefs,
+  retrieveDealThreadBriefs,
   retrieveMeetingContext,
   type BriefingContext,
   type DealContext,
@@ -1960,6 +1961,20 @@ Rules for project detection:
 - The PROJECT_DETECTED block is hidden from display but parsed by the system to auto-create/update projects in the Network mindmap.
 - If no projects are detected, omit the block entirely.
 
+DEAL DETECTION:
+When this thread has NO linked deal and Tina discusses commercial topics (pricing, contracts, proposals, procurement, budget, data licensing, integration scope, POC, pilot) for a specific company, append a DEAL_DETECTED block:
+
+<!-- DEAL_DETECTED
+{"company": "Integrate", "suggested_stage": "conversation", "reason": "Discussion of pricing tiers and procurement timeline"}
+-->
+
+Rules for deal detection:
+- Only trigger when the thread has no linked deal_id (the system context will tell you if a deal is linked).
+- Only trigger for clearly commercial conversations, not general networking or research.
+- suggested_stage should be "conversation" for early-stage discussions, "lead" if they've expressed real interest, or "discovery" if technical/business requirements are being explored.
+- The DEAL_DETECTED block is hidden from display but parsed by the system to prompt Tina to create a deal card.
+- If no deal detection is warranted, omit the block entirely.
+
 ${coachingToneRules()}`;
 
 const THREAD_CATCHUP_PROMPT = `${STRATEGIST_IDENTITY}
@@ -2072,6 +2087,7 @@ export interface ThreadResponseResult {
   followUpsExtracted: { description: string; due_date: string | null }[];
   meetingDetected: MeetingDetectedData | null;
   projectsDetected: ProjectDetectedData[];
+  dealDetected: DealDetectedData | null;
   userConversationId: string | null;
   assistantConversationId: string | null;
 }
@@ -2100,12 +2116,15 @@ export async function generateThreadResponse(
     })
   );
 
-  // Fetch deal context, global thread briefs, and recent meeting notes in parallel
-  const [dealContext, globalBriefs, recentMeetings] = await Promise.all([
+  // Fetch deal context, global thread briefs, deal-specific briefs, and recent meeting notes in parallel
+  const [dealContext, globalBriefs, dealThreadBriefs, recentMeetings] = await Promise.all([
     options?.dealId
       ? retrieveDealContext(supabase, userId, options.dealId)
       : Promise.resolve(null),
     retrieveGlobalThreadBriefs(supabase, userId, threadId),
+    options?.dealId
+      ? retrieveDealThreadBriefs(supabase, userId, options.dealId, threadId)
+      : Promise.resolve([]),
     retrieveMeetingContext(supabase, userId, { limit: 15 }),
   ]);
 
@@ -2194,6 +2213,20 @@ export async function generateThreadResponse(
   // Thread brief (progressive summary of older messages)
   if (options?.threadBrief) {
     contextSections.push(`THREAD HISTORY BRIEF:\n${options.threadBrief}`);
+  }
+
+  // Deal-specific thread briefs — FULL briefs from all threads sharing this deal.
+  // Critical for contradiction detection: pricing, timelines, contacts.
+  if (dealThreadBriefs.length > 0) {
+    const dealBriefLines = dealThreadBriefs.map((t) => {
+      const label = t.contact_name ? `${t.title} (${t.contact_name})` : t.title;
+      return t.thread_brief
+        ? `- [${label}]: ${t.thread_brief}`
+        : `- [${label}]: (brief not yet generated, last active ${t.last_message_at?.split("T")[0] ?? "unknown"})`;
+    });
+    contextSections.push(
+      `SAME-DEAL THREAD BRIEFS (other threads for this deal. Read carefully for contradictions in pricing, timelines, commitments, or contact info. If you detect conflicts between threads, flag them explicitly: "CONTRADICTION: Thread A says X, Thread B says Y. Please clarify which is current."):\n${dealBriefLines.join("\n")}`
+    );
   }
 
   // Global thread briefs — cross-thread memory so the Strategist knows
@@ -2430,10 +2463,12 @@ export async function generateThreadResponse(
   const followUpsExtracted = extractFollowUps(fullResponseText);
   const meetingDetected = extractMeetingDetected(fullResponseText);
   const projectsDetected = extractProjectDetected(fullResponseText);
+  const dealDetected = !options?.dealId ? extractDealDetected(fullResponseText) : null;
   const cleanResponse = fullResponseText
     .replace(/<!-- FOLLOW_UPS\n[\s\S]*?(?:-->|$)/g, "")
     .replace(/<!-- MEETING_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
     .replace(/<!-- PROJECT_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
+    .replace(/<!-- DEAL_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
     .trim();
 
   // Step 7: Save messages to coaching_conversations (with thread_id)
@@ -2476,17 +2511,10 @@ export async function generateThreadResponse(
   const userConversationId = savedMessages?.find((m) => m.role === "user")?.conversation_id ?? null;
   const assistantConversationId = savedMessages?.find((m) => m.role === "assistant")?.conversation_id ?? null;
 
-  // Step 8: Save extracted follow-ups
-  if (followUpsExtracted.length > 0) {
-    await supabase.from("thread_follow_ups").insert(
-      followUpsExtracted.map((fu) => ({
-        thread_id: threadId,
-        user_id: userId,
-        description: fu.description,
-        due_date: fu.due_date,
-      }))
-    );
-  }
+  // Step 8: Save extracted follow-ups (dedup into unified user_tasks + backward compat)
+  await deduplicateAndInsertTasks(
+    supabase, userId, threadId, options?.dealId, followUpsExtracted
+  );
 
   // Step 8b: Auto-create/update projects from detected project mentions
   if (projectsDetected.length > 0) {
@@ -2545,6 +2573,7 @@ export async function generateThreadResponse(
     followUpsExtracted,
     meetingDetected,
     projectsDetected,
+    dealDetected,
     userConversationId,
     assistantConversationId,
   };
@@ -2561,6 +2590,7 @@ export interface StreamThreadDoneEvent {
   tokensUsed: number;
   followUpsExtracted: ThreadResponseResult["followUpsExtracted"];
   meetingDetected: MeetingDetectedData | null;
+  dealDetected: DealDetectedData | null;
 }
 
 export interface StreamThreadErrorEvent {
@@ -2609,11 +2639,14 @@ export function streamThreadResponse(
           retrieveStrategicContext(supabase, userId, { dealId: options?.dealId })
         );
 
-        const [dealContext, globalBriefs] = await Promise.all([
+        const [dealContext, globalBriefs, dealThreadBriefs] = await Promise.all([
           options?.dealId
             ? retrieveDealContext(supabase, userId, options.dealId)
             : Promise.resolve(null),
           retrieveGlobalThreadBriefs(supabase, userId, threadId),
+          options?.dealId
+            ? retrieveDealThreadBriefs(supabase, userId, options.dealId, threadId)
+            : Promise.resolve([]),
         ]);
 
         // M&A entity context (same logic as generateThreadResponse)
@@ -2661,6 +2694,19 @@ export function streamThreadResponse(
         // ── Step 3: Build context document ────────────────────────────
         const contextSections: string[] = [];
         if (options?.threadBrief) contextSections.push(`THREAD HISTORY BRIEF:\n${options.threadBrief}`);
+
+        // Deal-specific thread briefs — full briefs for contradiction detection
+        if (dealThreadBriefs.length > 0) {
+          const dealBriefLines = dealThreadBriefs.map((t) => {
+            const label = t.contact_name ? `${t.title} (${t.contact_name})` : t.title;
+            return t.thread_brief
+              ? `- [${label}]: ${t.thread_brief}`
+              : `- [${label}]: (brief not yet generated, last active ${t.last_message_at?.split("T")[0] ?? "unknown"})`;
+          });
+          contextSections.push(
+            `SAME-DEAL THREAD BRIEFS (other threads for this deal. Flag contradictions in pricing, timelines, commitments, or contact info.):\n${dealBriefLines.join("\n")}`
+          );
+        }
 
         // Global thread briefs — cross-thread awareness
         if (globalBriefs.length > 0) {
@@ -2806,10 +2852,12 @@ export function streamThreadResponse(
         const followUpsExtracted = extractFollowUps(accumulated);
         const meetingDetected = extractMeetingDetected(accumulated);
         const projectsDetected = extractProjectDetected(accumulated);
+        const dealDetected = !options?.dealId ? extractDealDetected(accumulated) : null;
         const cleanResponse = accumulated
           .replace(/<!-- FOLLOW_UPS\n[\s\S]*?(?:-->|$)/g, "")
           .replace(/<!-- MEETING_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
           .replace(/<!-- PROJECT_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
+          .replace(/<!-- DEAL_DETECTED\n[\s\S]*?(?:-->|$)/g, "")
           .trim();
 
         // ── Step 7: Save assistant message to DB ─────────────────────
@@ -2833,17 +2881,10 @@ export function streamThreadResponse(
           .select("conversation_id")
           .single();
 
-        // ── Step 8: Save follow-ups ───────────────────────────────────
-        if (followUpsExtracted.length > 0) {
-          await supabase.from("thread_follow_ups").insert(
-            followUpsExtracted.map(fu => ({
-              thread_id: threadId,
-              user_id: userId,
-              description: fu.description,
-              due_date: fu.due_date,
-            }))
-          );
-        }
+        // ── Step 8: Save follow-ups (dedup into unified user_tasks) ────
+        await deduplicateAndInsertTasks(
+          supabase, userId, threadId, options?.dealId, followUpsExtracted
+        );
 
         // ── Step 9: Detected projects (fire-and-forget) ───────────────
         if (projectsDetected.length > 0) {
@@ -2892,6 +2933,7 @@ export function streamThreadResponse(
           tokensUsed,
           followUpsExtracted,
           meetingDetected,
+          dealDetected,
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "Generation failed";
@@ -3116,6 +3158,67 @@ function extractFollowUps(
     console.error("[strategist] Failed to parse FOLLOW_UPS block");
     return [];
   }
+}
+
+/**
+ * Deduplicate and insert follow-ups into the unified user_tasks table.
+ * Also writes to thread_follow_ups for backward compat.
+ * Skips any task whose exact description already exists as an open task
+ * for the same deal (or globally if no deal).
+ */
+async function deduplicateAndInsertTasks(
+  supabase: SupabaseClient,
+  userId: string,
+  threadId: string,
+  dealId: string | null | undefined,
+  followUps: { description: string; due_date: string | null }[]
+): Promise<void> {
+  if (followUps.length === 0) return;
+
+  // Fetch existing open tasks to check for duplicates
+  let existingQuery = supabase
+    .from("user_tasks")
+    .select("description")
+    .eq("user_id", userId)
+    .eq("status", "open");
+
+  if (dealId) {
+    existingQuery = existingQuery.eq("deal_id", dealId);
+  }
+
+  const { data: existing } = await existingQuery;
+  const existingDescriptions = new Set(
+    (existing ?? []).map((t) => t.description.toLowerCase().trim())
+  );
+
+  const newTasks = followUps.filter(
+    (fu) => !existingDescriptions.has(fu.description.toLowerCase().trim())
+  );
+
+  if (newTasks.length > 0) {
+    // Write to unified user_tasks
+    await supabase.from("user_tasks").insert(
+      newTasks.map((fu) => ({
+        user_id: userId,
+        description: fu.description,
+        due_date: fu.due_date,
+        deal_id: dealId || null,
+        thread_id: threadId,
+        owner: "me",
+        source: "strategist",
+      }))
+    );
+  }
+
+  // Also write to thread_follow_ups for backward compat (all items, including dupes)
+  await supabase.from("thread_follow_ups").insert(
+    followUps.map((fu) => ({
+      thread_id: threadId,
+      user_id: userId,
+      description: fu.description,
+      due_date: fu.due_date,
+    }))
+  );
 }
 
 /**
@@ -3579,4 +3682,45 @@ export async function generateBoardReport(
     weekNumber,
     tokensUsed,
   };
+}
+
+// ── Deal Detection ───────────────────────────────────────────────────────
+
+export interface DealDetectedData {
+  company: string;
+  suggested_stage: string;
+  reason: string;
+}
+
+/**
+ * Parse deal detection from the Strategist's response.
+ * Looks for the hidden <!-- DEAL_DETECTED ... --> block.
+ */
+export function extractDealDetected(
+  responseText: string
+): DealDetectedData | null {
+  const match = responseText.match(
+    /<!-- DEAL_DETECTED\n([\s\S]*?)(?:-->|$)/
+  );
+  if (!match) return null;
+
+  try {
+    const parsed = JSON.parse(match[1].trim());
+    if (
+      typeof parsed === "object" &&
+      parsed !== null &&
+      "company" in parsed &&
+      typeof parsed.company === "string"
+    ) {
+      return {
+        company: parsed.company,
+        suggested_stage: parsed.suggested_stage ?? "conversation",
+        reason: parsed.reason ?? "",
+      };
+    }
+    return null;
+  } catch {
+    console.error("[strategist] Failed to parse DEAL_DETECTED block");
+    return null;
+  }
 }

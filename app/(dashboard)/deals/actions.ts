@@ -11,6 +11,7 @@ const createDealSchema = z.object({
   company: z.string().min(1, "Company name is required"),
   acv: z.coerce.number().nonnegative().optional(),
   stage: z.enum([
+    "conversation",
     "lead",
     "qualified",
     "discovery",
@@ -40,6 +41,7 @@ const updateDealSchema = z.object({
   acv: z.number().nonnegative().nullable().optional(),
   stage: z
     .enum([
+      "conversation",
       "lead",
       "qualified",
       "discovery",
@@ -185,6 +187,7 @@ export async function deleteDeal(
 }
 
 const dealStageSchema = z.enum([
+  "conversation",
   "lead",
   "qualified",
   "discovery",

@@ -2,7 +2,7 @@
  * pharosIQ Contacts DB Integration — Read-Only Contact & Intent Data Access
  *
  * Provides access to pharosIQ's proprietary business contacts database
- * (270M+ contacts, 650+ intent categories) and weekly intent signal data.
+ * (360M+ contacts, 650+ intent categories) and weekly intent signal data.
  * Used by: Prospect Scout, Strategist, Email Composer
  *
  * Auth: API key-based (server-to-server)

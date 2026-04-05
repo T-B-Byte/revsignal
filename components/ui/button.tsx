@@ -11,13 +11,13 @@ interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variantStyles: Record<ButtonVariant, string> = {
   primary:
-    'bg-brand-500 text-white hover:bg-brand-600 shadow-sm shadow-accent-glow',
+    'bg-brand-500 text-white hover:bg-brand-600 shadow-[0_0_20px_rgba(59,130,246,0.25)] hover:shadow-[0_0_28px_rgba(59,130,246,0.35)] hover:scale-[1.02]',
   secondary:
-    'bg-white/5 text-text-primary border border-white/10 hover:border-white/15 hover:bg-white/10',
+    'bg-white/[0.04] text-text-primary border border-white/[0.08] hover:border-brand-500/30 hover:bg-white/[0.06] hover:shadow-[0_0_16px_rgba(59,130,246,0.1)]',
   danger:
-    'bg-status-red/10 text-status-red border border-status-red/20 hover:bg-status-red/20',
+    'bg-status-red/10 text-status-red border border-status-red/20 hover:bg-status-red/20 hover:shadow-[0_0_16px_rgba(239,68,68,0.15)]',
   ghost:
-    'bg-transparent text-text-secondary hover:text-text-primary hover:bg-white/5',
+    'bg-transparent text-text-secondary hover:text-text-primary hover:bg-white/[0.04]',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {
@@ -67,8 +67,8 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         disabled={disabled || loading}
-        className={`inline-flex items-center justify-center font-medium transition-colors duration-150 cursor-pointer
-          disabled:opacity-50 disabled:cursor-not-allowed
+        className={`inline-flex items-center justify-center font-heading font-bold tracking-wide transition-all duration-200 cursor-pointer
+          disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 disabled:hover:shadow-none
           ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
         {...props}
       >

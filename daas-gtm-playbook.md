@@ -336,7 +336,7 @@ You're not the cheapest, the biggest, or the most established. You have to win o
   - "How is this different from Bombora?" (first-party vs. co-op, contact-level vs. account-level)
   - "We already have 6sense/Demandbase — why do we need more intent data?" (complement, don't replace; different signal source; eliminate single-vendor risk)
   - "Can you prove the data is accurate?" (match rate test, trial, case studies)
-  - "What's your scale?" (270M contacts, 25M companies, 650 categories — but be honest about where you're lighter)
+  - "What's your scale?" (360M contacts, 25M companies, 650 categories — but be honest about where you're lighter)
   - "Who else uses this?" (your early customers — get references fast)
   - "Why haven't we heard of you?" (pharosIQ is a $60M company with 1,300 employees — you're not a startup; the DaaS product is new, the data and company aren't)
 - [ ] **Competitive monitoring cadence** — Weekly check:

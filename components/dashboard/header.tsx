@@ -13,16 +13,16 @@ export function Header({ displayName }: { displayName?: string | null }) {
   }
 
   return (
-    <header className="flex h-14 items-center justify-between border-b border-white/10 bg-surface-primary px-6">
+    <header className="flex h-14 items-center justify-between border-b border-white/[0.06] bg-[#030305]/80 backdrop-blur-xl px-6">
       <div />
 
       <div className="flex items-center gap-4">
-        <span className="text-sm text-text-secondary">
+        <span className="font-heading text-sm font-medium text-text-secondary tracking-wide">
           {displayName ?? "User"}
         </span>
         <button
           onClick={handleSignOut}
-          className="text-sm text-text-muted transition-colors hover:text-text-primary"
+          className="text-sm text-text-muted transition-all duration-200 hover:text-text-primary"
         >
           Sign out
         </button>

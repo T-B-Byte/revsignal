@@ -60,7 +60,7 @@ ABOUT PHAROSIQ'S DATA ASSET
 pharosIQ provides:
 - First-party, permission-based intent data (NOT co-op, NOT scraped, NOT bidstream)
 - Contact-level precision (identifies WHO is engaging, not just which company)
-- 270M+ contacts across 25M+ global companies
+- 360M+ contacts across 25M+ global companies
 - 650+ product intent categories
 - Rooftop-level geographic precision
 - Down-funnel buying signals from owned content ecosystem (expert newsletters, 500K+ curated content assets, 133M+ professional contacts)

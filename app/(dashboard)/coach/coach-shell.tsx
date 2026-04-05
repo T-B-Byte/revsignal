@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback, useMemo } from "react";
-import { useRouter, usePathname } from "next/navigation";
+import { useState, useCallback, useMemo, useEffect } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { ThreadSidebar } from "@/components/coaching/thread-sidebar";
 import { NewThreadDialog } from "@/components/coaching/new-thread-dialog";
 import type { CoachingThreadWithDeal, Deal, ThreadParticipant } from "@/types/database";
@@ -15,9 +15,23 @@ interface CoachShellProps {
 export function CoachShell({ threads: initialThreads, activeDeals: initialDeals, children }: CoachShellProps) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [threads, setThreads] = useState(initialThreads);
   const [deals, setDeals] = useState(initialDeals);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [prefillDealId, setPrefillDealId] = useState<string | null>(null);
+  const [prefillCompany, setPrefillCompany] = useState<string | null>(null);
+
+  // Auto-open new thread dialog when navigating from deal page with ?new=1
+  useEffect(() => {
+    if (searchParams.get("new") === "1") {
+      setPrefillDealId(searchParams.get("deal_id"));
+      setPrefillCompany(searchParams.get("company"));
+      setDialogOpen(true);
+      // Clean up URL params without a full navigation
+      router.replace("/coach", { scroll: false });
+    }
+  }, [searchParams, router]);
 
   // Derive unique company names from threads + deals for autocomplete
   const knownCompanies = useMemo(() => {
@@ -140,12 +154,18 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
       {/* New thread dialog */}
       <NewThreadDialog
         open={dialogOpen}
-        onClose={() => setDialogOpen(false)}
+        onClose={() => {
+          setDialogOpen(false);
+          setPrefillDealId(null);
+          setPrefillCompany(null);
+        }}
         onCreated={handleThreadCreated}
         activeDeals={deals}
         onDealCreated={(deal) => setDeals((prev) => [deal, ...prev])}
         knownCompanies={knownCompanies}
         existingThreads={threads}
+        prefillDealId={prefillDealId}
+        prefillCompany={prefillCompany}
       />
     </>
   );

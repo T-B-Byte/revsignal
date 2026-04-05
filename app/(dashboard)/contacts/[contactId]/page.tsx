@@ -60,6 +60,7 @@ const acvFormatter = new Intl.NumberFormat("en-US", {
 });
 
 const STAGE_LABELS: Record<string, string> = {
+  conversation: "Conversation",
   lead: "Lead",
   discovery: "Discovery",
   proposal: "Proposal",

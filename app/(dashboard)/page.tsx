@@ -216,13 +216,13 @@ export default async function DashboardPage() {
 
   // --- Render ---
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 stagger-children">
       {/* Page heading */}
       <div>
-        <h1 className="text-2xl font-bold text-text-primary">
+        <h1 className="font-heading text-3xl font-bold tracking-tight text-text-primary">
           Revenue Command Center
         </h1>
-        <p className="mt-1 text-sm text-text-muted">
+        <p className="mt-1 text-sm font-light text-text-muted tracking-wide">
           Track your path to $1M. Every signal matters.
         </p>
       </div>

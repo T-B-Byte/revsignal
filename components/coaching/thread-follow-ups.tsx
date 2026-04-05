@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import Link from "next/link";
 import type { ThreadFollowUp } from "@/types/database";
 
 interface ThreadFollowUpsProps {
@@ -57,6 +58,7 @@ export function ThreadFollowUps({ threadId }: ThreadFollowUpsProps) {
       >
         <span className="text-xs font-semibold text-text-secondary">
           Open Follow-ups ({followUps.length})
+          <Link href="/tasks" className="ml-2 font-normal text-brand-500 hover:underline" onClick={(e) => e.stopPropagation()}>View all</Link>
         </span>
         <svg
           width="12"

@@ -23,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/deals", label: "Deals", icon: BriefcaseIcon, key: "deals" },
   { href: "/network", label: "Projects", icon: NetworkIcon, key: "network" },
   { href: "/coach", label: "StrategyGPT", icon: SparklesIcon, key: "coach" },
+  { href: "/tasks", label: "Tasks", icon: TasksIcon, key: "tasks" },
   { href: "/prospects", label: "Prospects", icon: SearchIcon, key: "prospects" },
   { href: "/meetings", label: "Meetings", icon: CalendarIcon, key: "meetings" },
   { href: "/tradeshows", label: "Tradeshows", icon: MapPinIcon, key: "tradeshows" },
@@ -99,20 +100,20 @@ export function Sidebar() {
   return (
     <>
       <aside
-        className={`flex h-screen flex-col border-r border-white/10 bg-[#0a101f] transition-[width] duration-200 ${
+        className={`flex h-screen flex-col border-r border-white/[0.06] bg-[#050810] transition-[width] duration-200 ${
           isCollapsed ? "w-16" : "w-60"
         }`}
       >
         {/* Logo */}
         <div className="flex h-14 items-center px-5">
-          <Link href="/" className="text-lg font-bold text-text-primary">
+          <Link href="/" className="font-heading text-lg font-bold text-text-primary tracking-tight">
             {isCollapsed ? (
               <span>
-                R<span className="bg-gradient-to-r from-brand-500 to-accent-secondary bg-clip-text text-transparent">S</span>
+                R<span className="bg-gradient-to-r from-brand-500 to-accent-secondary bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]">S</span>
               </span>
             ) : (
               <span>
-                Rev<span className="bg-gradient-to-r from-brand-500 to-accent-secondary bg-clip-text text-transparent">Signal</span>
+                Rev<span className="bg-gradient-to-r from-brand-500 to-accent-secondary bg-clip-text text-transparent drop-shadow-[0_0_8px_rgba(59,130,246,0.4)]">Signal</span>
               </span>
             )}
           </Link>
@@ -287,12 +288,12 @@ function NavLink({
     <Link
       href={item.href}
       title={isCollapsed ? item.label : undefined}
-      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-colors ${
+      className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm transition-all duration-200 ${
         isCollapsed ? "justify-center" : ""
       } ${
         isActive
-          ? "bg-brand-500/15 text-brand-500 border border-brand-500/20"
-          : "text-text-secondary hover:bg-white/5 hover:text-text-primary border border-transparent"
+          ? "bg-brand-500/10 text-brand-500 border border-brand-500/20 shadow-[0_0_12px_rgba(59,130,246,0.1)]"
+          : "text-text-secondary hover:bg-white/[0.04] hover:text-text-primary border border-transparent"
       }`}
     >
       <item.icon className="h-4 w-4 shrink-0" />
@@ -484,6 +485,14 @@ function DocsIcon({ className }: { className?: string }) {
   return (
     <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
       <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m2.25 0H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+    </svg>
+  );
+}
+
+function TasksIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75L11.25 15 15 9.75M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
     </svg>
   );
 }

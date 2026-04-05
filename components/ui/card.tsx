@@ -15,7 +15,7 @@ const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`px-6 py-4 border-b border-white/10 ${className}`}
+      className={`px-6 py-4 border-b border-white/[0.06] ${className}`}
       {...props}
     />
   )
@@ -28,7 +28,7 @@ const CardTitle = forwardRef<
 >(({ className = '', ...props }, ref) => (
   <h3
     ref={ref}
-    className={`text-sm font-semibold text-white tracking-wide ${className}`}
+    className={`font-heading text-sm font-bold text-text-primary tracking-wide uppercase ${className}`}
     {...props}
   />
 ));
@@ -45,7 +45,7 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`px-6 py-3 border-t border-white/10 ${className}`}
+      className={`px-6 py-3 border-t border-white/[0.06] ${className}`}
       {...props}
     />
   )

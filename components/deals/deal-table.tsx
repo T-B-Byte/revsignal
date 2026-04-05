@@ -29,15 +29,16 @@ const acvFormatter = new Intl.NumberFormat("en-US", {
 });
 
 const stageOrder: Record<DealStage, number> = {
-  lead: 0,
-  qualified: 1,
-  discovery: 2,
-  demo_booked: 3,
-  poc_trial: 4,
-  proposal: 5,
-  negotiation: 6,
-  closed_won: 7,
-  closed_lost: 8,
+  conversation: 0,
+  lead: 1,
+  qualified: 2,
+  discovery: 3,
+  demo_booked: 4,
+  poc_trial: 5,
+  proposal: 6,
+  negotiation: 7,
+  closed_won: 8,
+  closed_lost: 9,
 };
 
 function getStageBadgeVariant(stage: DealStage): BadgeVariant {

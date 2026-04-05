@@ -14,7 +14,7 @@ score: null
 
 # pharosIQ Data Feeds
 
-## First-Party Intent Data. Contact-Level Precision. Your Platform, Supercharged.
+## First-Party Intent Data. Persona-Level Precision. Your Platform, Supercharged.
 
 ---
 
@@ -30,13 +30,15 @@ The platforms that win in 2026 are the ones with proprietary data baked in. Not 
 
 ### What pharosIQ delivers
 
-**270M+ contacts** across 25M+ global companies. **650+ intent categories.** **3-6M signals per month** — the majority tied to a specific person, not just a company.
+**650+ intent categories. 3-6M signals per month.** Resolved to specific buyer personas, not just accounts. Built on 360M+ first-party contacts across 25M+ global companies.
 
-This is first-party data collected through our owned content ecosystem. Not a co-op. Not scraped. Not shared across your competitors.
+This is first-party intelligence collected through our owned content ecosystem. Not a co-op. Not scraped. Not shared across your competitors.
+
+**What we sell:** Persona + intent topic intelligence (which buyer personas are in-market for which topics). The contacts and content consumed data are retained by pharosIQ to power our demand gen business. Full-file access is available only for $1M+ platform-scale partnerships.
 
 | Capability | What It Means For Your Platform |
 |---|---|
-| **Contact-level intent** | Your users target the person researching, not just the company |
+| **Persona-level intent** | Your users know which buyer roles are researching, not just which company is surging |
 | **First-party signals** | Exclusive data your competitors can't buy from the same source |
 | **650+ intent categories** | Granular topic coverage across the full B2B buying landscape |
 | **Flexible delivery** | API, flat file, cloud delivery, or embedded OEM |
@@ -65,7 +67,7 @@ Every AI agent your customers deploy needs proprietary data to be useful. More A
 
 Companies without an AI data strategy are taking a **30%+ valuation haircut** (BCG). Companies combining AI with proprietary data moats are trading at **30-50x revenue** vs traditional SaaS at 4-6x.
 
-Your platform either owns its data layer or rents it from the same sources as everyone else. First-party, contact-level, exclusive intent data is how you build a moat that compounds over time.
+Your platform either owns its intelligence layer or rents it from the same sources as everyone else. First-party, persona-level, exclusive intent intelligence is how you build a moat that compounds over time.
 
 ---
 
@@ -74,7 +76,7 @@ Your platform either owns its data layer or rents it from the same sources as ev
 | | pharosIQ | Co-op Providers |
 |---|---|---|
 | **Data source** | First-party (owned content ecosystem) | Co-op (shared publisher network) |
-| **Signal level** | Contact-level (who is engaging) | Account-level (which company is surging) |
+| **Signal level** | Persona-level (which roles are in-market for which topics) | Account-level (which company is surging) |
 | **Exclusivity** | Exclusive to the buyer | Shared across all members |
 | **Signal volume** | 3-6M/month | Varies |
 | **Intent categories** | 650+ | ~8,000 (broad but shallow) |

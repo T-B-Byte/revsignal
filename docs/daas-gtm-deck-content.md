@@ -13,11 +13,13 @@ Tina Bean, SVP Data Monetization & Partnerships
 
 ## SLIDE 2: The Opportunity
 
-pharosIQ sits on one of the most valuable first-party intent data assets in B2B. 270M+ contacts, 650+ intent categories, content-level signal precision that competitors cannot match.
+pharosIQ sits on one of the most valuable first-party intent data assets in B2B. 360M+ contacts, 650+ intent categories, persona-level signal precision that competitors cannot match.
 
 Today, that data powers one business line: demand generation.
 
 The opportunity is to monetize the same data asset five additional ways, each reinforcing the others, creating compounding revenue streams that increase company valuation at higher multiples than services revenue alone.
+
+**Critical packaging rule:** The core DaaS offering is **personas + intent topics**. We do NOT sell the full file (contacts + content consumed) in standard deals. That combination cannibalizes lead gen. Full-file access is reserved for $1M+ enterprise platform partners (SFDC, HubSpot scale) where the deal economics justify the risk.
 
 **Why DaaS matters for valuation:**
 - Services/demand gen revenue: valued at 2-4x
@@ -125,11 +127,15 @@ Offering all four deployment methods removes the most common objection in data l
 ## SLIDE 6: PRONG 1 — DaaS Signal Licensing
 
 ### What We Sell
-Content-level intent signals delivered as a raw data feed or API to platforms that embed our data into their products. Their customers never see "pharosIQ" but the signal powers their features.
+Persona-level intent signals (which buyer personas at which accounts are researching which topics) delivered as a data feed or API to platforms that embed our intelligence into their products. Their customers never see "pharosIQ" but the signal powers their features.
+
+**Standard offering:** Personas + intent topics. Which roles are in-market, what they're researching, when they're surging. This is the intelligence layer.
+
+**Premium offering ($1M+ only):** Full file including contacts + content consumed. Reserved for platform-scale partners (SFDC, HubSpot) where the deal economics justify the lead gen cannibalization risk. Under $1M only for the right strategic partner.
 
 ### How It Works
 - OEM licensing agreements (annual, usage-based, or hybrid)
-- Platform integrates pharosIQ signals into their product (lead scoring, account prioritization, ad targeting)
+- Platform integrates pharosIQ persona + intent signals into their product (lead scoring, account prioritization, ad targeting)
 - Customer's end users get better results, platform differentiates vs. competitors
 
 ### Pricing Model
@@ -341,7 +347,7 @@ SurgeEngine.ai is broad-market, but priority outreach to:
 ## SLIDE 9: PRONG 4 — Jobson Title Expansion
 
 ### What We Sell
-Access to pharosIQ's title expansion engine. Jobson takes any job title (e.g., "Head of Marketing") and expands it into every permutation of how that title appears across 270M+ professional profiles, including translations to 15+ languages. ABM companies and DSPs buy the complete data brick (flat file) to power their audience targeting.
+Access to pharosIQ's title expansion engine. Jobson takes any job title (e.g., "Head of Marketing") and expands it into every permutation of how that title appears across 360M+ professional profiles, including translations to 15+ languages. ABM companies and DSPs buy the complete data brick (flat file) to power their audience targeting.
 
 ### The Problem It Solves
 Marketers and ABM platforms build audiences by targeting job titles. But "VP of Marketing" is written 200+ ways across LinkedIn: Vice President Marketing, VP Marketing & Communications, SVP Digital Marketing, Vizepräsident Marketing (German), Directeur Marketing (French), and on and on. Miss a variation, miss the prospect. Current solutions require manual guesswork or incomplete synonym lists.
@@ -579,7 +585,7 @@ Nobody else is selling AI-assembled, account-specific sales intelligence package
 | **Surge Trending** | Intent topics (10/25/50) | Ranked list of surging companies with scores and signals, updated weekly | $500-2,000/mo |
 | **Surge Radar** | Target account list | What each account is researching, competitive evaluations detected, recommended actions | $500-2,000/mo |
 | **ICP Analyzer** | Closed-won deal list | Common pre-close signals, synthesized ICP profile, lookalike companies currently matching | $500/report |
-| **Title Expansion** | Job title | Every variation across 270M+ profiles in 15+ languages, downloadable as data brick | $50K/yr license |
+| **Title Expansion** | Job title | Every variation across 360M+ profiles in 15+ languages, downloadable as data brick | $50K/yr license |
 | **Event Prep** | Event name + attendee list | One-page per-person briefings with conversation starters, optimized for mobile | $50-150/briefing |
 
 ### Every Mode Upsells to the Next
