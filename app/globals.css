@@ -45,8 +45,8 @@
   --color-border-brand: rgba(59, 130, 246, 0.3);
 
   /* Typography — distinctive, non-generic */
-  --font-sans: var(--font-body), "DM Sans", system-ui, sans-serif;
-  --font-heading: var(--font-heading), "Space Grotesk", system-ui, sans-serif;
+  --font-sans: var(--font-dm-sans), "DM Sans", system-ui, sans-serif;
+  --font-heading: var(--font-space-grotesk), "Space Grotesk", system-ui, sans-serif;
   --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", ui-monospace, monospace;
 
   /* Spacing/sizing */
@@ -205,6 +205,10 @@ select option {
 .stagger-children > *:nth-child(6) { animation-delay: 300ms; }
 .stagger-children > *:nth-child(7) { animation-delay: 360ms; }
 .stagger-children > *:nth-child(8) { animation-delay: 420ms; }
+.stagger-children > *:nth-child(9) { animation-delay: 480ms; }
+.stagger-children > *:nth-child(10) { animation-delay: 540ms; }
+.stagger-children > *:nth-child(11) { animation-delay: 600ms; }
+.stagger-children > *:nth-child(12) { animation-delay: 660ms; }
 
 /* Respect reduced motion preference */
 @media (prefers-reduced-motion: reduce) {
