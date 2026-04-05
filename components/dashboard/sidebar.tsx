@@ -101,7 +101,7 @@ export function Sidebar() {
   return (
     <>
       <aside
-        className={`flex h-screen flex-col border-r border-white/[0.06] bg-[#050810] transition-[width] duration-200 ${
+        className={`flex h-screen flex-col border-r border-border-primary bg-surface-secondary transition-[width] duration-200 ${
           isCollapsed ? "w-16" : "w-60"
         }`}
       >
@@ -298,7 +298,7 @@ function NavLink({
       } ${
         isActive
           ? "bg-brand-500/10 text-brand-500 border border-brand-500/20 shadow-[0_0_12px_rgba(59,130,246,0.1)]"
-          : "text-text-secondary hover:bg-white/[0.04] hover:text-text-primary border border-transparent"
+          : "text-text-secondary hover:bg-surface-tertiary hover:text-text-primary border border-transparent"
       }`}
     >
       <item.icon className="h-4 w-4 shrink-0" />

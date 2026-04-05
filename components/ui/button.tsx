@@ -13,11 +13,11 @@ const variantStyles: Record<ButtonVariant, string> = {
   primary:
     'bg-brand-500 text-white hover:bg-brand-600 shadow-[0_0_20px_rgba(59,130,246,0.25)] hover:shadow-[0_0_28px_rgba(59,130,246,0.35)] hover:scale-[1.02]',
   secondary:
-    'bg-white/[0.04] text-text-primary border border-white/[0.08] hover:border-brand-500/30 hover:bg-white/[0.06] hover:shadow-[0_0_16px_rgba(59,130,246,0.1)]',
+    'bg-surface-tertiary text-text-primary border border-border-primary hover:border-brand-500/30 hover:bg-surface-elevated hover:shadow-[0_0_16px_rgba(59,130,246,0.1)]',
   danger:
     'bg-status-red/10 text-status-red border border-status-red/20 hover:bg-status-red/20 hover:shadow-[0_0_16px_rgba(239,68,68,0.15)]',
   ghost:
-    'bg-transparent text-text-secondary hover:text-text-primary hover:bg-white/[0.04]',
+    'bg-transparent text-text-secondary hover:text-text-primary hover:bg-surface-tertiary',
 };
 
 const sizeStyles: Record<ButtonSize, string> = {

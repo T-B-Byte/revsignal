@@ -15,7 +15,7 @@ const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`px-6 py-4 border-b border-white/[0.06] ${className}`}
+      className={`px-6 py-4 border-b border-border-primary ${className}`}
       {...props}
     />
   )
@@ -45,7 +45,7 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className = '', ...props }, ref) => (
     <div
       ref={ref}
-      className={`px-6 py-3 border-t border-white/[0.06] ${className}`}
+      className={`px-6 py-3 border-t border-border-primary ${className}`}
       {...props}
     />
   )

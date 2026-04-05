@@ -63,7 +63,7 @@ html.light {
   --color-surface-primary: #ffffff;
   --color-surface-secondary: #f8fafc;
   --color-surface-tertiary: rgba(0, 0, 0, 0.04);
-  --color-surface-elevated: rgba(0, 0, 0, 0.02);
+  --color-surface-elevated: rgba(0, 0, 0, 0.03);
   --color-surface-card: rgba(0, 0, 0, 0.02);
 
   --color-accent-glow: rgba(59, 130, 246, 0.12);

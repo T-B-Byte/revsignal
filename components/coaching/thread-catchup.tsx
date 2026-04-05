@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { formatAgentHtml } from "@/lib/format-agent-html";
+import type { UserTask } from "@/types/database";
 
 interface ThreadCatchupProps {
   threadId: string;
@@ -12,6 +13,7 @@ interface ThreadCatchupProps {
 
 export function ThreadCatchup({ threadId, messageCount, initialCatchup }: ThreadCatchupProps) {
   const [catchup, setCatchup] = useState<string | null>(initialCatchup ?? null);
+  const [tasks, setTasks] = useState<UserTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
 
@@ -19,12 +21,12 @@ export function ThreadCatchup({ threadId, messageCount, initialCatchup }: Thread
   useEffect(() => {
     setDismissed(false);
     setCatchup(initialCatchup ?? null);
+    setTasks([]);
   }, [threadId, initialCatchup]);
 
+  // Fetch catchup text
   useEffect(() => {
-    // If we already have a cached catchup, skip the network fetch
     if (initialCatchup) return;
-    // Only fetch catchup for threads with existing history
     if (messageCount < 2) return;
 
     setLoading(true);
@@ -35,13 +37,26 @@ export function ThreadCatchup({ threadId, messageCount, initialCatchup }: Thread
           setCatchup(data.catchup);
         }
       })
-      .catch(() => {
-        // Silent fail on catchup
-      })
+      .catch(() => {})
       .finally(() => setLoading(false));
   }, [threadId, messageCount, initialCatchup]);
 
-  if (dismissed || (!loading && !catchup)) return null;
+  // Fetch open tasks for this thread
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch(`/api/tasks?thread_id=${threadId}&status=open`, { signal: controller.signal })
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.tasks) setTasks(data.tasks);
+      })
+      .catch(() => {});
+    return () => controller.abort();
+  }, [threadId]);
+
+  const hasCatchup = !loading && catchup;
+  const hasTasks = tasks.length > 0;
+
+  if (dismissed || (!loading && !hasCatchup && !hasTasks)) return null;
 
   return (
     <div className="mx-4 mb-4 rounded-lg border border-accent-primary/20 bg-accent-primary/5 p-4">
@@ -56,19 +71,45 @@ export function ThreadCatchup({ threadId, messageCount, initialCatchup }: Thread
               Loading catch-up...
             </div>
           ) : (
-            catchup && (
-              <div
-                className="prose prose-sm max-w-none text-text-secondary
-                  prose-headings:text-text-primary prose-headings:text-xs prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-1
-                  prose-p:text-text-secondary prose-p:text-xs prose-p:my-1
-                  prose-li:text-text-secondary prose-li:text-xs
-                  prose-strong:text-text-primary prose-strong:font-medium
-                  prose-ul:my-1 prose-ol:my-1"
-                dangerouslySetInnerHTML={{
-                  __html: formatAgentHtml(catchup),
-                }}
-              />
-            )
+            <>
+              {catchup && (
+                <div
+                  className="prose prose-sm max-w-none text-text-secondary
+                    prose-headings:text-text-primary prose-headings:text-xs prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-1
+                    prose-p:text-text-secondary prose-p:text-xs prose-p:my-1
+                    prose-li:text-text-secondary prose-li:text-xs
+                    prose-strong:text-text-primary prose-strong:font-medium
+                    prose-ul:my-1 prose-ol:my-1"
+                  dangerouslySetInnerHTML={{
+                    __html: formatAgentHtml(catchup),
+                  }}
+                />
+              )}
+              {hasTasks && (
+                <div className={catchup ? "mt-3 pt-3 border-t border-accent-primary/15" : ""}>
+                  <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-accent-primary/70">
+                    Open Tasks
+                  </p>
+                  <ul className="space-y-1">
+                    {tasks.map((task) => (
+                      <li key={task.task_id} className="flex items-start gap-2 text-xs text-text-secondary">
+                        <span className="mt-0.5 shrink-0 h-3.5 w-3.5 rounded border border-border-primary bg-surface-tertiary" />
+                        <span className="flex-1">
+                          {task.description}
+                          {task.due_date && (
+                            <span className={`ml-1.5 text-[10px] ${
+                              new Date(task.due_date) < new Date() ? "text-status-red" : "text-text-muted"
+                            }`}>
+                              Due {new Date(task.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                            </span>
+                          )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </>
           )}
         </div>
         <button
