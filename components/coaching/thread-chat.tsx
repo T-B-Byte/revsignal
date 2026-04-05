@@ -8,7 +8,7 @@ import { ThreadFollowUps } from "./thread-follow-ups";
 import type { CoachingMessage, CoachingThread, CoachingThreadWithDeal, InteractionType, Deal, Contact, Project, MaEntity, MessageReaction } from "@/types/database";
 import { ThreadBreadcrumb } from "./thread-breadcrumb";
 import type { MessageChannel } from "@/lib/agents/email-composer";
-import { INTERACTION_TYPES, MESSAGE_REACTIONS } from "@/types/database";
+import { MESSAGE_REACTIONS } from "@/types/database";
 import { DatePicker } from "@/components/ui/date-picker";
 
 interface ThreadChatProps {
@@ -52,7 +52,7 @@ export function ThreadChat({
   const router = useRouter();
   const [messages, setMessages] = useState<CoachingMessage[]>(initialMessages);
   const [input, setInput] = useState(initialMessages.length === 0 && primeMessage ? primeMessage : "");
-  const [interactionType, setInteractionType] = useState<InteractionType>("coaching");
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [followUpKey, setFollowUpKey] = useState(0);
@@ -288,8 +288,7 @@ export function ThreadChat({
     if (!contextMenu) return;
     const selectedText = contextMenu.text;
     setContextMenu(null);
-    // Switch to coaching mode and prefill input with the selected text as a quote
-    setInteractionType("coaching");
+    // Prefill input with the selected text as a quote
     setInput(`Re: "${selectedText.length > 300 ? selectedText.slice(0, 300) + "..." : selectedText}"\n\n`);
     // Focus the textarea
     setTimeout(() => {
@@ -398,9 +397,7 @@ export function ThreadChat({
     return result;
   }
 
-  // Get current placeholder from interaction type
-  const currentType = INTERACTION_TYPES.find((t) => t.value === interactionType);
-  const placeholder = currentType?.placeholder ?? "Type a message...";
+  const placeholder = "Ask the Strategist anything...";
 
   async function handleSend(options?: { flushQueue?: boolean }) {
     const trimmed = input.trim();
@@ -409,7 +406,7 @@ export function ThreadChat({
     if ((!trimmed && !hasImages && !hasDocs && inputChunks.length === 0) || loading || sendingRef.current) return;
 
     // If "more to paste" is on (and not flushing), buffer the chunk and wait
-    if (moreToAdd && !options?.flushQueue && interactionType === "coaching") {
+    if (moreToAdd && !options?.flushQueue) {
       if (trimmed) {
         setInputChunks((prev) => [...prev, trimmed]);
         setInput("");
@@ -442,7 +439,7 @@ export function ThreadChat({
       thread_id: thread.thread_id,
       role: "user",
       content: combined,
-      interaction_type: interactionType,
+      interaction_type: "coaching",
       context_used: null,
       sources_cited: [],
       tokens_used: null,
@@ -522,7 +519,7 @@ export function ThreadChat({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             message: messageContent,
-            interaction_type: interactionType,
+            interaction_type: "coaching",
             attachments: allAttachmentUrls.length > 0 ? allAttachmentUrls : undefined,
           }),
         }
@@ -545,51 +542,40 @@ export function ThreadChat({
 
       const data = await res.json();
 
-      if (interactionType === "coaching") {
-        // Replace optimistic user message with real conversation_id from server
-        if (data.userConversationId) {
-          setMessages((prev) =>
-            prev.map((m) =>
-              m.conversation_id === userMsg.conversation_id
-                ? { ...m, conversation_id: data.userConversationId }
-                : m
-            )
-          );
-        }
-
-        // AI response — add assistant message with real conversation_id
-        const assistantMsg: CoachingMessage = {
-          conversation_id: data.assistantConversationId || crypto.randomUUID(),
-          user_id: "",
-          thread_id: thread.thread_id,
-          role: "assistant",
-          content: data.response,
-          interaction_type: "coaching",
-          context_used: null,
-          sources_cited: [],
-          tokens_used: data.tokensUsed,
-          created_at: data.generatedAt,
-        };
-        setMessages((prev) => [...prev, assistantMsg]);
-
-        // If follow-ups were extracted, refresh the follow-ups panel
-        if (data.followUpsExtracted?.length > 0) {
-          setFollowUpKey((k) => k + 1);
-        }
-
-        // If a meeting was detected, show the create-meeting prompt
-        if (data.meetingDetected) {
-          setMeetingPrompt(data.meetingDetected);
-        }
-      } else if (data.message) {
-        // Replace optimistic message with server record (real conversation_id)
+      // Replace optimistic user message with real conversation_id from server
+      if (data.userConversationId) {
         setMessages((prev) =>
           prev.map((m) =>
             m.conversation_id === userMsg.conversation_id
-              ? { ...userMsg, ...data.message }
+              ? { ...m, conversation_id: data.userConversationId }
               : m
           )
         );
+      }
+
+      // AI response — add assistant message with real conversation_id
+      const assistantMsg: CoachingMessage = {
+        conversation_id: data.assistantConversationId || crypto.randomUUID(),
+        user_id: "",
+        thread_id: thread.thread_id,
+        role: "assistant",
+        content: data.response,
+        interaction_type: "coaching",
+        context_used: null,
+        sources_cited: [],
+        tokens_used: data.tokensUsed,
+        created_at: data.generatedAt,
+      };
+      setMessages((prev) => [...prev, assistantMsg]);
+
+      // If follow-ups were extracted, refresh the follow-ups panel
+      if (data.followUpsExtracted?.length > 0) {
+        setFollowUpKey((k) => k + 1);
+      }
+
+      // If a meeting was detected, show the create-meeting prompt
+      if (data.meetingDetected) {
+        setMeetingPrompt(data.meetingDetected);
       }
       // Cross-post @mentions to other threads (fire-and-forget)
       const mentions = extractMentions(trimmed);
@@ -1298,18 +1284,10 @@ export function ThreadChat({
   }
 
   function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
-    if (interactionType === "coaching") {
-      // Chat mode: Enter sends, Shift+Enter newline
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        handleSend();
-      }
-    } else {
-      // Intel paste mode: Cmd/Ctrl+Enter saves, plain Enter is newline
-      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        handleSend();
-      }
+    // Enter sends, Shift+Enter newline
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
     }
   }
 
@@ -1589,13 +1567,6 @@ export function ThreadChat({
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-6 py-4 space-y-4"
       >
-        {/* Catch-up banner (shown on re-entry for threads with history) */}
-        <ThreadCatchup
-          threadId={thread.thread_id}
-          messageCount={thread.message_count}
-          initialCatchup={initialCatchup}
-        />
-
         {/* Follow-ups panel */}
         <ThreadFollowUps
           key={followUpKey}
@@ -2036,7 +2007,7 @@ export function ThreadChat({
         )}
 
         {/* Loading indicator */}
-        {loading && interactionType === "coaching" && (
+        {loading && (
           <div className="flex justify-start">
             <div className="rounded-lg bg-surface-tertiary px-4 py-3">
               <div className="flex items-center gap-2 text-sm text-text-muted">
@@ -2046,6 +2017,13 @@ export function ThreadChat({
             </div>
           </div>
         )}
+
+        {/* Catch-up banner at bottom so it's visible without scrolling */}
+        <ThreadCatchup
+          threadId={thread.thread_id}
+          messageCount={thread.message_count}
+          initialCatchup={initialCatchup}
+        />
       </div>
 
       {/* Error */}
@@ -2057,23 +2035,6 @@ export function ThreadChat({
 
       {/* Input area */}
       <div className="shrink-0 border-t border-border-primary px-6 py-3">
-        {/* Interaction type selector */}
-        <div className="mb-2 flex flex-wrap gap-1">
-          {INTERACTION_TYPES.map((type) => (
-            <button
-              key={type.value}
-              onClick={() => setInteractionType(type.value)}
-              className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                interactionType === type.value
-                  ? "bg-accent-primary text-white"
-                  : "bg-surface-tertiary text-text-secondary hover:text-text-primary"
-              }`}
-            >
-              {type.label}
-            </button>
-          ))}
-        </div>
-
         {/* Pending image previews */}
         {pendingImages.length > 0 && (
           <div className="mb-2 flex flex-wrap gap-2">
@@ -2145,8 +2106,8 @@ export function ThreadChat({
             }, 0);
           }}
           placeholder={pendingImages.length > 0 || pendingDocs.length > 0 ? "Add a message (optional)..." : placeholder}
-          rows={interactionType === "coaching" ? 4 : 6}
-          maxLength={interactionType === "coaching" ? 5000 : 50000}
+          rows={4}
+          maxLength={5000}
           className="w-full resize-y rounded-lg border border-border-primary bg-surface-secondary px-3 py-2 text-sm text-text-primary placeholder:text-text-muted focus:border-accent-primary focus:outline-none min-h-[100px] max-h-[40vh]"
         />
         {/* Toolbar row: Attach + Send */}
@@ -2163,8 +2124,7 @@ export function ThreadChat({
             Attach PDF / Doc
           </button>
           <div className="flex items-center gap-3">
-            {interactionType === "coaching" && (
-              <label className="flex cursor-pointer items-center gap-2 select-none">
+            <label className="flex cursor-pointer items-center gap-2 select-none">
                 <input
                   type="checkbox"
                   checked={moreToAdd}
@@ -2183,21 +2143,18 @@ export function ThreadChat({
                     ? `${inputChunks.length} chunk${inputChunks.length > 1 ? "s" : ""} queued — uncheck to send`
                     : "More to paste"}
                 </span>
-              </label>
-            )}
+            </label>
             <button
               onClick={() => handleSend()}
               disabled={loading || (!input.trim() && pendingImages.length === 0 && pendingDocs.length === 0)}
-              title={interactionType === "coaching" ? "Enter to send" : "⌘+Enter to save"}
+              title="Enter to send"
               className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
             >
               {uploadingImages
                 ? "Uploading..."
-                : moreToAdd && interactionType === "coaching"
+                : moreToAdd
                 ? "Queue Chunk"
-                : interactionType === "coaching"
-                ? "Send"
-                : "Save ⌘↵"}
+                : "Send"}
             </button>
           </div>
         </div>

@@ -9,6 +9,7 @@ import {
   getSidebarOrganization,
   toggleFolderOpen,
 } from "@/app/(dashboard)/settings/sidebar-actions";
+import { ThemeToggle } from "@/components/theme-toggle";
 
 interface NavItem {
   href: string;
@@ -216,6 +217,7 @@ export function Sidebar() {
         <div className="border-t border-border-primary px-3 py-2">
           {isCollapsed ? (
             <div className="flex flex-col items-center gap-1">
+              <ThemeToggle collapsed />
               <button
                 onClick={() => setShowOrganize(true)}
                 className="flex h-8 w-8 items-center justify-center rounded-lg text-text-muted hover:bg-surface-tertiary hover:text-text-primary transition-colors"
@@ -233,7 +235,7 @@ export function Sidebar() {
             </div>
           ) : (
             <>
-              {/* Top row: Organize + Collapse */}
+              {/* Top row: Organize + Theme + Collapse */}
               <div className="flex items-center justify-between mb-2">
                 <button
                   onClick={() => setShowOrganize(true)}
@@ -242,13 +244,16 @@ export function Sidebar() {
                   <FolderIcon className="h-3.5 w-3.5 shrink-0" />
                   <span>Organize</span>
                 </button>
-                <button
-                  onClick={toggleSidebar}
-                  className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:bg-surface-tertiary hover:text-text-primary transition-colors"
-                  title="Collapse sidebar"
-                >
-                  <CollapseIcon className="h-3.5 w-3.5 shrink-0" collapsed={isCollapsed} />
-                </button>
+                <div className="flex items-center gap-1">
+                  <ThemeToggle />
+                  <button
+                    onClick={toggleSidebar}
+                    className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-xs text-text-muted hover:bg-surface-tertiary hover:text-text-primary transition-colors"
+                    title="Collapse sidebar"
+                  >
+                    <CollapseIcon className="h-3.5 w-3.5 shrink-0" collapsed={isCollapsed} />
+                  </button>
+                </div>
               </div>
               {/* Version */}
               <p className="px-1 font-data text-[10px] text-text-muted/60">
