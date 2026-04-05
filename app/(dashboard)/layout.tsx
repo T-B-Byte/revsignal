@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/dashboard/sidebar";
 import { Header } from "@/components/dashboard/header";
 import { SidebarProvider } from "@/components/dashboard/sidebar-context";
+import { PageTracker } from "@/components/dashboard/page-tracker";
 
 export default async function DashboardLayout({
   children,
@@ -28,6 +29,7 @@ export default async function DashboardLayout({
     <SidebarProvider>
       <div className="bg-atmosphere flex h-screen overflow-hidden">
         <Sidebar />
+        <PageTracker />
         <div className="relative z-10 flex flex-1 flex-col overflow-hidden">
           <Header displayName={profile?.display_name} />
           <main className="flex-1 overflow-y-auto p-6">{children}</main>
