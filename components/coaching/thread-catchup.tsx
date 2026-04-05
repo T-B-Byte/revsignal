@@ -1,8 +1,15 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { formatAgentHtml } from "@/lib/format-agent-html";
 import type { UserTask } from "@/types/database";
+
+/** Split catchup HTML into logical sections (one per <p> block). */
+function splitIntoSections(html: string): string[] {
+  // Split on <p> tags — each paragraph is a section
+  const parts = html.split(/<\/?p[^>]*>/i).filter((s) => s.trim().length > 0);
+  return parts;
+}
 
 interface ThreadCatchupProps {
   threadId: string;
@@ -16,12 +23,14 @@ export function ThreadCatchup({ threadId, messageCount, initialCatchup }: Thread
   const [tasks, setTasks] = useState<UserTask[]>([]);
   const [loading, setLoading] = useState(false);
   const [dismissed, setDismissed] = useState(false);
+  const [crossedOut, setCrossedOut] = useState<Set<number>>(new Set());
 
   // Reset state when thread changes
   useEffect(() => {
     setDismissed(false);
     setCatchup(initialCatchup ?? null);
     setTasks([]);
+    setCrossedOut(new Set());
   }, [threadId, initialCatchup]);
 
   // Fetch catchup text
@@ -53,6 +62,17 @@ export function ThreadCatchup({ threadId, messageCount, initialCatchup }: Thread
     return () => controller.abort();
   }, [threadId]);
 
+  const sections = useMemo(() => (catchup ? splitIntoSections(formatAgentHtml(catchup)) : []), [catchup]);
+
+  const toggleSection = (index: number) => {
+    setCrossedOut((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      return next;
+    });
+  };
+
   const hasCatchup = !loading && catchup;
   const hasTasks = tasks.length > 0;
 
@@ -72,18 +92,29 @@ export function ThreadCatchup({ threadId, messageCount, initialCatchup }: Thread
             </div>
           ) : (
             <>
-              {catchup && (
-                <div
-                  className="prose prose-sm max-w-none text-text-secondary
-                    prose-headings:text-text-primary prose-headings:text-xs prose-headings:font-semibold prose-headings:mt-2 prose-headings:mb-1
-                    prose-p:text-text-secondary prose-p:text-xs prose-p:my-1
-                    prose-li:text-text-secondary prose-li:text-xs
-                    prose-strong:text-text-primary prose-strong:font-medium
-                    prose-ul:my-1 prose-ol:my-1"
-                  dangerouslySetInnerHTML={{
-                    __html: formatAgentHtml(catchup),
-                  }}
-                />
+              {catchup && sections.length > 0 && (
+                <div className="space-y-0.5">
+                  {sections.map((sectionHtml, i) => (
+                    <button
+                      key={i}
+                      type="button"
+                      onClick={() => toggleSection(i)}
+                      className={`group block w-full cursor-pointer rounded px-1.5 py-1 text-left transition-colors hover:bg-accent-primary/10
+                        prose prose-sm max-w-none
+                        prose-headings:text-text-primary prose-headings:text-xs prose-headings:font-semibold prose-headings:mt-0 prose-headings:mb-0
+                        prose-p:text-xs prose-p:my-0
+                        prose-li:text-xs
+                        prose-strong:font-medium
+                        prose-ul:my-1 prose-ol:my-1
+                        ${crossedOut.has(i)
+                          ? "prose-p:text-text-muted prose-strong:text-text-muted prose-li:text-text-muted line-through opacity-50"
+                          : "prose-p:text-text-secondary prose-strong:text-text-primary prose-li:text-text-secondary"
+                        }`}
+                      aria-label={crossedOut.has(i) ? "Mark as not done" : "Mark as done"}
+                      dangerouslySetInnerHTML={{ __html: `<p>${sectionHtml}</p>` }}
+                    />
+                  ))}
+                </div>
               )}
               {hasTasks && (
                 <div className={catchup ? "mt-3 pt-3 border-t border-accent-primary/15" : ""}>
