@@ -42,6 +42,7 @@ export default async function DealRoomsPage() {
       .select("product_id, name, slug, category, tagline, demo_type")
       .eq("user_id", user.id)
       .eq("is_active", true)
+      .not("slug", "in", "(surgeengine-platform,audience-dashboard)")
       .order("display_order"),
   ]);
 

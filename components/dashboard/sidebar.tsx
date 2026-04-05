@@ -23,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/deals", label: "Deals", icon: BriefcaseIcon, key: "deals" },
   { href: "/network", label: "Projects", icon: NetworkIcon, key: "network" },
   { href: "/coach", label: "StrategyGPT", icon: SparklesIcon, key: "coach" },
+  { href: "/deal-rooms", label: "Deal Rooms", icon: DealRoomIcon, key: "deal-rooms" },
   { href: "/tasks", label: "Tasks", icon: TasksIcon, key: "tasks" },
   { href: "/prospects", label: "Prospects", icon: SearchIcon, key: "prospects" },
   { href: "/meetings", label: "Meetings", icon: CalendarIcon, key: "meetings" },
@@ -36,7 +37,6 @@ const NAV_ITEMS: NavItem[] = [
   { href: "/marketing", label: "Marketing", icon: MegaphoneIcon, key: "marketing" },
   { href: "/studio", label: "Studio", icon: StudioIcon, key: "studio" },
   { href: "/board-report", label: "Board Report", icon: ClipboardIcon, key: "board-report" },
-  { href: "/deal-rooms", label: "Deal Rooms", icon: DealRoomIcon, key: "deal-rooms" },
   { href: "/docs", label: "Docs", icon: DocsIcon, key: "docs" },
   { href: "/settings", label: "Settings", icon: GearIcon, key: "settings", pinned: true },
 ];
