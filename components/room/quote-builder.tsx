@@ -69,7 +69,10 @@ export function QuoteBuilder({ products, slug, password, theme = "dark", customP
   }
 
   async function handleSubmit() {
-    if (items.length === 0 && !prospectNotes.trim()) return;
+    if (items.length === 0 && !prospectNotes.trim()) {
+      setError("Please select a tier or add notes before submitting.");
+      return;
+    }
 
     setSubmitting(true);
     setError("");

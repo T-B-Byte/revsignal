@@ -11,7 +11,7 @@ const quoteSchema = z.object({
   selected_items: z
     .array(
       z.object({
-        product_id: z.string().uuid(),
+        product_id: z.union([z.literal("custom"), z.string().uuid()]),
         product_name: z.string().max(200),
         tier: z.string().max(100),
         quantity: z.number().int().positive().optional(),
@@ -20,9 +20,8 @@ const quoteSchema = z.object({
         notes: z.string().max(1000).optional(),
       })
     )
-    .min(1)
     .max(20),
-  total_price: z.number().min(0),
+  total_price: z.number().min(0).nullable(),
   prospect_name: z.string().max(200).optional(),
   prospect_email: z.string().email().max(200).optional(),
   prospect_title: z.string().max(200).optional(),

@@ -39,8 +39,8 @@ const createDealRoomSchema = z.object({
   custom_pricing: z
     .array(
       z.object({
-        label: z.string().max(200),
-        price: z.string().max(100),
+        label: z.string().min(1).max(200),
+        price: z.string().min(1).max(100),
         unit: z.string().max(100),
         description: z.string().max(500),
       })
@@ -50,8 +50,8 @@ const createDealRoomSchema = z.object({
   custom_use_cases: z
     .array(
       z.object({
-        title: z.string().max(200),
-        description: z.string().max(1000),
+        title: z.string().min(1).max(200),
+        description: z.string().min(1).max(1000),
         persona: z.string().max(200).optional(),
       })
     )
