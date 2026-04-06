@@ -1465,6 +1465,19 @@ export interface DealRoomProductSelection {
   custom_notes?: string;
 }
 
+export interface DealRoomCustomPricing {
+  label: string;
+  price: string;
+  unit: string;
+  description: string;
+}
+
+export interface DealRoomCustomUseCase {
+  title: string;
+  description: string;
+  persona?: string;
+}
+
 export interface DealRoomDemoSelection {
   demo_type: DemoType;
   config?: Record<string, unknown>;
@@ -1486,6 +1499,8 @@ export interface DealRoom {
   show_audience_dashboard: boolean;
   audience_dashboard_url: string | null;
   show_quote_builder: boolean;
+  custom_pricing: DealRoomCustomPricing[];
+  custom_use_cases: DealRoomCustomUseCase[];
   company_logo_url: string | null;
   accent_color: string | null;
   view_count: number;

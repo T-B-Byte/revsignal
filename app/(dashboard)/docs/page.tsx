@@ -32,6 +32,15 @@ const DEFAULT_DOCS: Doc[] = [
     created: "2026-03-31",
   },
   {
+    id: "ibm-framework",
+    title: "IBM: DaaS Tiered Licensing Model",
+    description: "Confidential pitch deck presenting pharosIQ's tiered DaaS licensing model prepared for IBM. Four tiers from Accounts+Intent ($48K) to Contacts+Content Enterprise ($2.4M+).",
+    url: "https://revsignal.vercel.app/frameworks/ibm",
+    password: "",
+    category: "Strategy",
+    created: "2026-04-06",
+  },
+  {
     id: "daas-product-definition",
     title: "DaaS Product Definition (Legacy)",
     description: "Original contact vs. persona comparison doc. Superseded by the DaaS Framework but kept for reference.",

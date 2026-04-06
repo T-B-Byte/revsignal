@@ -43,6 +43,8 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
   const showAudienceDashboard = room.show_audience_dashboard as boolean;
   const audienceDashboardUrl = room.audience_dashboard_url as string | null;
   const accentColor = (room.accent_color as string) || "#22c55e";
+  const customPricing = (room.custom_pricing as { label: string; price: string; unit: string; description: string }[]) || [];
+  const customUseCases = (room.custom_use_cases as { title: string; description: string; persona?: string }[]) || [];
 
   const tabs: { key: Tab; label: string; show: boolean }[] = [
     { key: "products", label: "Solutions", show: true },
@@ -132,7 +134,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
             </section>
           )}
 
-          <ProductShowcase products={products} accentColor={accentColor} theme={theme} />
+          <ProductShowcase products={products} accentColor={accentColor} theme={theme} customUseCases={customUseCases} customPricing={customPricing} />
 
           <DataCoverage theme={theme} />
         </div>
@@ -144,6 +146,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
           slug={slug}
           password={password}
           theme={theme}
+          customPricing={customPricing}
         />
       )}
 

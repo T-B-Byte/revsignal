@@ -151,7 +151,9 @@ Shareable documents live in two locations depending on format:
 - **React pages** go in `app/frameworks/<company>/` with `page.tsx` + `layout.tsx`. Public, unauthenticated, designed for clean presentation and print.
 - **Static HTML docs** go in `public/`. Accessible at `/<filename>.html`.
 
-After creating or updating a document, log its URL in `reference_live_documents.md`.
+After creating or updating a document:
+1. Add an entry to the `DEFAULT_DOCS` array in `app/(dashboard)/docs/page.tsx` (the Documents portal) with id, title, description, url, password, category, and created date.
+2. Log its URL in `reference_live_documents.md`.
 
 | Route | Description |
 |-------|-------------|

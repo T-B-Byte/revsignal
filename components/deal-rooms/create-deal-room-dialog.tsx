@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { GtmCompanyProfile, GtmProduct } from "@/types/database";
+import type { GtmCompanyProfile, GtmProduct, DealRoomCustomPricing, DealRoomCustomUseCase } from "@/types/database";
 
 interface CreateDealRoomDialogProps {
   open: boolean;
@@ -108,6 +108,8 @@ export function CreateDealRoomDialog({
   const [showQuoteBuilder, setShowQuoteBuilder] = useState(true);
   const [accentColor, setAccentColor] = useState("");
   const [expiresAt, setExpiresAt] = useState("");
+  const [customPricing, setCustomPricing] = useState<DealRoomCustomPricing[]>([]);
+  const [customUseCases, setCustomUseCases] = useState<DealRoomCustomUseCase[]>([]);
 
   // Auto-generate slug, password, and welcome message when company changes
   useEffect(() => {
@@ -181,6 +183,8 @@ export function CreateDealRoomDialog({
     setShowQuoteBuilder(true);
     setAccentColor("");
     setExpiresAt("");
+    setCustomPricing([]);
+    setCustomUseCases([]);
     setError(null);
     setShowAddCompany(false);
     setNewCompanyName("");
@@ -255,6 +259,8 @@ export function CreateDealRoomDialog({
         show_quote_builder: showQuoteBuilder,
         accent_color: accentColor || null,
         expires_at: expiresAt || null,
+        custom_pricing: customPricing.filter((p) => p.label.trim()),
+        custom_use_cases: customUseCases.filter((uc) => uc.title.trim()),
       };
 
       const res = await fetch("/api/deal-rooms", {
@@ -516,6 +522,130 @@ export function CreateDealRoomDialog({
               checked={showQuoteBuilder}
               onChange={setShowQuoteBuilder}
             />
+          </div>
+
+          {/* Custom Pricing */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-text-secondary">Custom Pricing</label>
+              <button
+                type="button"
+                onClick={() => setCustomPricing((prev) => [...prev, { label: "", price: "", unit: "", description: "" }])}
+                className="text-xs text-brand-400 hover:text-brand-300"
+              >
+                + Add tier
+              </button>
+            </div>
+            {customPricing.length === 0 && (
+              <p className="text-xs text-text-muted">No pricing set. Prospects will see a &quot;Request a Quote&quot; form instead. You can add pricing later.</p>
+            )}
+            {customPricing.map((tier, i) => (
+              <div key={i} className="grid grid-cols-[1fr_1fr_auto] gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+                <Input
+                  value={tier.label}
+                  onChange={(e) => {
+                    const next = [...customPricing];
+                    next[i] = { ...next[i], label: e.target.value };
+                    setCustomPricing(next);
+                  }}
+                  placeholder="Tier name (e.g., Standard OEM)"
+                />
+                <Input
+                  value={tier.price}
+                  onChange={(e) => {
+                    const next = [...customPricing];
+                    next[i] = { ...next[i], price: e.target.value };
+                    setCustomPricing(next);
+                  }}
+                  placeholder="Price (e.g., $100K)"
+                />
+                <Input
+                  value={tier.unit}
+                  onChange={(e) => {
+                    const next = [...customPricing];
+                    next[i] = { ...next[i], unit: e.target.value };
+                    setCustomPricing(next);
+                  }}
+                  placeholder="Unit (e.g., /year)"
+                />
+                <div className="col-span-2">
+                  <Input
+                    value={tier.description}
+                    onChange={(e) => {
+                      const next = [...customPricing];
+                      next[i] = { ...next[i], description: e.target.value };
+                      setCustomPricing(next);
+                    }}
+                    placeholder="Description"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setCustomPricing((prev) => prev.filter((_, j) => j !== i))}
+                  className="self-center text-xs text-red-400 hover:text-red-300"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
+          </div>
+
+          {/* Custom Use Cases */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-text-secondary">Custom Use Cases</label>
+              <button
+                type="button"
+                onClick={() => setCustomUseCases((prev) => [...prev, { title: "", description: "", persona: "" }])}
+                className="text-xs text-brand-400 hover:text-brand-300"
+              >
+                + Add use case
+              </button>
+            </div>
+            {customUseCases.length === 0 && (
+              <p className="text-xs text-text-muted">No custom use cases. You can add them later to display in the prospect&apos;s deal room.</p>
+            )}
+            {customUseCases.map((uc, i) => (
+              <div key={i} className="grid grid-cols-[1fr_auto] gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+                <Input
+                  value={uc.title}
+                  onChange={(e) => {
+                    const next = [...customUseCases];
+                    next[i] = { ...next[i], title: e.target.value };
+                    setCustomUseCases(next);
+                  }}
+                  placeholder="Use case title"
+                />
+                <button
+                  type="button"
+                  onClick={() => setCustomUseCases((prev) => prev.filter((_, j) => j !== i))}
+                  className="self-center text-xs text-red-400 hover:text-red-300"
+                >
+                  Remove
+                </button>
+                <div className="col-span-2">
+                  <Textarea
+                    value={uc.description}
+                    onChange={(e) => {
+                      const next = [...customUseCases];
+                      next[i] = { ...next[i], description: e.target.value };
+                      setCustomUseCases(next);
+                    }}
+                    placeholder="Description of this use case"
+                    rows={2}
+                  />
+                </div>
+                <Input
+                  value={uc.persona ?? ""}
+                  onChange={(e) => {
+                    const next = [...customUseCases];
+                    next[i] = { ...next[i], persona: e.target.value };
+                    setCustomUseCases(next);
+                  }}
+                  placeholder="Persona (optional, e.g., VP Marketing)"
+                />
+              </div>
+            ))}
           </div>
 
           {/* Accent color + expiration */}

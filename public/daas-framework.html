@@ -282,44 +282,6 @@
     </tbody>
   </table>
 
-  <div class="impact-box">
-    <div class="impact-title">* Unresolved: Wholesale Contact Access for Lead Gen / Competitor Buyers</div>
-    <p style="margin-bottom: 12px;">
-      The tiered model above excludes lead gen businesses and competitors from contact-level data in Tiers 3 and 4. They can buy Tier 1 (accounts + intent) and Tier 2 (persona + intent), neither of which includes PII. However, Jeff has indicated openness to selling contact-level data to these buyers under controlled conditions. If approved, this becomes a <strong>Tier 3 variant</strong> with additional guardrails:
-    </p>
-    <p style="margin-bottom: 12px;">
-      <strong>What the variant would look like:</strong> Same Tier 3 data (contacts + intent topics, no content consumption). Credits-based or volume-capped access (not unlimited). Higher price point than standard Tier 3 to account for the elevated risk. MSA includes enhanced anti-competitive clause, strict permitted use definitions, caching restrictions, and audit rights.
-    </p>
-    <p style="margin-bottom: 12px; font-weight: 700;">Risks of allowing it:</p>
-    <p style="margin-bottom: 4px;">1. <strong>Competitive empowerment.</strong> Lead gen competitors (6sense, Demandbase, ZoomInfo, Bombora, TechTarget, Madison Logic) could use pharosIQ contact data to enhance their own intent products. They have the infrastructure to absorb and operationalize it.</p>
-    <p style="margin-bottom: 4px;">2. <strong>Cannibalization.</strong> Contact + topic signal overlaps with what Marty's team sells as demand gen leads. Wholesale buyers could self-serve instead of buying campaigns. The line Chris Vriavas drew on 2026-03-27 (topic signal yes, content detail no) helps, but doesn't eliminate the overlap entirely.</p>
-    <p style="margin-bottom: 4px;">3. <strong>Data leakage.</strong> Once contact-level PII leaves pharosIQ's systems, control is limited. Current MSA has no caching terms, no TTL enforcement, no downstream passthrough restrictions, no audit rights. The new DaaS MSA must close these gaps before any wholesale contact deal closes.</p>
-    <p style="margin-bottom: 12px;">4. <strong>Precedent.</strong> Allowing one lead gen competitor sets the expectation for all of them. Harder to say no to Bombora if you've already said yes to Madison Logic.</p>
-    <p style="margin-bottom: 12px; font-weight: 700;">Risks of blocking it:</p>
-    <p style="margin-bottom: 4px;">1. <strong>Lost revenue.</strong> Lead gen competitors are some of the highest-ACV buyers on the target list. Restricting them to Tier 1 and Tier 2 caps their deal value at $144K-$300K instead of $300K-$504K+.</p>
-    <p style="margin-bottom: 4px;">2. <strong>They'll get similar data elsewhere.</strong> Competitors already license contact data from Lusha, Apollo, ZoomInfo, and others. Blocking doesn't prevent them from building their product. It just means pharosIQ doesn't get the revenue.</p>
-    <p style="margin-bottom: 12px;">3. <strong>Mixed-model buyers walk.</strong> Some buyers want persona for some use cases and contacts for others. If you can only serve half their needs, they find a single vendor who can serve both.</p>
-    <p><strong>Decision required:</strong> Jeff, Chris, and Marty need to determine whether wholesale contact access is approved (with guardrails), permanently blocked, or deferred pending the first round of closes. This must be resolved before external pitches begin to lead gen buyers.</p>
-  </div>
-
-  <div class="impact-box">
-    <div class="impact-title">Immediate: AWS EMEA Requesting Contacts + Intent Topics</div>
-    <p style="margin-bottom: 12px;">AWS EMEA is asking for contact-level records with intent topic signals. This is a Tier 2 product (contacts + intent, no content consumption). AWS is a Brand Direct buyer, not a competitor or lead gen business, so they fall within the standard Tier 2 authorization. The question is whether selling contacts + intent topics to AWS will cannibalize the existing lead gen business pharosIQ runs for them.</p>
-    <div style="display: flex; gap: 24px; align-items: center;">
-      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; font-size: 14px; color: var(--t1);"><input type="checkbox" id="awsEmeaYes" style="width: 20px; height: 20px; accent-color: var(--t1); cursor: pointer;"> Yes, sell contacts + intent to AWS EMEA</label>
-      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 700; font-size: 14px; color: var(--red-600);"><input type="checkbox" id="awsEmeaNo" style="width: 20px; height: 20px; accent-color: var(--red-600); cursor: pointer;"> No, persona-level only</label>
-    </div>
-  </div>
-
-  <div class="decision-box" style="border-color: var(--t2); background: var(--t2-light); margin-bottom: 28px;">
-    <h3 style="color: var(--t2);">Minimum Deal Value for Contact-Level Data</h3>
-    <p style="margin-bottom: 12px;">Contact-level data (Tiers 2, 3, 4) carries higher risk: MSA complexity, channel conflict, data leakage exposure. To protect margin and ensure deals justify the overhead, set a minimum ACV below which contacts are not included. Deals below this threshold receive Tier 1 (persona + intent) only.</p>
-    <div style="display: flex; align-items: center; gap: 12px;">
-      <label style="font-weight: 700; font-size: 14px; color: var(--t2);">Minimum deal value for contacts:</label>
-      <span style="font-size: 18px; font-weight: 700; color: var(--t2);">$</span>
-      <input type="text" id="minContactDealValue" placeholder="e.g. 100,000" style="width: 160px; padding: 8px 12px; font-size: 16px; font-weight: 700; font-family: 'Inter', sans-serif; border: 2px solid var(--t2-border); border-radius: 6px; color: var(--t2); background: #fff; outline: none;" />
-    </div>
-  </div>
 
   <div class="decision-box">
     <h3>What This Framework Resolves</h3>
@@ -349,7 +311,7 @@
   </div>
 
   <div class="section-label">Lead Routing Partners (CPL Model)</div>
-  <div class="section-sublabel">Lead distribution providers (Integrate, Madison Logic, LeadScale, Enhancio, Converter) operate on a cost-per-lead basis, not an annual data license. They receive Tier 2 quality data (contacts + intent topics, no content consumption) delivered per lead through their routing platform. This is a separate commercial model from the DaaS tiers. Subject to the wholesale contact access decision (see page 1).</div>
+  <div class="section-sublabel">Lead distribution providers (Integrate, Madison Logic, LeadScale, Enhancio, Converter) operate on a cost-per-lead basis, not an annual data license. They receive Tier 2 quality data (contacts + intent topics, no content consumption) delivered per lead through their routing platform. This is a separate commercial model from the DaaS tiers.</div>
 
   <table class="price-table">
     <thead>
@@ -1005,21 +967,6 @@ function initDecisionCheckboxes() {
     save('decisions', state.decisions);
   });
 
-  var awsYes = document.getElementById('awsEmeaYes');
-  var awsNo = document.getElementById('awsEmeaNo');
-  if (state.decisions['aws-emea-contacts'] === 'yes') awsYes.checked = true;
-  if (state.decisions['aws-emea-contacts'] === 'no') awsNo.checked = true;
-  awsYes.addEventListener('change', function() {
-    if (this.checked) { awsNo.checked = false; state.decisions['aws-emea-contacts'] = 'yes'; }
-    else { delete state.decisions['aws-emea-contacts']; }
-    save('decisions', state.decisions);
-  });
-  awsNo.addEventListener('change', function() {
-    if (this.checked) { awsYes.checked = false; state.decisions['aws-emea-contacts'] = 'no'; }
-    else { delete state.decisions['aws-emea-contacts']; }
-    save('decisions', state.decisions);
-  });
-
   var sigLs = document.getElementById('signalDeliveryLeadscale');
   var sigCv = document.getElementById('signalDeliveryConverter');
   if (state.decisions['signal-delivery'] === 'leadscale') sigLs.checked = true;
@@ -1035,20 +982,6 @@ function initDecisionCheckboxes() {
     save('decisions', state.decisions);
   });
 
-  // Minimum deal value for contact-level data
-  var minInput = document.getElementById('minContactDealValue');
-  if (state.decisions['min-contact-deal-value']) minInput.value = state.decisions['min-contact-deal-value'];
-  minInput.addEventListener('input', function() {
-    var val = this.value.replace(/[^0-9]/g, '');
-    if (val) {
-      this.value = parseInt(val, 10).toLocaleString();
-      state.decisions['min-contact-deal-value'] = this.value;
-    } else {
-      this.value = '';
-      delete state.decisions['min-contact-deal-value'];
-    }
-    save('decisions', state.decisions);
-  });
 }
 
 // --- CPL inputs ---

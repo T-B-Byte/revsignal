@@ -3,6 +3,13 @@
 import { useState, useMemo } from "react";
 import { TINA_CALENDAR_URL } from "@/types/database";
 
+interface CustomPricing {
+  label: string;
+  price: string;
+  unit: string;
+  description: string;
+}
+
 interface QuoteLineItem {
   product_id: string;
   product_name: string;
@@ -16,9 +23,22 @@ interface QuoteBuilderProps {
   slug: string;
   password: string;
   theme?: "dark" | "light";
+  customPricing?: CustomPricing[];
 }
 
-export function QuoteBuilder({ products, slug, password, theme = "dark" }: QuoteBuilderProps) {
+function parsePrice(priceStr: string): number {
+  const cleaned = priceStr.replace(/[^0-9.,KkMm-]/g, "");
+  const parts = cleaned.split("-");
+  const firstPart = parts[0].replace(/,/g, "");
+  if (firstPart.toLowerCase().endsWith("k")) {
+    return parseFloat(firstPart) * 1000;
+  } else if (firstPart.toLowerCase().endsWith("m")) {
+    return parseFloat(firstPart) * 1000000;
+  }
+  return parseFloat(firstPart) || 0;
+}
+
+export function QuoteBuilder({ products, slug, password, theme = "dark", customPricing = [] }: QuoteBuilderProps) {
   const t = (dark: string, light: string) => theme === "dark" ? dark : light;
   const [items, setItems] = useState<QuoteLineItem[]>([]);
   const [prospectName, setProspectName] = useState("");
@@ -29,30 +49,18 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState("");
 
+  const hasPricing = customPricing.length > 0;
   const total = useMemo(() => items.reduce((sum, item) => sum + item.subtotal, 0), [items]);
 
-  function addItem(product: Record<string, unknown>, tierName: string, tierData: { price: string; unit: string }) {
-    // Parse price: extract numeric value from strings like "$100K-200K", "$500", "$0.01-0.05"
-    const priceStr = tierData.price.replace(/[^0-9.,KkMm-]/g, "");
-    let numericPrice = 0;
-    const parts = priceStr.split("-");
-    const firstPart = parts[0].replace(/,/g, "");
-    if (firstPart.toLowerCase().endsWith("k")) {
-      numericPrice = parseFloat(firstPart) * 1000;
-    } else if (firstPart.toLowerCase().endsWith("m")) {
-      numericPrice = parseFloat(firstPart) * 1000000;
-    } else {
-      numericPrice = parseFloat(firstPart) || 0;
-    }
-
+  function addPricingItem(tier: CustomPricing) {
+    const numericPrice = parsePrice(tier.price);
     const newItem: QuoteLineItem = {
-      product_id: product.product_id as string,
-      product_name: product.name as string,
-      tier: tierName,
+      product_id: "custom",
+      product_name: tier.label,
+      tier: tier.label,
       unit_price: numericPrice,
       subtotal: numericPrice,
     };
-
     setItems((prev) => [...prev, newItem]);
   }
 
@@ -61,7 +69,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
   }
 
   async function handleSubmit() {
-    if (items.length === 0) return;
+    if (items.length === 0 && !prospectNotes.trim()) return;
 
     setSubmitting(true);
     setError("");
@@ -73,7 +81,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
         body: JSON.stringify({
           password,
           selected_items: items,
-          total_price: total,
+          total_price: total || null,
           prospect_name: prospectName || undefined,
           prospect_email: prospectEmail || undefined,
           prospect_title: prospectTitle || undefined,
@@ -124,25 +132,22 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
 
   return (
     <div className="space-y-6">
-      {/* Product Cards with Inline Tier Selection */}
+      {/* Product Overview (no pricing, just features) */}
       <div className="space-y-4">
-        <h2 className={`text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>Select Products and Tiers</h2>
-        {products.map((product) => {
-          const tiers = (product.pricing_tiers as Record<string, { price: string; unit: string; description: string }>) || {};
-          if (Object.keys(tiers).length === 0) return null;
+        <h2 className={`text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
+          {hasPricing ? "Select Products and Tiers" : "Included Solutions"}
+        </h2>
 
+        {/* Show products as read-only overview */}
+        {products.map((product) => {
           const features = (product.features as { name: string; description: string }[]) || [];
           const tagline = product.tagline as string | null;
-          const addedTiers = items
-            .filter((i) => i.product_id === (product.product_id as string))
-            .map((i) => i.tier);
 
           return (
             <div
               key={product.product_id as string}
               className={`rounded-xl border overflow-hidden ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}
             >
-              {/* Product header */}
               <div className="p-5">
                 <h3 className={`text-base font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
                   {product.name as string}
@@ -150,8 +155,6 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
                 {tagline && (
                   <p className={`mt-1 text-sm ${t("text-zinc-400", "text-zinc-500")}`}>{tagline}</p>
                 )}
-
-                {/* Key features (compact, 2-col) */}
                 {features.length > 0 && (
                   <div className="mt-3 grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-1.5">
                     {features.slice(0, 6).map((f, i) => (
@@ -165,50 +168,54 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
                   </div>
                 )}
               </div>
-
-              {/* Tier selection */}
-              <div className={`border-t px-5 py-4 ${t("border-slate-700 bg-slate-900/50", "border-zinc-100 bg-zinc-50")}`}>
-                <p className={`text-xs font-medium uppercase tracking-wider mb-3 ${t("text-zinc-500", "text-zinc-400")}`}>
-                  Select a tier to add
-                </p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                  {Object.entries(tiers).map(([tierName, tierData]) => {
-                    const isAdded = addedTiers.includes(tierName);
-                    return (
-                      <button
-                        key={tierName}
-                        onClick={() => !isAdded && addItem(product, tierName, tierData)}
-                        disabled={isAdded}
-                        className={`rounded-lg border p-3 text-left transition ${
-                          isAdded
-                            ? "border-green-500/30 bg-green-500/10 cursor-default"
-                            : t(
-                                "border-slate-600 bg-slate-800 hover:border-green-500 hover:bg-green-500/5 cursor-pointer",
-                                "border-zinc-300 bg-white hover:border-green-500 hover:bg-green-50 cursor-pointer"
-                              )
-                        }`}
-                      >
-                        <div className="flex items-center justify-between">
-                          <span className={`text-sm font-medium ${t("text-zinc-200", "text-zinc-800")}`}>{tierName}</span>
-                          {isAdded && (
-                            <svg className="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                        </div>
-                        <p className="text-sm font-mono font-semibold text-green-500 mt-1">
-                          {tierData.price}<span className={`font-normal text-xs ${t("text-zinc-500", "text-zinc-400")}`}>{tierData.unit}</span>
-                        </p>
-                        <p className={`text-xs mt-1 ${t("text-zinc-500", "text-zinc-400")}`}>{tierData.description}</p>
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
             </div>
           );
         })}
       </div>
+
+      {/* Custom Pricing Tier Selection (only shown when Tina has set pricing) */}
+      {hasPricing && (
+        <div className={`rounded-xl border overflow-hidden ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
+          <div className={`px-5 py-4 ${t("bg-slate-900/50", "bg-zinc-50")}`}>
+            <p className={`text-xs font-medium uppercase tracking-wider mb-3 ${t("text-zinc-500", "text-zinc-400")}`}>
+              Select a tier to add
+            </p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+              {customPricing.map((tier, i) => {
+                const isAdded = items.some((item) => item.tier === tier.label);
+                return (
+                  <button
+                    key={i}
+                    onClick={() => !isAdded && addPricingItem(tier)}
+                    disabled={isAdded}
+                    className={`rounded-lg border p-3 text-left transition ${
+                      isAdded
+                        ? "border-green-500/30 bg-green-500/10 cursor-default"
+                        : t(
+                            "border-slate-600 bg-slate-800 hover:border-green-500 hover:bg-green-500/5 cursor-pointer",
+                            "border-zinc-300 bg-white hover:border-green-500 hover:bg-green-50 cursor-pointer"
+                          )
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-sm font-medium ${t("text-zinc-200", "text-zinc-800")}`}>{tier.label}</span>
+                      {isAdded && (
+                        <svg className="h-4 w-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                          <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                        </svg>
+                      )}
+                    </div>
+                    <p className="text-sm font-mono font-semibold text-green-500 mt-1">
+                      {tier.price}<span className={`font-normal text-xs ${t("text-zinc-500", "text-zinc-400")}`}>{tier.unit}</span>
+                    </p>
+                    <p className={`text-xs mt-1 ${t("text-zinc-500", "text-zinc-400")}`}>{tier.description}</p>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Quote Summary */}
       {items.length > 0 && (
@@ -248,9 +255,16 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
       )}
 
       {/* Contact Info + Submit */}
-      {items.length > 0 && (
+      {(items.length > 0 || !hasPricing) && (
         <div className={`rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
-          <h2 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>Your Information (Optional)</h2>
+          <h2 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
+            {hasPricing ? "Your Information (Optional)" : "Request a Quote"}
+          </h2>
+          {!hasPricing && (
+            <p className={`mb-4 text-sm ${t("text-zinc-400", "text-zinc-500")}`}>
+              Tell us about your needs and we&apos;ll put together a custom proposal.
+            </p>
+          )}
           <div className="grid gap-4 sm:grid-cols-2">
             <input
               type="text"
@@ -293,7 +307,7 @@ export function QuoteBuilder({ products, slug, password, theme = "dark" }: Quote
             disabled={submitting}
             className="mt-4 w-full rounded-lg bg-green-600 px-4 py-3 font-medium text-white transition hover:bg-green-500 disabled:opacity-50"
           >
-            {submitting ? "Submitting..." : "Submit Quote Request"}
+            {submitting ? "Submitting..." : hasPricing && items.length > 0 ? "Submit Quote Request" : "Request a Quote"}
           </button>
         </div>
       )}

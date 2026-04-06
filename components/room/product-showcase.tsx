@@ -172,13 +172,28 @@ function ProductVisuals({
   );
 }
 
+interface CustomUseCase {
+  title: string;
+  description: string;
+  persona?: string;
+}
+
+interface CustomPricing {
+  label: string;
+  price: string;
+  unit: string;
+  description: string;
+}
+
 interface ProductShowcaseProps {
   products: Record<string, unknown>[];
   accentColor: string;
   theme?: "dark" | "light";
+  customUseCases?: CustomUseCase[];
+  customPricing?: CustomPricing[];
 }
 
-export function ProductShowcase({ products, accentColor, theme = "dark" }: ProductShowcaseProps) {
+export function ProductShowcase({ products, accentColor, theme = "dark", customUseCases = [], customPricing = [] }: ProductShowcaseProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const t = (dark: string, light: string) => theme === "dark" ? dark : light;
 
@@ -200,7 +215,6 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
         const useCases = (product.use_cases as { title: string; description: string; persona?: string }[]) || [];
         const keyStats = (product.key_stats as { stat: string; source?: string }[]) || [];
         const differentiators = (product.differentiators as { vs_competitor: string; advantage: string }[]) || [];
-        const pricingTiers = (product.pricing_tiers as Record<string, { price: string; unit: string; description: string }>) || {};
         const category = product.category as string | undefined;
         const categoryColor = category ? CATEGORY_COLORS[category] : undefined;
 
@@ -379,36 +393,57 @@ export function ProductShowcase({ products, accentColor, theme = "dark" }: Produ
                   </div>
                 )}
 
-                {/* Pricing */}
-                {Object.keys(pricingTiers).length > 0 && (
-                  <div>
-                    <h4 className="mb-3 text-sm font-semibold uppercase tracking-wider text-zinc-400">
-                      Pricing
-                    </h4>
-                    <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                      {Object.entries(pricingTiers).map(([tierName, tier]) => (
-                        <div
-                          key={tierName}
-                          className={`rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}
-                        >
-                          <p className={`text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>{tierName}</p>
-                          <p className="mt-1 text-lg font-bold" style={{ color: categoryColor || accentColor }}>
-                            {tier.price}
-                            <span className={`text-sm font-normal ${t("text-zinc-500", "text-zinc-400")}`}>
-                              {tier.unit}
-                            </span>
-                          </p>
-                          <p className={`mt-1 text-xs ${t("text-zinc-500", "text-zinc-400")}`}>{tier.description}</p>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </div>
         );
       })}
+
+      {/* Custom Use Cases (room-level, set by Tina) */}
+      {customUseCases.length > 0 && (
+        <div className={`mt-6 rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
+          <h3 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
+            Use Cases
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {customUseCases.map((uc, i) => (
+              <div key={i} className={`rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}>
+                <p className={`text-sm font-medium ${t("text-zinc-200", "text-zinc-800")}`}>{uc.title}</p>
+                <p className={`mt-1 text-xs leading-relaxed ${t("text-zinc-400", "text-zinc-500")}`}>{uc.description}</p>
+                {uc.persona && (
+                  <p className={`mt-2 text-xs ${t("text-zinc-600", "text-zinc-400")}`}>For: {uc.persona}</p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Custom Pricing (room-level, set by Tina) */}
+      {customPricing.length > 0 && (
+        <div className={`mt-6 rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
+          <h3 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
+            Pricing
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {customPricing.map((tier, i) => (
+              <div
+                key={i}
+                className={`rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}
+              >
+                <p className={`text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>{tier.label}</p>
+                <p className="mt-1 text-lg font-bold" style={{ color: accentColor }}>
+                  {tier.price}
+                  <span className={`text-sm font-normal ${t("text-zinc-500", "text-zinc-400")}`}>
+                    {tier.unit}
+                  </span>
+                </p>
+                <p className={`mt-1 text-xs ${t("text-zinc-500", "text-zinc-400")}`}>{tier.description}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
