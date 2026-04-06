@@ -159,7 +159,7 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
       {/* Chat area or landing view */}
       <div className="flex flex-1 flex-col overflow-hidden">
         {isLanding ? (
-          <div className="h-full overflow-hidden p-6">
+          <div className="h-full overflow-y-auto p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-text-primary">StrategyGPT</h2>
               <p className="text-xs text-text-muted">
