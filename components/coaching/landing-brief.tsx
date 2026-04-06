@@ -193,28 +193,28 @@ export function LandingBrief() {
           {/* Priorities */}
           {priorities && (
             <BriefSection title="Top Priorities" color="accent-primary">
-              <BriefContent text={priorities} />
+              <BriefContent text={priorities} briefingId={data.briefingId} sectionKey="priorities" />
             </BriefSection>
           )}
 
           {/* Pipeline Health */}
           {pipelineHealth && (
             <BriefSection title="Pipeline Health" color="emerald-400">
-              <BriefContent text={pipelineHealth} />
+              <BriefContent text={pipelineHealth} briefingId={data.briefingId} sectionKey="pipeline" />
             </BriefSection>
           )}
 
           {/* Overdue */}
           {overdue && (
             <BriefSection title="Overdue & Upcoming" color="status-red">
-              <BriefContent text={overdue} />
+              <BriefContent text={overdue} briefingId={data.briefingId} sectionKey="overdue" />
             </BriefSection>
           )}
 
           {/* Deal Momentum */}
           {dealMomentum && (
             <BriefSection title="Deal Momentum" color="status-yellow">
-              <BriefContent text={dealMomentum} />
+              <BriefContent text={dealMomentum} briefingId={data.briefingId} sectionKey="momentum" />
             </BriefSection>
           )}
 
@@ -260,7 +260,31 @@ function BriefSection({
   );
 }
 
-function BriefContent({ text }: { text: string }) {
+function BriefContent({ text, briefingId, sectionKey }: { text: string; briefingId: string | null; sectionKey: string }) {
+  const storageKey = briefingId ? `brief-done-${briefingId}-${sectionKey}` : null;
+
+  const [doneLines, setDoneLines] = useState<Set<number>>(() => {
+    if (!storageKey) return new Set();
+    try {
+      const stored = localStorage.getItem(storageKey);
+      return stored ? new Set(JSON.parse(stored)) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
+
+  const toggleLine = useCallback((index: number) => {
+    setDoneLines((prev) => {
+      const next = new Set(prev);
+      if (next.has(index)) next.delete(index);
+      else next.add(index);
+      if (storageKey) {
+        try { localStorage.setItem(storageKey, JSON.stringify([...next])); } catch {}
+      }
+      return next;
+    });
+  }, [storageKey]);
+
   // Convert markdown list items to clean display
   const lines = text
     .split("\n")
@@ -273,10 +297,18 @@ function BriefContent({ text }: { text: string }) {
         // Strip leading markdown list markers (-, *, 1.)
         const clean = line.replace(/^[-*]\s+|^\d+\.\s+/, "");
         const isBullet = line !== clean;
+        const isDone = doneLines.has(i);
 
         return (
-          <p key={i} className={`text-xs text-text-secondary leading-relaxed ${isBullet ? "pl-3" : ""}`}>
-            {isBullet && <span className="text-text-muted mr-1">&bull;</span>}
+          <p
+            key={i}
+            role="button"
+            tabIndex={0}
+            onClick={() => toggleLine(i)}
+            onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); toggleLine(i); } }}
+            className={`text-xs leading-relaxed cursor-pointer select-none transition-colors ${isBullet ? "pl-3" : ""} ${isDone ? "line-through text-text-muted/50" : "text-text-secondary hover:text-text-primary"}`}
+          >
+            {isBullet && <span className={`mr-1 ${isDone ? "text-text-muted/30" : "text-text-muted"}`}>&bull;</span>}
             {clean}
           </p>
         );
