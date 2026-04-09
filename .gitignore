@@ -48,4 +48,7 @@ supabase/.temp/
 /public/*.xlsx
 /public/*.xls
 /public/*.docx
+/public/*.zip
+/public/*.png
 /public/Contracts/
+/public/linkedin_data/
