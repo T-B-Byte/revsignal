@@ -1562,17 +1562,17 @@ export function ThreadChat({
         </div>
       )}
 
+      {/* Follow-ups panel — outside scroll area so checkboxes stay accessible */}
+      <ThreadFollowUps
+        key={followUpKey}
+        threadId={thread.thread_id}
+      />
+
       {/* Messages area */}
       <div
         ref={scrollRef}
         className="flex-1 overflow-y-auto px-6 py-4 space-y-4"
       >
-        {/* Follow-ups panel */}
-        <ThreadFollowUps
-          key={followUpKey}
-          threadId={thread.thread_id}
-        />
-
         {/* Empty state */}
         {messages.length === 0 && (
           <div className="flex items-center justify-center h-32">

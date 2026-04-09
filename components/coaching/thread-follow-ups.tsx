@@ -51,7 +51,7 @@ export function ThreadFollowUps({ threadId }: ThreadFollowUpsProps) {
   const today = new Date().toISOString().split("T")[0];
 
   return (
-    <div className="mx-4 mb-3 rounded-lg border border-border-primary bg-surface-tertiary">
+    <div className="mx-6 mb-0 mt-3 rounded-lg border border-border-primary bg-surface-tertiary">
       <button
         onClick={() => setCollapsed(!collapsed)}
         className="flex w-full items-center justify-between px-3 py-2"
