@@ -28,6 +28,8 @@ const createDealRoomSchema = z.object({
           "icp_analyzer",
           "surge_dossier",
           "audience_dashboard",
+          "closed_won_analyzer",
+          "daas_framework",
         ] as const),
         config: z.record(z.string(), z.unknown()).optional(),
       })

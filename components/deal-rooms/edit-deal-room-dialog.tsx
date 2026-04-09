@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { DealRoomWithCompany, GtmProduct, DealRoomStatus, DealRoomCustomPricing, DealRoomCustomUseCase } from "@/types/database";
+import type { DealRoomWithCompany, GtmProduct, DealRoomStatus, DealRoomCustomPricing, DealRoomCustomUseCase, DemoType, DealRoomDemoSelection } from "@/types/database";
 
 interface EditDealRoomDialogProps {
   open: boolean;
@@ -21,6 +21,13 @@ interface EditDealRoomDialogProps {
   room: DealRoomWithCompany;
   products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type">[];
 }
+
+const AVAILABLE_DEMOS: { demo_type: DemoType; label: string; description: string }[] = [
+  { demo_type: "title_expansion", label: "Title Expansion", description: "Interactive title/persona search" },
+  { demo_type: "surge_dossier", label: "Surge Dossier", description: "AI-synthesized account intelligence" },
+  { demo_type: "closed_won_analyzer", label: "Closed-Won Analyzer", description: "ICP analysis from closed deals" },
+  { demo_type: "daas_framework", label: "DaaS Framework", description: "Tiered data product framework" },
+];
 
 const ACCENT_COLORS = [
   { value: "", label: "Default (Brand)" },
@@ -72,6 +79,12 @@ export function EditDealRoomDialog({
   const [customUseCases, setCustomUseCases] = useState<DealRoomCustomUseCase[]>(
     (room.custom_use_cases as DealRoomCustomUseCase[]) ?? []
   );
+  const [selectedDemos, setSelectedDemos] = useState<DemoType[]>(() => {
+    const demos = (room.selected_demos as DealRoomDemoSelection[]) ?? [];
+    return demos.length > 0
+      ? demos.map((d) => d.demo_type)
+      : AVAILABLE_DEMOS.map((d) => d.demo_type);
+  });
 
   function handleProductToggle(productId: string) {
     setSelectedProducts((prev) =>
@@ -101,6 +114,7 @@ export function EditDealRoomDialog({
           product_id: id,
           display_order: i,
         })),
+        selected_demos: selectedDemos.map((dt) => ({ demo_type: dt })),
         show_audience_dashboard: showAudienceDashboard,
         show_quote_builder: showQuoteBuilder,
         accent_color: accentColor || null,
@@ -277,6 +291,24 @@ export function EditDealRoomDialog({
               checked={showQuoteBuilder}
               onChange={setShowQuoteBuilder}
             />
+            <div className="pt-2">
+              <p className="text-xs text-text-muted mb-2">Demo Tabs</p>
+              {AVAILABLE_DEMOS.map((demo) => (
+                <ToggleRow
+                  key={demo.demo_type}
+                  label={demo.label}
+                  description={demo.description}
+                  checked={selectedDemos.includes(demo.demo_type)}
+                  onChange={(checked) =>
+                    setSelectedDemos((prev) =>
+                      checked
+                        ? [...prev, demo.demo_type]
+                        : prev.filter((d) => d !== demo.demo_type)
+                    )
+                  }
+                />
+              ))}
+            </div>
           </div>
 
           {/* Custom Pricing */}

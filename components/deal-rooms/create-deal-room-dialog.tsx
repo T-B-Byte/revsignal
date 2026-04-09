@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { GtmCompanyProfile, GtmProduct, DealRoomCustomPricing, DealRoomCustomUseCase } from "@/types/database";
+import type { GtmCompanyProfile, GtmProduct, DealRoomCustomPricing, DealRoomCustomUseCase, DemoType } from "@/types/database";
 
 interface CreateDealRoomDialogProps {
   open: boolean;
@@ -68,6 +68,13 @@ function generateWelcome(companyName: string, productNames: string[]): string {
   return `Welcome to your personalized pharosIQ deal room. ${productList} Explore the solutions below, build a quote, or request a data test to see our coverage for your target accounts.`;
 }
 
+const AVAILABLE_DEMOS: { demo_type: DemoType; label: string; description: string }[] = [
+  { demo_type: "title_expansion", label: "Title Expansion", description: "Interactive title/persona search" },
+  { demo_type: "surge_dossier", label: "Surge Dossier", description: "AI-synthesized account intelligence" },
+  { demo_type: "closed_won_analyzer", label: "Closed-Won Analyzer", description: "ICP analysis from closed deals" },
+  { demo_type: "daas_framework", label: "DaaS Framework", description: "Tiered data product framework" },
+];
+
 const ACCENT_COLORS = [
   { value: "", label: "Default (Brand)" },
   { value: "#4f6ef7", label: "Blue" },
@@ -110,6 +117,9 @@ export function CreateDealRoomDialog({
   const [expiresAt, setExpiresAt] = useState("");
   const [customPricing, setCustomPricing] = useState<DealRoomCustomPricing[]>([]);
   const [customUseCases, setCustomUseCases] = useState<DealRoomCustomUseCase[]>([]);
+  const [selectedDemos, setSelectedDemos] = useState<DemoType[]>(
+    AVAILABLE_DEMOS.map((d) => d.demo_type)
+  );
 
   // Auto-generate slug, password, and welcome message when company changes
   useEffect(() => {
@@ -185,6 +195,7 @@ export function CreateDealRoomDialog({
     setExpiresAt("");
     setCustomPricing([]);
     setCustomUseCases([]);
+    setSelectedDemos(AVAILABLE_DEMOS.map((d) => d.demo_type));
     setError(null);
     setShowAddCompany(false);
     setNewCompanyName("");
@@ -255,6 +266,7 @@ export function CreateDealRoomDialog({
           product_id: id,
           display_order: i,
         })),
+        selected_demos: selectedDemos.map((dt) => ({ demo_type: dt })),
         show_audience_dashboard: showAudienceDashboard,
         show_quote_builder: showQuoteBuilder,
         accent_color: accentColor || null,
@@ -522,6 +534,24 @@ export function CreateDealRoomDialog({
               checked={showQuoteBuilder}
               onChange={setShowQuoteBuilder}
             />
+            <div className="pt-2">
+              <p className="text-xs text-text-muted mb-2">Demo Tabs</p>
+              {AVAILABLE_DEMOS.map((demo) => (
+                <ToggleRow
+                  key={demo.demo_type}
+                  label={demo.label}
+                  description={demo.description}
+                  checked={selectedDemos.includes(demo.demo_type)}
+                  onChange={(checked) =>
+                    setSelectedDemos((prev) =>
+                      checked
+                        ? [...prev, demo.demo_type]
+                        : prev.filter((d) => d !== demo.demo_type)
+                    )
+                  }
+                />
+              ))}
+            </div>
           </div>
 
           {/* Custom Pricing */}

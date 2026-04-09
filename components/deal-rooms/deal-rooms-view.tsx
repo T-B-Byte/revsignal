@@ -10,6 +10,8 @@ import type {
   DealRoomStatus,
   GtmCompanyProfile,
   GtmProduct,
+  DealRoomQuote,
+  QuoteStatus,
 } from "@/types/database";
 
 interface DealRoomsViewProps {
@@ -57,6 +59,9 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
   const [copiedSlug, setCopiedSlug] = useState<string | null>(null);
   const [copiedPassword, setCopiedPassword] = useState<string | null>(null);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [expandedQuotes, setExpandedQuotes] = useState<string | null>(null);
+  const [quotes, setQuotes] = useState<DealRoomQuote[]>([]);
+  const [quotesLoading, setQuotesLoading] = useState(false);
 
   // Stats
   const stats = useMemo(() => {
@@ -79,6 +84,42 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
     }
   }
 
+  async function handleToggleQuotes(roomId: string) {
+    if (expandedQuotes === roomId) {
+      setExpandedQuotes(null);
+      return;
+    }
+    setExpandedQuotes(roomId);
+    setQuotesLoading(true);
+    try {
+      const res = await fetch(`/api/deal-rooms/${roomId}/quotes`);
+      if (res.ok) {
+        const data = await res.json();
+        setQuotes(data.quotes ?? []);
+      }
+    } finally {
+      setQuotesLoading(false);
+    }
+  }
+
+  async function handleQuoteAction(roomId: string, quoteId: string, status: QuoteStatus) {
+    setActionLoading(quoteId);
+    try {
+      const res = await fetch(`/api/deal-rooms/${roomId}/quotes`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ quote_id: quoteId, status }),
+      });
+      if (res.ok) {
+        setQuotes((prev) =>
+          prev.map((q) => (q.quote_id === quoteId ? { ...q, status, reviewed_at: new Date().toISOString() } : q))
+        );
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
   async function handleToggleStatus(roomId: string, currentStatus: DealRoomStatus) {
     const newStatus: DealRoomStatus = currentStatus === "active" ? "draft" : "active";
     setActionLoading(roomId);
@@ -87,6 +128,20 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        router.refresh();
+      }
+    } finally {
+      setActionLoading(null);
+    }
+  }
+
+  async function handleClone(roomId: string) {
+    setActionLoading(roomId);
+    try {
+      const res = await fetch(`/api/deal-rooms/${roomId}/clone`, {
+        method: "POST",
       });
       if (res.ok) {
         router.refresh();
@@ -327,6 +382,22 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
                   <Button
                     size="sm"
                     variant="ghost"
+                    onClick={() => handleToggleQuotes(room.room_id)}
+                    disabled={isLoading}
+                  >
+                    Quotes
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleClone(room.room_id)}
+                    disabled={isLoading}
+                  >
+                    Duplicate
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
                     onClick={() =>
                       handleToggleStatus(room.room_id, room.status)
                     }
@@ -344,6 +415,30 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
                     Delete
                   </Button>
                 </div>
+
+                {/* Quotes panel */}
+                {expandedQuotes === room.room_id && (
+                  <div className="border-t border-white/5 pt-3 space-y-3">
+                    <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
+                      Submitted Quotes
+                    </h4>
+                    {quotesLoading ? (
+                      <p className="text-xs text-text-muted">Loading...</p>
+                    ) : quotes.length === 0 ? (
+                      <p className="text-xs text-text-muted">No quotes submitted yet.</p>
+                    ) : (
+                      quotes.map((q) => (
+                        <QuoteCard
+                          key={q.quote_id}
+                          quote={q}
+                          roomId={room.room_id}
+                          onAction={handleQuoteAction}
+                          isLoading={actionLoading === q.quote_id}
+                        />
+                      ))
+                    )}
+                  </div>
+                )}
               </div>
             );
           })}
@@ -367,6 +462,92 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
           room={editRoom}
           products={products}
         />
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Quote card                                                          */
+/* ------------------------------------------------------------------ */
+
+const QUOTE_STATUS_STYLES: Record<string, { bg: string; text: string }> = {
+  submitted: { bg: "bg-amber-500/15", text: "text-amber-500" },
+  reviewed: { bg: "bg-blue-500/15", text: "text-blue-400" },
+  accepted: { bg: "bg-status-green/15", text: "text-status-green" },
+  declined: { bg: "bg-status-red/15", text: "text-status-red" },
+  draft: { bg: "bg-white/10", text: "text-text-muted" },
+};
+
+function QuoteCard({
+  quote,
+  roomId,
+  onAction,
+  isLoading,
+}: {
+  quote: DealRoomQuote;
+  roomId: string;
+  onAction: (roomId: string, quoteId: string, status: QuoteStatus) => void;
+  isLoading: boolean;
+}) {
+  const style = QUOTE_STATUS_STYLES[quote.status] ?? QUOTE_STATUS_STYLES.draft;
+  const total = quote.total_price != null ? `$${Number(quote.total_price).toLocaleString()}` : "N/A";
+  const items = (quote.selected_items ?? []) as { product_name: string; tier: string; subtotal: number }[];
+  const canAct = quote.status === "submitted" || quote.status === "reviewed";
+
+  return (
+    <div className="rounded-lg border border-white/[0.06] bg-white/[0.02] p-3 space-y-2">
+      <div className="flex items-center justify-between">
+        <div className="min-w-0">
+          <p className="text-sm font-medium text-text-primary truncate">
+            {quote.prospect_name || "Unknown prospect"}
+          </p>
+          <p className="text-xs text-text-muted truncate">
+            {quote.prospect_email || "No email"}{quote.prospect_title ? ` · ${quote.prospect_title}` : ""}
+          </p>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          <span className="text-sm font-semibold text-text-primary">{total}</span>
+          <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${style.bg} ${style.text}`}>
+            {quote.status}
+          </span>
+        </div>
+      </div>
+      {items.length > 0 && (
+        <div className="text-xs text-text-muted space-y-0.5">
+          {items.map((item, i) => (
+            <div key={i} className="flex justify-between">
+              <span className="truncate">{item.product_name} ({item.tier})</span>
+              <span className="shrink-0 ml-2">${Number(item.subtotal).toLocaleString()}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {quote.prospect_notes && (
+        <p className="text-xs text-text-muted italic">&quot;{quote.prospect_notes}&quot;</p>
+      )}
+      <div className="flex items-center gap-2 text-xs text-text-muted">
+        <span>Submitted {formatDate(quote.submitted_at)}</span>
+        {quote.reviewed_at && <span>· Reviewed {formatDate(quote.reviewed_at)}</span>}
+      </div>
+      {canAct && (
+        <div className="flex gap-2 pt-1">
+          <Button
+            size="sm"
+            onClick={() => onAction(roomId, quote.quote_id, "accepted")}
+            disabled={isLoading}
+          >
+            Accept
+          </Button>
+          <Button
+            size="sm"
+            variant="danger"
+            onClick={() => onAction(roomId, quote.quote_id, "declined")}
+            disabled={isLoading}
+          >
+            Decline
+          </Button>
+        </div>
       )}
     </div>
   );

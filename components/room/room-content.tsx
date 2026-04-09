@@ -7,14 +7,16 @@ import { DataTestForm } from "./data-test-form";
 import { DataCoverage } from "./data-coverage";
 import { TINA_CALENDAR_URL } from "@/types/database";
 
-type Tab = "products" | "title-expansion" | "dossier" | "closed-won" | "daas" | "quote" | "data-test";
+import type { DealRoomDemoSelection } from "@/types/database";
 
-const DEMO_TABS: { key: Tab; label: string; url: string }[] = [
-  { key: "title-expansion", label: "Title Expansion", url: "https://surgeengine.app/title-expansion?theme=dark" },
-  { key: "dossier", label: "Surge Dossier", url: "https://surgeengine.app/demo/sap?theme=dark" },
-  { key: "closed-won", label: "Closed-Won Analyzer", url: "https://surgeengine.app/closed-won-analyzer?theme=dark" },
-  { key: "daas", label: "DaaS Framework", url: "https://revsignal.vercel.app/daas-framework.html?theme=dark" },
-];
+type Tab = "products" | "quote" | "data-test" | string;
+
+const ALL_DEMOS: Record<string, { label: string; url: string }> = {
+  title_expansion: { label: "Title Expansion", url: "https://surgeengine.app/title-expansion?theme=dark" },
+  surge_dossier: { label: "Surge Dossier", url: "https://surgeengine.app/demo/sap?theme=dark" },
+  closed_won_analyzer: { label: "Closed-Won Analyzer", url: "https://surgeengine.app/closed-won-analyzer?theme=dark" },
+  daas_framework: { label: "DaaS Framework", url: "https://revsignal.vercel.app/daas-framework.html?theme=dark" },
+};
 
 interface RoomContentProps {
   room: Record<string, unknown>;
@@ -45,9 +47,17 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
   const customPricing = (room.custom_pricing as { label: string; price: string; unit: string; description: string }[]) || [];
   const customUseCases = (room.custom_use_cases as { title: string; description: string; persona?: string }[]) || [];
 
+  // Build active demos from selected_demos, falling back to all demos if none selected
+  const selectedDemos = (room.selected_demos as DealRoomDemoSelection[]) || [];
+  const activeDemos = selectedDemos.length > 0
+    ? selectedDemos
+        .filter((d) => d.demo_type in ALL_DEMOS)
+        .map((d) => ({ key: d.demo_type, ...ALL_DEMOS[d.demo_type] }))
+    : Object.entries(ALL_DEMOS).map(([key, val]) => ({ key, ...val }));
+
   const tabs: { key: Tab; label: string; show: boolean }[] = [
     { key: "products", label: "Solutions", show: true },
-    ...DEMO_TABS.map((d) => ({ key: d.key, label: d.label, show: true })),
+    ...activeDemos.map((d) => ({ key: d.key, label: d.label, show: true })),
     { key: "quote", label: "Build a Quote", show: showQuoteBuilder },
     { key: "data-test", label: "Data Test", show: true },
   ];
@@ -150,7 +160,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
       )}
 
       {/* Demo tabs */}
-      {DEMO_TABS.map((demo) =>
+      {activeDemos.map((demo) =>
         activeTab === demo.key ? (
           <div key={demo.key} className={`overflow-hidden rounded-xl border ${t("border-zinc-800", "border-zinc-200")}`}>
             <iframe

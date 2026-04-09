@@ -1303,7 +1303,9 @@ export type DemoType =
   | "title_expansion"
   | "icp_analyzer"
   | "surge_dossier"
-  | "audience_dashboard";
+  | "audience_dashboard"
+  | "closed_won_analyzer"
+  | "daas_framework";
 
 // --- GTM Product ---
 
