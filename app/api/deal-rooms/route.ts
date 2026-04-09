@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
       selected_products: parsed.data.selected_products ?? [],
       selected_demos: parsed.data.selected_demos ?? [],
       show_audience_dashboard: parsed.data.show_audience_dashboard ?? true,
-      audience_dashboard_url: parsed.data.audience_dashboard_url ?? "https://audience-dashboard-liard.vercel.app",
+      audience_dashboard_url: parsed.data.audience_dashboard_url ?? "https://surgeengine.app/audience-dashboard.html",
       show_quote_builder: parsed.data.show_quote_builder ?? true,
       custom_pricing: parsed.data.custom_pricing ?? [],
       custom_use_cases: parsed.data.custom_use_cases ?? [],

@@ -10,11 +10,11 @@ import { TINA_CALENDAR_URL } from "@/types/database";
 type Tab = "products" | "title-expansion" | "dossier" | "closed-won" | "trending" | "radar" | "quote" | "data-test";
 
 const DEMO_TABS: { key: Tab; label: string; url: string }[] = [
-  { key: "title-expansion", label: "Title Expansion", url: "https://surgeengine.app/title-expansion" },
-  { key: "dossier", label: "Surge Dossier", url: "https://surgeengine.app/demo/sap" },
-  { key: "closed-won", label: "Closed-Won Analyzer", url: "https://surgeengine.app/closed-won-analyzer" },
-  { key: "trending", label: "Surge Trending", url: "https://surgeengine.app/surge-trending" },
-  { key: "radar", label: "Surge Radar", url: "https://surgeengine.app/surge-radar" },
+  { key: "title-expansion", label: "Title Expansion", url: "https://surgeengine.app/title-expansion?theme=dark" },
+  { key: "dossier", label: "Surge Dossier", url: "https://surgeengine.app/demo/sap?theme=dark" },
+  { key: "closed-won", label: "Closed-Won Analyzer", url: "https://surgeengine.app/closed-won-analyzer?theme=dark" },
+  { key: "trending", label: "Surge Trending", url: "https://surgeengine.app/surge-trending?theme=dark" },
+  { key: "radar", label: "Surge Radar", url: "https://surgeengine.app/surge-radar?theme=dark" },
 ];
 
 interface RoomContentProps {
@@ -125,7 +125,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
               </h2>
               <div className={`overflow-hidden rounded-xl border ${t("border-zinc-800", "border-zinc-200")}`}>
                 <iframe
-                  src={audienceDashboardUrl}
+                  src={`${audienceDashboardUrl}${audienceDashboardUrl?.includes("?") ? "&" : "?"}theme=dark`}
                   className="h-[800px] w-full"
                   title="Audience Intelligence Dashboard"
                   sandbox="allow-scripts allow-same-origin"
