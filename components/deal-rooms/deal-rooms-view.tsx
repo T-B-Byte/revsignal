@@ -90,6 +90,7 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
       return;
     }
     setExpandedQuotes(roomId);
+    setQuotes([]);
     setQuotesLoading(true);
     try {
       const res = await fetch(`/api/deal-rooms/${roomId}/quotes`);

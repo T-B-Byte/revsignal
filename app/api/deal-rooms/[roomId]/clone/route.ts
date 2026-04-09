@@ -96,5 +96,6 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
     );
   }
 
-  return NextResponse.json({ deal_room: cloned }, { status: 201 });
+  const { password_hash: _, ...safeCloned } = cloned as Record<string, unknown>;
+  return NextResponse.json({ deal_room: safeCloned }, { status: 201 });
 }
