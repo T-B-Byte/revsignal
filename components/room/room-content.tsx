@@ -7,14 +7,13 @@ import { DataTestForm } from "./data-test-form";
 import { DataCoverage } from "./data-coverage";
 import { TINA_CALENDAR_URL } from "@/types/database";
 
-type Tab = "products" | "title-expansion" | "dossier" | "closed-won" | "trending" | "radar" | "quote" | "data-test";
+type Tab = "products" | "title-expansion" | "dossier" | "closed-won" | "daas" | "quote" | "data-test";
 
 const DEMO_TABS: { key: Tab; label: string; url: string }[] = [
   { key: "title-expansion", label: "Title Expansion", url: "https://surgeengine.app/title-expansion?theme=dark" },
   { key: "dossier", label: "Surge Dossier", url: "https://surgeengine.app/demo/sap?theme=dark" },
   { key: "closed-won", label: "Closed-Won Analyzer", url: "https://surgeengine.app/closed-won-analyzer?theme=dark" },
-  { key: "trending", label: "Surge Trending", url: "https://surgeengine.app/surge-trending?theme=dark" },
-  { key: "radar", label: "Surge Radar", url: "https://surgeengine.app/surge-radar?theme=dark" },
+  { key: "daas", label: "DaaS Framework", url: "https://revsignal.vercel.app/daas-framework.html?theme=dark" },
 ];
 
 interface RoomContentProps {
