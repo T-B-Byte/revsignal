@@ -307,7 +307,8 @@ var accounts = [
   { name: 'Arrow Electronics', cat: 'IT Distribution / Channel', catClass: 'cat-distrib', restricted: false },
 ];
 
-function loadLocal(key) { try { return JSON.parse(localStorage.getItem(key)) || {}; } catch(e) { return {}; } }
+function loadLocal(key) { try { var v = JSON.parse(localStorage.getItem(key)); return v && Object.keys(v).length ? v : null; } catch(e) { return null; } }
+function loadLocalOr(key, fallbackKey) { return loadLocal(key) || loadLocal(fallbackKey) || {}; }
 function showSave() { var b = document.getElementById('saveBanner'); b.classList.add('visible'); setTimeout(function() { b.classList.remove('visible'); }, 1500); }
 
 var _pendingSync = {};
@@ -539,11 +540,13 @@ function startRealtime(url, anonKey) {
     })
     .catch(function(err) {
       console.warn('Server load failed, using localStorage:', err);
-      state.checks = loadLocal(PREFIX + 'checks-v4');
-      state.acvs = loadLocal(PREFIX + 'acvs-v4');
-      state.leads = loadLocal(PREFIX + 'leads-v4');
-      state.intros = loadLocal(PREFIX + 'intros-v4');
-      state.stages = loadLocal(PREFIX + 'stages-v4');
+      state.checks = loadLocalOr(PREFIX + 'checks', PREFIX + 'checks-v4');
+      state.acvs = loadLocalOr(PREFIX + 'acvs', PREFIX + 'acvs-v4');
+      state.leads = loadLocalOr(PREFIX + 'leads', PREFIX + 'leads-v4');
+      state.intros = loadLocalOr(PREFIX + 'intros', PREFIX + 'intros-v4');
+      state.stages = loadLocalOr(PREFIX + 'stages', PREFIX + 'stages-v4');
+      state.decisions = loadLocal(PREFIX + 'decisions') || {};
+      state.cpl_values = loadLocal(PREFIX + 'cpl_values') || {};
       render();
     });
 })();

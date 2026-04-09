@@ -224,6 +224,13 @@
     </thead>
     <tbody>
       <tr>
+        <td>Use cases</td>
+        <td class="t1">Prioritize outbound account lists by real-time surge activity. Feed DSP/programmatic platforms with intent-qualified audiences. Score inbound leads against account-level signals. Power ABM campaign targeting: which accounts to focus on this week.</td>
+        <td class="t2">Build persona-based audience segments for targeted campaigns. Identify buying committee composition at surging accounts. Segment content strategy by seniority and job function. Power persona-level ABM: target the right roles, not just the right accounts.</td>
+        <td class="t3">Enrich CRM with contact-level intent signals for outbound prioritization. Power SDR sequences with named contacts showing active intent. ABM activation: direct outreach to the people driving the surge. Embed contact-level signals into buyer's platform via OEM/API.</td>
+        <td class="t4">Build predictive models on content consumption patterns. Power content recommendation engines with full behavioral fingerprints. Enterprise platform intelligence: complete signal chain embedded in buyer's product. Custom analytics on which content topics drive pipeline conversion.</td>
+      </tr>
+      <tr>
         <td>Deliverable</td>
         <td class="t1">Account-level intent signals. Which companies are surging on which topics. No persona detail, no contacts.</td>
         <td class="t2">Everything in Tier 1, plus audience-level behavioral profiles matched to intent categories: industry, title function, seniority band, company size, intent topic, engagement source.</td>
@@ -381,6 +388,10 @@
     </tbody>
   </table>
 
+  <div class="context-box" style="border-left-color: var(--t1);">
+    <strong>Where Surge Signals fit:</strong> Weekly intent feeds power account prioritization for sales and marketing. SDR teams use them to focus outbound on accounts showing real-time buying signals. Marketing ops teams pipe signals into their MAP or CDP to trigger nurture campaigns. Revenue leaders use trending data to spot emerging demand before competitors do. The signal feed is the connective tissue between pharosIQ data and the buyer's go-to-market motion.
+  </div>
+
   <div class="diff-box">
     <strong>What Makes Surge Dossiers Possible: Data Provenance</strong>
     <div class="diff-item">A Surge Dossier is not a generic company report. It is an AI-synthesized intelligence document assembled from pharosIQ's proprietary first-party signal chain. Every data point in the dossier traces back to a known content engagement on a pharosIQ-owned property. That provenance is what makes the dossier defensible, accurate, and impossible for competitors to replicate with scraped or co-op data.</div>
@@ -402,6 +413,10 @@
     </tbody>
   </table>
 
+  <div class="context-box" style="border-left-color: var(--t3);">
+    <strong>When to use Snapshots:</strong> An AE prepping for a first meeting with a surging account. A BDR responding to an inbound and needing context in 60 seconds. A channel partner who needs a briefing document before a co-sell conversation. Event follow-up: pull dossiers on every account that visited the booth. Board prep: on-demand intelligence on strategic accounts the CEO will ask about.
+  </div>
+
   <div class="section-label">Surge Dossiers: Monitor (Living, Monthly Refresh)</div>
   <div class="section-sublabel">Living dossier, refreshed monthly with new signals, updated persona activity, competitive shifts. Strategic accounts, enterprise pursuits, long sales cycles.</div>
 
@@ -416,6 +431,10 @@
       <tr><td>Monitor Unlimited</td><td>All surging accounts</td><td>$15,000</td><td>$180,000</td><td>Depends on surge volume</td></tr>
     </tbody>
   </table>
+
+  <div class="context-box" style="border-left-color: var(--t2);">
+    <strong>When to use Monitors:</strong> Enterprise pursuit accounts with 6-12 month sales cycles where signals shift between meetings. Strategic accounts where the buying committee evolves and new stakeholders emerge. Competitive displacement deals where you need to track which personas are evaluating alternatives. Customer success: monitor expansion signals inside existing accounts to catch upsell timing before the customer tells you.
+  </div>
 
   <div class="section-label">White-Label / Reseller Dossiers</div>
   <div class="section-sublabel">Partners can resell pharosIQ dossiers under their own brand. The end buyer sees the partner's logo and branding; pharosIQ data powers the content underneath. Ideal for lead distribution providers, agencies, and platforms that want to offer dossiers as a value-add to their clients without building their own research capability.</div>
@@ -514,6 +533,10 @@
       <tr><td>Warroom</td><td>Signals (50K+) + Monitor 100</td><td>$220,000+</td><td>Full revenue org, strategic selling</td></tr>
     </tbody>
   </table>
+
+  <div class="context-box" style="border-left-color: var(--t1);">
+    <strong>Matching the bundle to the buyer:</strong> <strong>Scout</strong> is the entry point for SDR-led orgs running outbound at scale: weekly signal feeds prioritize accounts, snapshots arm reps before first calls. <strong>Hunter</strong> fits mid-market sales teams that need both coverage and depth: more accounts in the signal feed, more dossiers to prep for meetings. <strong>Command</strong> is for ABM teams running coordinated plays across 25-50 strategic accounts with living intelligence that refreshes monthly. <strong>Warroom</strong> is the full revenue org deployment: the CRO's team gets real-time signal coverage across the entire TAM with monitor-level depth on the 100 accounts that matter most.
+  </div>
 
   <div class="context-box">
     <strong>Why the Monitor premium is justified:</strong> A Surge Monitor account at $100-150/month is high, but it replaces 2-3 hours of manual research per account before every touchpoint ($75-150 in loaded labor cost per session), plus the tool stacking cost of ZoomInfo + Bombora + manual research ($100+/account). The Monitor delivers a continuously fresh, AI-synthesized view with persona-level signal tracking that no amount of manual research replicates. The pitch: "Your reps spend 3 hours prepping for every enterprise meeting. Monitor does it in 60 seconds, and it's never stale."
@@ -680,7 +703,8 @@ var accounts = [
 
 // --- Persistence layer ---
 
-function loadLocal(key) { try { return JSON.parse(localStorage.getItem(key)) || {}; } catch(e) { return {}; } }
+function loadLocal(key) { try { var v = JSON.parse(localStorage.getItem(key)); return v && Object.keys(v).length ? v : null; } catch(e) { return null; } }
+function loadLocalOr(key, fallbackKey) { return loadLocal(key) || loadLocal(fallbackKey) || {}; }
 
 function showSave() { var b = document.getElementById('saveBanner'); b.classList.add('visible'); setTimeout(function() { b.classList.remove('visible'); }, 1500); }
 
@@ -960,18 +984,19 @@ function initCplInputs() {
 
 function migrateFromLocalStorage() {
   // One-time migration: pull old localStorage data into state if server is empty
-  var oldChecks = loadLocal(PREFIX + 'checks-v4');
-  var oldAcvs = loadLocal(PREFIX + 'acvs-v4');
-  var oldLeads = loadLocal(PREFIX + 'leads-v4');
-  var oldIntros = loadLocal(PREFIX + 'intros-v4');
-  var oldStages = loadLocal(PREFIX + 'stages-v4');
+  // Check both legacy -v4 keys and current keys for migration
+  var oldChecks = loadLocal(PREFIX + 'checks-v4') || loadLocal(PREFIX + 'checks');
+  var oldAcvs = loadLocal(PREFIX + 'acvs-v4') || loadLocal(PREFIX + 'acvs');
+  var oldLeads = loadLocal(PREFIX + 'leads-v4') || loadLocal(PREFIX + 'leads');
+  var oldIntros = loadLocal(PREFIX + 'intros-v4') || loadLocal(PREFIX + 'intros');
+  var oldStages = loadLocal(PREFIX + 'stages-v4') || loadLocal(PREFIX + 'stages');
   var migrated = false;
 
-  if (Object.keys(oldChecks).length && !Object.keys(state.checks).length) { state.checks = oldChecks; migrated = true; }
-  if (Object.keys(oldAcvs).length && !Object.keys(state.acvs).length) { state.acvs = oldAcvs; migrated = true; }
-  if (Object.keys(oldLeads).length && !Object.keys(state.leads).length) { state.leads = oldLeads; migrated = true; }
-  if (Object.keys(oldIntros).length && !Object.keys(state.intros).length) { state.intros = oldIntros; migrated = true; }
-  if (Object.keys(oldStages).length && !Object.keys(state.stages).length) { state.stages = oldStages; migrated = true; }
+  if (oldChecks && !Object.keys(state.checks).length) { state.checks = oldChecks; migrated = true; }
+  if (oldAcvs && !Object.keys(state.acvs).length) { state.acvs = oldAcvs; migrated = true; }
+  if (oldLeads && !Object.keys(state.leads).length) { state.leads = oldLeads; migrated = true; }
+  if (oldIntros && !Object.keys(state.intros).length) { state.intros = oldIntros; migrated = true; }
+  if (oldStages && !Object.keys(state.stages).length) { state.stages = oldStages; migrated = true; }
 
   // Migrate decision checkboxes
   var oldDoss = localStorage.getItem(PREFIX + 'dossier-contacts');
@@ -1043,11 +1068,14 @@ function startRealtime(url, anonKey) {
     })
     .catch(function(err) {
       console.warn('Server load failed, using localStorage:', err);
-      state.checks = loadLocal(PREFIX + 'checks-v4');
-      state.acvs = loadLocal(PREFIX + 'acvs-v4');
-      state.leads = loadLocal(PREFIX + 'leads-v4');
-      state.intros = loadLocal(PREFIX + 'intros-v4');
-      state.stages = loadLocal(PREFIX + 'stages-v4');
+      // Try current keys first, then legacy -v4 keys
+      state.checks = loadLocalOr(PREFIX + 'checks', PREFIX + 'checks-v4');
+      state.acvs = loadLocalOr(PREFIX + 'acvs', PREFIX + 'acvs-v4');
+      state.leads = loadLocalOr(PREFIX + 'leads', PREFIX + 'leads-v4');
+      state.intros = loadLocalOr(PREFIX + 'intros', PREFIX + 'intros-v4');
+      state.stages = loadLocalOr(PREFIX + 'stages', PREFIX + 'stages-v4');
+      state.decisions = loadLocal(PREFIX + 'decisions') || {};
+      state.cpl_values = loadLocal(PREFIX + 'cpl_values') || {};
       render();
       initDecisionCheckboxes();
       initCplInputs();
