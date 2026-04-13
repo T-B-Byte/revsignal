@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>PMP Infrastructure Comparison: Index Exchange vs. PubMatic vs. LiveRamp</title>
+  <title>PMP Infrastructure Comparison: Index Exchange vs. LiveRamp vs. Permutive</title>
   <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
@@ -11,12 +11,12 @@
       --ix-primary: #0050ff;
       --ix-light: #eff4ff;
       --ix-border: #93b4f4;
-      --pm-primary: #e05c00;
-      --pm-light: #fff4ee;
-      --pm-border: #f9b580;
       --lr-primary: #7c3aed;
       --lr-light: #f5f3ff;
       --lr-border: #c4b5fd;
+      --pv-primary: #0e7490;
+      --pv-light: #ecfeff;
+      --pv-border: #67e8f9;
       --gray-900: #111827;
       --gray-700: #374151;
       --gray-500: #6b7280;
@@ -28,6 +28,9 @@
       --red-700: #b91c1c;
       --red-50: #fef2f2;
       --red-border: #fca5a5;
+      --amber-700: #b45309;
+      --amber-50: #fffbeb;
+      --amber-border: #fcd34d;
     }
 
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -46,7 +49,6 @@
       padding: 56px 48px;
     }
 
-    /* Header */
     .header {
       border-bottom: 2px solid var(--gray-900);
       padding-bottom: 24px;
@@ -75,13 +77,12 @@
       color: var(--gray-500);
     }
 
-    /* Verdict box */
     .verdict {
       background: var(--green-50);
       border: 1.5px solid var(--green-border);
       border-radius: 8px;
       padding: 20px 24px;
-      margin-bottom: 36px;
+      margin-bottom: 16px;
     }
 
     .verdict-label {
@@ -99,13 +100,12 @@
       line-height: 1.6;
     }
 
-    /* Cost warning box */
     .cost-warning {
       background: var(--red-50);
       border: 1.5px solid var(--red-border);
       border-radius: 8px;
       padding: 16px 20px;
-      margin-bottom: 36px;
+      margin-bottom: 16px;
       font-size: 13px;
       color: var(--red-700);
       line-height: 1.6;
@@ -113,7 +113,19 @@
 
     .cost-warning strong { color: var(--red-700); }
 
-    /* Section headings */
+    .mismatch-warning {
+      background: var(--amber-50);
+      border: 1.5px solid var(--amber-border);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 36px;
+      font-size: 13px;
+      color: var(--amber-700);
+      line-height: 1.6;
+    }
+
+    .mismatch-warning strong { color: var(--amber-700); }
+
     h2 {
       font-size: 13px;
       font-weight: 700;
@@ -126,7 +138,6 @@
 
     h2:first-of-type { margin-top: 0; }
 
-    /* Comparison cards */
     .three-col {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -140,9 +151,9 @@
       border: 1.5px solid;
     }
 
-    .card-ix { background: var(--ix-light); border-color: var(--ix-border); }
-    .card-pm { background: var(--pm-light); border-color: var(--pm-border); }
-    .card-lr { background: var(--lr-light); border-color: var(--lr-border); }
+    .card-ix  { background: var(--ix-light);  border-color: var(--ix-border);  }
+    .card-lr  { background: var(--lr-light);  border-color: var(--lr-border);  }
+    .card-pv  { background: var(--pv-light);  border-color: var(--pv-border);  }
 
     .card-label {
       font-size: 10px;
@@ -153,8 +164,8 @@
     }
 
     .label-ix { color: var(--ix-primary); }
-    .label-pm { color: var(--pm-primary); }
     .label-lr { color: var(--lr-primary); }
+    .label-pv { color: var(--pv-primary); }
 
     .card h3 {
       font-size: 14px;
@@ -163,10 +174,7 @@
       color: var(--gray-900);
     }
 
-    .card ul {
-      list-style: none;
-      padding: 0;
-    }
+    .card ul { list-style: none; padding: 0; }
 
     .card ul li {
       font-size: 12px;
@@ -188,12 +196,12 @@
       margin-top: 5px;
     }
 
-    .dot-ix { background: var(--ix-primary); }
-    .dot-pm { background: var(--pm-primary); }
-    .dot-lr { background: var(--lr-primary); }
+    .dot-ix  { background: var(--ix-primary); }
+    .dot-lr  { background: var(--lr-primary); }
+    .dot-pv  { background: var(--pv-primary); }
     .dot-red { background: var(--red-700); }
+    .dot-amber { background: var(--amber-700); }
 
-    /* Head-to-head table */
     table {
       width: 100%;
       border-collapse: collapse;
@@ -212,7 +220,7 @@
     }
 
     thead th:first-child { border-radius: 6px 0 0 0; }
-    thead th:last-child { border-radius: 0 6px 0 0; }
+    thead th:last-child  { border-radius: 0 6px 0 0; }
 
     tbody tr:nth-child(even) { background: var(--gray-100); }
 
@@ -229,19 +237,15 @@
       white-space: nowrap;
     }
 
-    .win { font-weight: 600; }
-    .win-ix { color: var(--ix-primary); }
-    .win-pm { color: var(--pm-primary); }
-    .win-lr { color: var(--lr-primary); }
+    .win     { font-weight: 600; }
+    .win-ix  { color: var(--ix-primary); }
+    .win-lr  { color: var(--lr-primary); }
+    .win-pv  { color: var(--pv-primary); }
     .win-tie { color: var(--gray-700); }
-    .win-no { color: var(--red-700); font-weight: 600; }
+    .win-no  { color: var(--red-700); font-weight: 600; }
+    .win-na  { color: var(--gray-500); font-style: italic; }
 
-    /* Deal structure section */
-    .steps {
-      list-style: none;
-      padding: 0;
-      counter-reset: step;
-    }
+    .steps { list-style: none; padding: 0; counter-reset: step; }
 
     .steps li {
       counter-increment: step;
@@ -286,7 +290,6 @@
       color: var(--gray-900);
     }
 
-    /* Recommendation box */
     .recommendation {
       background: var(--gray-100);
       border-radius: 8px;
@@ -299,7 +302,6 @@
 
     .recommendation strong { color: var(--gray-900); }
 
-    /* Footer */
     .footer {
       margin-top: 48px;
       padding-top: 20px;
@@ -310,7 +312,6 @@
       justify-content: space-between;
     }
 
-    /* Category note */
     .category-note {
       font-size: 11px;
       color: var(--gray-500);
@@ -318,7 +319,6 @@
       font-style: italic;
     }
 
-    /* Print */
     @media print {
       body { background: #fff; }
       .page { padding: 32px 36px; }
@@ -326,7 +326,6 @@
       .three-col { break-inside: avoid; }
       table { break-inside: avoid; }
       .recommendation { break-inside: avoid; }
-      .cost-warning { break-inside: avoid; }
     }
   </style>
 </head>
@@ -335,21 +334,25 @@
 
     <div class="header">
       <div class="header-label">PMP Infrastructure Evaluation — B2B Audience Activation</div>
-      <h1>Index Exchange vs. PubMatic vs. LiveRamp</h1>
+      <h1>Index Exchange vs. LiveRamp vs. Permutive</h1>
       <div class="header-meta">Prepared by pharosIQ Data Products &amp; Partnerships &nbsp;|&nbsp; April 2026</div>
     </div>
 
     <div class="verdict">
       <div class="verdict-label">Recommendation</div>
-      <p><strong>Lead with Index Exchange</strong> for the initial TTD PMP deal. Their OpenPath partnership with The Trade Desk gives deal IDs a structural routing advantage, and their Curated Marketplaces program is purpose-built for non-publisher data owners. Run PubMatic as a secondary deal ID for scale. Skip LiveRamp for the first deal — the cost structure doesn't survive the math at $300K.</p>
+      <p><strong>Lead with Index Exchange</strong> for the initial TTD PMP deal. Their OpenPath partnership with The Trade Desk gives deal IDs a structural routing advantage, and their Curated Marketplaces program is purpose-built for non-publisher data owners. UID2-hashed emails natively — no LiveRamp required. Revisit LiveRamp at scale (5+ clients). Permutive is a publisher tool and does not map to pharosIQ's data-owner use case.</p>
     </div>
 
     <div class="cost-warning">
       <strong>LiveRamp cost reality check:</strong> $100K onboarding + $15K/month minimum = $280K in year one before a single impression runs. On a $300K client deal, that leaves $20K of margin to cover data costs, operations, and rev-share. LiveRamp becomes viable at 5+ clients where the fixed cost amortizes. Not deal one.
     </div>
 
-    <h2>Where Each Platform Wins</h2>
-    <p class="category-note">Note: Index Exchange and PubMatic are SSPs (supply-side platforms). LiveRamp is an identity and data onboarding platform. Different categories, but all three are paths to PMP activation on The Trade Desk.</p>
+    <div class="mismatch-warning">
+      <strong>Permutive category mismatch:</strong> Permutive is a publisher-side DMP — it helps media companies and content publishers package and monetize their own first-party audiences. pharosIQ is a data owner and seller, not a publisher. Permutive is designed for the other side of this transaction. Notably, Permutive's own documentation describes ingesting second-party data via LiveRamp — they work alongside LiveRamp, not against it.
+    </div>
+
+    <h2>Where Each Platform Fits</h2>
+    <p class="category-note">Index Exchange is an SSP. LiveRamp is an identity and data onboarding platform. Permutive is a publisher DMP. Three different layers of the adtech stack — only IX maps directly to pharosIQ's data-owner distribution need.</p>
     <div class="three-col">
       <div class="card card-ix">
         <div class="card-label label-ix">Index Exchange</div>
@@ -360,28 +363,31 @@
           <li><span class="dot dot-ix"></span>Best-in-class fee transparency post Publicis/TTD audit controversy</li>
           <li><span class="dot dot-ix"></span>Native UID2 — no identity infrastructure needed</li>
           <li><span class="dot dot-ix"></span>No upfront cost; ~10-15% take rate on media only</li>
-        </ul>
-      </div>
-      <div class="card card-pm">
-        <div class="card-label label-pm">PubMatic</div>
-        <h3>Secondary: Scale Play</h3>
-        <ul>
-          <li><span class="dot dot-pm"></span>Tier-one CTV/OTT publisher network — strongest footprint for video</li>
-          <li><span class="dot dot-pm"></span>Greater raw impression volume for large budgets</li>
-          <li><span class="dot dot-pm"></span>PubMatic Connect identity graph supplements UID2 match rates</li>
-          <li><span class="dot dot-pm"></span>Audience Encore for data collaboration</li>
-          <li><span class="dot dot-pm"></span>No upfront cost; similar take rate to IX</li>
+          <li><span class="dot dot-ix"></span>Taylor has prior relationship — fastest path to deal</li>
         </ul>
       </div>
       <div class="card card-lr">
         <div class="card-label label-lr">LiveRamp</div>
-        <h3>Revisit at Scale</h3>
+        <h3>Revisit at Scale (5+ Clients)</h3>
         <ul>
-          <li><span class="dot dot-lr"></span>Largest identity graph — best match rates at scale (10+ clients)</li>
+          <li><span class="dot dot-lr"></span>Largest identity graph — best match rates at scale</li>
           <li><span class="dot dot-lr"></span>RampID: deepest TTD integration, frequency capping, omnichannel addressability</li>
-          <li><span class="dot dot-lr"></span>Established data marketplace with direct demand-side relationships</li>
-          <li><span class="dot dot-red"></span>$100K onboarding + $15K/month minimum — unworkable for first deal</li>
+          <li><span class="dot dot-lr"></span>Established data marketplace with direct DSP demand</li>
+          <li><span class="dot dot-red"></span>$100K onboarding + $15K/month minimum</li>
           <li><span class="dot dot-red"></span>Additional rev-share on data marketplace distribution</li>
+          <li><span class="dot dot-red"></span>Cost unworkable for first deal at $300K budget</li>
+        </ul>
+      </div>
+      <div class="card card-pv">
+        <div class="card-label label-pv">Permutive</div>
+        <h3>Wrong Layer of the Stack</h3>
+        <ul>
+          <li><span class="dot dot-pv"></span>Publisher-side DMP: helps media companies activate their own first-party audiences</li>
+          <li><span class="dot dot-pv"></span>Privacy-first, cookieless, on-device/edge computing architecture</li>
+          <li><span class="dot dot-pv"></span>Used by major publishers (The Guardian, SHE Media) to package and sell audiences</li>
+          <li><span class="dot dot-amber"></span>pharosIQ is a data owner, not a publisher — wrong role for this tool</li>
+          <li><span class="dot dot-amber"></span>Permutive integrates with LiveRamp (ingest via LR) — they're complementary, not competitive</li>
+          <li><span class="dot dot-amber"></span>Future angle: data clean room collaboration with Permutive publishers</li>
         </ul>
       </div>
     </div>
@@ -392,79 +398,79 @@
         <tr>
           <th>Dimension</th>
           <th>Index Exchange</th>
-          <th>PubMatic</th>
           <th>LiveRamp</th>
+          <th>Permutive</th>
           <th>Edge</th>
         </tr>
       </thead>
       <tbody>
         <tr>
+          <td>Fits pharosIQ use case?</td>
+          <td class="win win-ix">Yes — data owner distribution</td>
+          <td>Yes, at scale</td>
+          <td class="win-no">No — publisher tool</td>
+          <td class="win win-ix">IX</td>
+        </tr>
+        <tr>
           <td>TTD relationship</td>
           <td>OpenPath direct partner</td>
-          <td>Standard TTD connectivity</td>
-          <td>Deep RampID integration (identity layer)</td>
+          <td>Deep RampID integration</td>
+          <td class="win-na">Not applicable</td>
           <td class="win win-ix">IX</td>
         </tr>
         <tr>
           <td>Data owner program</td>
           <td>Curated Marketplaces (non-publisher)</td>
-          <td>Audience Encore (publisher-oriented)</td>
-          <td>Data Marketplace (established, broad demand)</td>
+          <td>Data Marketplace (broad demand)</td>
+          <td class="win-na">Publisher monetization only</td>
           <td class="win win-lr">LR at scale</td>
-        </tr>
-        <tr>
-          <td>CTV/OTT scale</td>
-          <td>Solid coverage</td>
-          <td>Tier-one CTV network</td>
-          <td>Via SSP partners (indirect)</td>
-          <td class="win win-pm">PubMatic</td>
         </tr>
         <tr>
           <td>Identity / matching</td>
           <td>Native UID2</td>
-          <td>UID2 + Connect graph</td>
-          <td>RampID (proprietary, strongest match rates)</td>
+          <td>RampID (strongest match rates)</td>
+          <td>Cookieless on-device (publisher side)</td>
           <td class="win win-lr">LR at scale</td>
         </tr>
         <tr>
           <td>Fee transparency</td>
           <td>Industry benchmark</td>
-          <td>Strong, publicly auditable</td>
-          <td>Complex; rev-share + platform fees</td>
+          <td>Complex; multi-layer fees</td>
+          <td>Page-based pricing (publisher)</td>
           <td class="win win-ix">IX</td>
         </tr>
         <tr>
           <td>Upfront cost</td>
           <td>None</td>
-          <td>None</td>
           <td>$100K onboarding</td>
-          <td class="win win-ix win-pm">IX / PM</td>
+          <td class="win-na">Publisher pricing, n/a</td>
+          <td class="win win-ix">IX</td>
         </tr>
         <tr>
           <td>Ongoing cost</td>
           <td>~10-15% media take rate</td>
-          <td>~10-15% media take rate</td>
-          <td>$15K/month minimum + take rate</td>
-          <td class="win win-ix win-pm">IX / PM</td>
+          <td>$15K/month min + take rate</td>
+          <td class="win-na">Publisher pricing, n/a</td>
+          <td class="win win-ix">IX</td>
         </tr>
         <tr>
-          <td>B2B data precedent</td>
-          <td>Strong (third-party data owners)</td>
-          <td>Moderate (publisher-first)</td>
-          <td>Strong (broad enterprise adoption)</td>
-          <td class="win win-tie">Tie</td>
+          <td>Relationship status</td>
+          <td>Taylor has prior relationship</td>
+          <td>Taylor managing existing</td>
+          <td>New / unknown</td>
+          <td class="win win-ix">IX</td>
         </tr>
         <tr>
           <td>Right for first deal?</td>
           <td class="win win-ix">Yes</td>
-          <td>As secondary</td>
           <td class="win-no">No — cost unworkable</td>
+          <td class="win-no">No — wrong category</td>
           <td class="win win-ix">IX</td>
         </tr>
       </tbody>
     </table>
 
-    <h2>How the Deal Works (No LiveRamp Required)</h2>
+    <h2>How the Deal Works via Index Exchange (No LiveRamp Required)</h2>
     <ol class="steps">
       <li>
         <span class="step-num">1</span>
@@ -504,11 +510,11 @@
     </ol>
 
     <div class="recommendation">
-      <strong>What to bring to the Index Exchange conversation:</strong> pharosIQ data asset (360M+ B2B contacts, 650+ intent categories, first-party signal), one client with $300K media budget on TTD, hashed email delivery ready, target CPM $5-10, weekly refresh cadence. Ask for: Curated Marketplace deal, open web + video, client's TTD seat ID to route the Deal ID.
+      <strong>What to bring to the Index Exchange conversation:</strong> pharosIQ data asset (360M+ B2B contacts, 650+ intent categories, first-party signal), one client with $300K media budget on TTD, hashed email delivery ready, target CPM $5-10, weekly refresh cadence. Ask for: Curated Marketplace deal, open web + video, client's TTD seat ID to route the Deal ID. Target rev-share: 10-15% with $3-5K/month minimum.
       <br><br>
       <strong>When LiveRamp makes sense:</strong> Once pharosIQ has 5+ active PMP clients, the $100K onboarding amortizes to $20K per client and RampID's match rate advantage becomes meaningful. Revisit after the first two deals close.
       <br><br>
-      <strong>Fastest path to a warm IX intro:</strong> If your client's agency or trading desk holds an IX seat, have them make the introduction. IX accelerates onboarding for existing buyer relationships.
+      <strong>Permutive future angle:</strong> If pharosIQ wants to collaborate with premium publishers who use Permutive (The Guardian, major media brands), there's a clean room opportunity to layer pharosIQ B2B intent signals onto publisher first-party audiences. Not deal one infrastructure — a later expansion play.
     </div>
 
     <div class="footer">
