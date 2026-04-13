@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SSP Comparison: Index Exchange vs. PubMatic for B2B Audience PMP</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --ix-primary: #0050ff;
+      --ix-light: #eff4ff;
+      --ix-border: #93b4f4;
+      --pm-primary: #e05c00;
+      --pm-light: #fff4ee;
+      --pm-border: #f9b580;
+      --gray-900: #111827;
+      --gray-700: #374151;
+      --gray-500: #6b7280;
+      --gray-300: #d1d5db;
+      --gray-100: #f3f4f6;
+      --green-700: #15803d;
+      --green-50: #f0fdf4;
+      --green-border: #86efac;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-900);
+      line-height: 1.6;
+      background: #fff;
+      padding: 0;
+    }
+
+    .page {
+      max-width: 820px;
+      margin: 0 auto;
+      padding: 56px 48px;
+    }
+
+    /* Header */
+    .header {
+      border-bottom: 2px solid var(--gray-900);
+      padding-bottom: 24px;
+      margin-bottom: 36px;
+    }
+
+    .header-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 8px;
+    }
+
+    h1 {
+      font-size: 26px;
+      font-weight: 800;
+      line-height: 1.2;
+      color: var(--gray-900);
+      margin-bottom: 10px;
+    }
+
+    .header-meta {
+      font-size: 13px;
+      color: var(--gray-500);
+    }
+
+    /* Verdict box */
+    .verdict {
+      background: var(--green-50);
+      border: 1.5px solid var(--green-border);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-bottom: 36px;
+    }
+
+    .verdict-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--green-700);
+      margin-bottom: 6px;
+    }
+
+    .verdict p {
+      font-size: 14px;
+      color: var(--gray-700);
+      line-height: 1.6;
+    }
+
+    /* Section headings */
+    h2 {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 16px;
+      margin-top: 40px;
+    }
+
+    h2:first-of-type { margin-top: 0; }
+
+    /* Comparison cards */
+    .two-col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 16px;
+    }
+
+    .card {
+      border-radius: 8px;
+      padding: 20px;
+      border: 1.5px solid;
+    }
+
+    .card-ix {
+      background: var(--ix-light);
+      border-color: var(--ix-border);
+    }
+
+    .card-pm {
+      background: var(--pm-light);
+      border-color: var(--pm-border);
+    }
+
+    .card-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+
+    .label-ix { color: var(--ix-primary); }
+    .label-pm { color: var(--pm-primary); }
+
+    .card h3 {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 14px;
+      color: var(--gray-900);
+    }
+
+    .card ul {
+      list-style: none;
+      padding: 0;
+    }
+
+    .card ul li {
+      font-size: 13px;
+      color: var(--gray-700);
+      padding: 5px 0;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      display: flex;
+      gap: 8px;
+      align-items: flex-start;
+    }
+
+    .card ul li:last-child { border-bottom: none; }
+
+    .card ul li .dot {
+      flex-shrink: 0;
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      margin-top: 6px;
+    }
+
+    .dot-ix { background: var(--ix-primary); }
+    .dot-pm { background: var(--pm-primary); }
+
+    /* Head-to-head table */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-bottom: 8px;
+    }
+
+    thead th {
+      text-align: left;
+      padding: 10px 12px;
+      background: var(--gray-100);
+      font-weight: 600;
+      font-size: 12px;
+      color: var(--gray-700);
+      border-bottom: 2px solid var(--gray-300);
+    }
+
+    thead th:first-child { border-radius: 6px 0 0 0; }
+    thead th:last-child { border-radius: 0 6px 0 0; }
+
+    tbody tr:nth-child(even) { background: var(--gray-100); }
+
+    tbody td {
+      padding: 10px 12px;
+      color: var(--gray-700);
+      vertical-align: top;
+      border-bottom: 1px solid var(--gray-300);
+    }
+
+    tbody td:first-child {
+      font-weight: 600;
+      color: var(--gray-900);
+      white-space: nowrap;
+    }
+
+    .win {
+      font-weight: 600;
+    }
+
+    .win-ix { color: var(--ix-primary); }
+    .win-pm { color: var(--pm-primary); }
+    .win-tie { color: var(--gray-700); }
+
+    /* Deal structure section */
+    .steps {
+      list-style: none;
+      padding: 0;
+      counter-reset: step;
+    }
+
+    .steps li {
+      counter-increment: step;
+      display: flex;
+      gap: 16px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--gray-300);
+      font-size: 13px;
+      color: var(--gray-700);
+      align-items: flex-start;
+    }
+
+    .steps li:last-child { border-bottom: none; }
+
+    .step-num {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--gray-900);
+      color: #fff;
+      font-size: 11px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .step-content strong {
+      display: block;
+      font-weight: 600;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+
+    /* Recommendation box */
+    .recommendation {
+      background: var(--gray-100);
+      border-radius: 8px;
+      padding: 20px 24px;
+      margin-top: 36px;
+      font-size: 13px;
+      color: var(--gray-700);
+      line-height: 1.7;
+    }
+
+    .recommendation strong {
+      color: var(--gray-900);
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 48px;
+      padding-top: 20px;
+      border-top: 1px solid var(--gray-300);
+      font-size: 11px;
+      color: var(--gray-500);
+      display: flex;
+      justify-content: space-between;
+    }
+
+    /* Print */
+    @media print {
+      body { background: #fff; }
+      .page { padding: 32px 40px; }
+      h2 { margin-top: 28px; }
+      .two-col { break-inside: avoid; }
+      table { break-inside: avoid; }
+      .recommendation { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page">
+
+    <div class="header">
+      <div class="header-label">SSP Evaluation — B2B Audience PMP</div>
+      <h1>Index Exchange vs. PubMatic</h1>
+      <div class="header-meta">Prepared by pharosIQ Data Products &amp; Partnerships &nbsp;|&nbsp; April 2026</div>
+    </div>
+
+    <div class="verdict">
+      <div class="verdict-label">Recommendation</div>
+      <p><strong>Lead with Index Exchange</strong> for the initial TTD PMP deal. Their OpenPath partnership with The Trade Desk gives your deal IDs a structural routing advantage. Establish a PubMatic relationship in parallel as a secondary deal ID for scale. Neither requires LiveRamp.</p>
+    </div>
+
+    <h2>Where Each Platform Wins</h2>
+    <div class="two-col">
+      <div class="card card-ix">
+        <div class="card-label label-ix">Index Exchange</div>
+        <h3>Stronger For This Deal</h3>
+        <ul>
+          <li><span class="dot dot-ix"></span>OpenPath partner with The Trade Desk — direct pipe, fewer hops, lower supply chain fees</li>
+          <li><span class="dot dot-ix"></span>Curated Marketplaces program built for non-publisher data owners</li>
+          <li><span class="dot dot-ix"></span>Industry-leading fee transparency; clean supply chain story post Publicis/TTD audit controversy</li>
+          <li><span class="dot dot-ix"></span>Native UID2 support — no additional identity infrastructure needed</li>
+          <li><span class="dot dot-ix"></span>Premium publisher quality with strong display and video inventory</li>
+        </ul>
+      </div>
+      <div class="card card-pm">
+        <div class="card-label label-pm">PubMatic</div>
+        <h3>Stronger For Scale</h3>
+        <ul>
+          <li><span class="dot dot-pm"></span>Significantly larger CTV/OTT publisher footprint</li>
+          <li><span class="dot dot-pm"></span>Greater raw impression volume — better for scaling past initial deal</li>
+          <li><span class="dot dot-pm"></span>Audience Encore data collaboration product for publisher-side monetization</li>
+          <li><span class="dot dot-pm"></span>PubMatic Connect identity graph supplements UID2 to improve match rates</li>
+          <li><span class="dot dot-pm"></span>Publicly traded (PUBM) — accessible investor-grade transparency</li>
+        </ul>
+      </div>
+    </div>
+
+    <h2>Head-to-Head</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>Dimension</th>
+          <th>Index Exchange</th>
+          <th>PubMatic</th>
+          <th>Edge</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>TTD relationship</td>
+          <td>OpenPath direct partner</td>
+          <td>Standard TTD connectivity</td>
+          <td class="win win-ix">IX</td>
+        </tr>
+        <tr>
+          <td>Data owner program</td>
+          <td>Curated Marketplaces (non-publisher)</td>
+          <td>Audience Encore (publisher-oriented)</td>
+          <td class="win win-ix">IX</td>
+        </tr>
+        <tr>
+          <td>CTV/OTT scale</td>
+          <td>Solid coverage</td>
+          <td>Tier-one CTV network</td>
+          <td class="win win-pm">PubMatic</td>
+        </tr>
+        <tr>
+          <td>Display/video inventory</td>
+          <td>Premium, curated</td>
+          <td>Broad, high volume</td>
+          <td class="win win-tie">Tie</td>
+        </tr>
+        <tr>
+          <td>Identity / UID2</td>
+          <td>Native UID2</td>
+          <td>UID2 + Connect graph</td>
+          <td class="win win-pm">PubMatic</td>
+        </tr>
+        <tr>
+          <td>Fee transparency</td>
+          <td>Industry benchmark</td>
+          <td>Strong, publicly auditable</td>
+          <td class="win win-ix">IX</td>
+        </tr>
+        <tr>
+          <td>Cost to data owner</td>
+          <td>No upfront; ~10-15% take rate</td>
+          <td>No upfront; similar take rate</td>
+          <td class="win win-tie">Tie</td>
+        </tr>
+        <tr>
+          <td>B2B data precedent</td>
+          <td>Strong (third-party data owners)</td>
+          <td>Moderate (publisher-first)</td>
+          <td class="win win-ix">IX</td>
+        </tr>
+        <tr>
+          <td>LiveRamp required?</td>
+          <td>No</td>
+          <td>No</td>
+          <td class="win win-tie">Neither</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <h2>How the Deal Works (No LiveRamp Required)</h2>
+    <ol class="steps">
+      <li>
+        <span class="step-num">1</span>
+        <div class="step-content">
+          <strong>Define the audience segment</strong>
+          Companies and contacts matching your intent surge signal, matched to target titles. Deliver as SHA-256 hashed emails.
+        </div>
+      </li>
+      <li>
+        <span class="step-num">2</span>
+        <div class="step-content">
+          <strong>Encode to Unified ID 2.0 (UID2)</strong>
+          Hash the contact emails to UID2 tokens via the open-source UID2 operator. Free. No LiveRamp needed. Index Exchange and TTD both accept UID2 natively.
+        </div>
+      </li>
+      <li>
+        <span class="step-num">3</span>
+        <div class="step-content">
+          <strong>IX creates the Deal ID</strong>
+          IX packages your UID2-matched segment against their publisher inventory. They generate a Deal ID string (e.g., <code>ix-pharosiq-b2b-intent-q2-2026</code>) with a $5-10 CPM floor, weekly refresh, and your specified flight dates.
+        </div>
+      </li>
+      <li>
+        <span class="step-num">4</span>
+        <div class="step-content">
+          <strong>Client activates in The Trade Desk</strong>
+          Client enters the Deal ID in their TTD seat under Inventory > My Deals. Assigns to their campaign. Sets bid parameters. No special integration on their end.
+        </div>
+      </li>
+      <li>
+        <span class="step-num">5</span>
+        <div class="step-content">
+          <strong>Measure via TTD native tools</strong>
+          TTD Universal Pixel for site conversions, or offline conversion upload using hashed emails. No third-party attribution vendor required.
+        </div>
+      </li>
+    </ol>
+
+    <div class="recommendation">
+      <strong>What to bring to the Index Exchange conversation:</strong> pharosIQ data asset (360M+ B2B contacts, 650+ intent categories, first-party signal), one client with $300K media budget on TTD, hashed email delivery ready, target CPM $5-10, weekly refresh cadence. Ask for: Curated Marketplace deal, open web + video, client's TTD seat ID to route the Deal ID.
+      <br><br>
+      <strong>Fastest path to a warm intro:</strong> If your client's agency or trading desk holds an IX seat, have them make the introduction. IX accelerates onboarding for existing buyer relationships.
+    </div>
+
+    <div class="footer">
+      <span>pharosIQ Data Products &amp; Partnerships — Confidential</span>
+      <span>April 2026</span>
+    </div>
+
+  </div>
+</body>
+</html>
