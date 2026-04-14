@@ -2145,13 +2145,22 @@ export function ThreadChat({
                 </span>
             </label>
             <button
-              onClick={() => handleSend()}
-              disabled={loading || (!input.trim() && pendingImages.length === 0 && pendingDocs.length === 0)}
+              onClick={() => {
+                // If chunks are queued and input is empty, flush the queue
+                if (moreToAdd && inputChunks.length > 0 && !input.trim()) {
+                  handleSend({ flushQueue: true });
+                } else {
+                  handleSend();
+                }
+              }}
+              disabled={loading || (!input.trim() && pendingImages.length === 0 && pendingDocs.length === 0 && inputChunks.length === 0)}
               title="Enter to send"
               className="rounded-lg bg-accent-primary px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-accent-primary/90 disabled:opacity-50"
             >
               {uploadingImages
                 ? "Uploading..."
+                : moreToAdd && inputChunks.length > 0 && !input.trim()
+                ? "Send Chunks"
                 : moreToAdd
                 ? "Queue Chunk"
                 : "Send"}

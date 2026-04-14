@@ -3365,10 +3365,45 @@ function extractFollowUps(
 }
 
 /**
- * Deduplicate and insert follow-ups into the unified user_tasks table.
- * Also writes to thread_follow_ups for backward compat.
- * Skips any task whose exact description already exists as an open task
- * for the same deal (or globally if no deal).
+ * Compute Jaccard similarity between two task descriptions using significant-word overlap.
+ * Returns a score 0–1. Score > 0.5 = semantically duplicate.
+ */
+function taskSimilarity(a: string, b: string): number {
+  const STOPWORDS = new Set([
+    "a", "an", "the", "and", "or", "in", "on", "at", "to", "for", "of",
+    "with", "from", "before", "after", "any", "if", "is", "are", "was",
+    "be", "have", "has", "do", "does", "by", "as", "so", "but", "this",
+    "that", "it", "its", "once", "will", "can", "about", "into", "out",
+    "up", "also", "all", "been", "their", "there", "then", "when", "so",
+  ]);
+  const tokenize = (s: string) =>
+    s
+      .toLowerCase()
+      .replace(/[^a-z0-9\s]/g, " ")
+      .split(/\s+/)
+      .filter((w) => w.length > 2 && !STOPWORDS.has(w));
+  const ta = new Set(tokenize(a));
+  const tb = new Set(tokenize(b));
+  const intersection = [...ta].filter((w) => tb.has(w)).length;
+  const union = new Set([...ta, ...tb]).size;
+  return union === 0 ? 0 : intersection / union;
+}
+
+/**
+ * Returns true if `candidate` is a semantic duplicate of any description in `existing`.
+ * Catches exact matches and paraphrases (e.g. "Confirm whether WPP..." vs "Check whether WPP...").
+ */
+function isDuplicateTask(candidate: string, existing: string[]): boolean {
+  const lower = candidate.toLowerCase().trim();
+  return existing.some(
+    (e) => e === lower || taskSimilarity(candidate, e) > 0.5
+  );
+}
+
+/**
+ * Deduplicate and insert follow-ups into user_tasks and thread_follow_ups.
+ * Uses semantic similarity (Jaccard token overlap) to catch paraphrased duplicates,
+ * not just exact string matches. Dedup is applied to both tables.
  */
 async function deduplicateAndInsertTasks(
   supabase: SupabaseClient,
@@ -3379,50 +3414,57 @@ async function deduplicateAndInsertTasks(
 ): Promise<void> {
   if (followUps.length === 0) return;
 
-  // Fetch existing open tasks to check for duplicates
-  let existingQuery = supabase
+  // Fetch existing open user_tasks for this deal (or global if no deal)
+  let tasksQuery = supabase
     .from("user_tasks")
     .select("description")
     .eq("user_id", userId)
     .eq("status", "open");
-
   if (dealId) {
-    existingQuery = existingQuery.eq("deal_id", dealId);
+    tasksQuery = tasksQuery.eq("deal_id", dealId);
   }
 
-  const { data: existing } = await existingQuery;
-  const existingDescriptions = new Set(
-    (existing ?? []).map((t) => t.description.toLowerCase().trim())
-  );
+  // Fetch existing open thread_follow_ups for this thread
+  const [{ data: existingTasks }, { data: existingFollowUps }] = await Promise.all([
+    tasksQuery,
+    supabase
+      .from("thread_follow_ups")
+      .select("description")
+      .eq("thread_id", threadId)
+      .eq("status", "open"),
+  ]);
 
-  const newTasks = followUps.filter(
-    (fu) => !existingDescriptions.has(fu.description.toLowerCase().trim())
-  );
+  const existingTaskDescs = (existingTasks ?? []).map((t) => t.description.toLowerCase().trim());
+  const existingFollowUpDescs = (existingFollowUps ?? []).map((t) => t.description.toLowerCase().trim());
 
-  if (newTasks.length > 0) {
-    // Write to unified user_tasks
-    await supabase.from("user_tasks").insert(
-      newTasks.map((fu) => ({
-        user_id: userId,
-        description: fu.description,
-        due_date: fu.due_date,
-        deal_id: dealId || null,
-        thread_id: threadId,
-        owner: "me",
-        source: "strategist",
-      }))
-    );
-  }
+  const newTasks = followUps.filter((fu) => !isDuplicateTask(fu.description, existingTaskDescs));
+  const newFollowUps = followUps.filter((fu) => !isDuplicateTask(fu.description, existingFollowUpDescs));
 
-  // Also write to thread_follow_ups for backward compat (all items, including dupes)
-  await supabase.from("thread_follow_ups").insert(
-    followUps.map((fu) => ({
-      thread_id: threadId,
-      user_id: userId,
-      description: fu.description,
-      due_date: fu.due_date,
-    }))
-  );
+  await Promise.all([
+    newTasks.length > 0
+      ? supabase.from("user_tasks").insert(
+          newTasks.map((fu) => ({
+            user_id: userId,
+            description: fu.description,
+            due_date: fu.due_date,
+            deal_id: dealId || null,
+            thread_id: threadId,
+            owner: "me",
+            source: "strategist",
+          }))
+        )
+      : Promise.resolve(),
+    newFollowUps.length > 0
+      ? supabase.from("thread_follow_ups").insert(
+          newFollowUps.map((fu) => ({
+            thread_id: threadId,
+            user_id: userId,
+            description: fu.description,
+            due_date: fu.due_date,
+          }))
+        )
+      : Promise.resolve(),
+  ]);
 }
 
 /**
