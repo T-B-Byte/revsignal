@@ -18,6 +18,8 @@ export function ThreadFollowUps({ threadId }: ThreadFollowUpsProps) {
       if (res.ok) {
         const data = await res.json();
         setFollowUps(data);
+        // Auto-collapse when there are enough items to crowd the screen
+        if (data.length >= 4) setCollapsed(true);
       }
     } catch {
       // Silent fail
@@ -75,7 +77,7 @@ export function ThreadFollowUps({ threadId }: ThreadFollowUpsProps) {
       </button>
 
       {!collapsed && (
-        <div className="space-y-1 px-3 pb-2">
+        <div className="max-h-40 overflow-y-auto space-y-1 px-3 pb-2">
           {followUps.map((fu) => {
             const isOverdue = fu.due_date && fu.due_date < today;
 
