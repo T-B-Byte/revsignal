@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pharosIQ DaaS: Internal Pricing Reference</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --t1: #2d7a4f; --t1-light: #e6f5ee; --t1-border: #7dd3a8;
+      --t2: #2a5fa5; --t2-light: #e0edfa; --t2-border: #93b4f4;
+      --t3: #9333ea; --t3-light: #f3e8ff; --t3-border: #c084fc;
+      --t4: #dc2626; --t4-light: #fef2f2; --t4-border: #fca5a5;
+      --gray-900: #111827; --gray-700: #374151; --gray-500: #6b7280;
+      --gray-300: #d1d5db; --gray-100: #f3f4f6;
+      --amber-600: #d97706; --amber-50: #fffbeb; --amber-border: #fcd34d;
+      --red-600: #dc2626; --red-50: #fef2f2; --red-border: #fca5a5;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-900); line-height: 1.5; background: #fff;
+    }
+
+    /* PASSWORD GATE */
+    #pw-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #f3f4f6;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #pw-gate.hidden { display: none; }
+    #pw-box {
+      background: #fff; border: 1px solid var(--gray-300);
+      padding: 40px 44px; width: 380px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    #pw-box h2 { font-size: 16px; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
+    #pw-box p { font-size: 12.5px; color: var(--gray-500); margin-bottom: 24px; }
+    #pw-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-700); display: block; margin-bottom: 6px; }
+    #pw-input {
+      width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-300);
+      font-family: inherit; font-size: 14px; color: var(--gray-900);
+      margin-bottom: 12px; outline: none;
+    }
+    #pw-input:focus { border-color: var(--t2); }
+    #pw-input.error { border-color: var(--red-600); }
+    #pw-error { font-size: 12px; color: var(--red-600); margin-bottom: 12px; display: none; }
+    #pw-submit {
+      width: 100%; padding: 10px; background: var(--gray-900); color: #fff;
+      border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.3px;
+    }
+    #pw-submit:hover { background: var(--gray-700); }
+    #pw-wordmark { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); margin-bottom: 20px; }
+    #doc-content { display: none; }
+
+    @media print {
+      body { font-size: 10px; }
+      .page { box-shadow: none; padding: 32px; page-break-after: always; }
+      .page:last-child { page-break-after: auto; }
+      .price-table { font-size: 10px; }
+      .price-table td, .price-table th { padding: 6px 8px; }
+      .signal-table { font-size: 10px; }
+      .signal-table td, .signal-table th { padding: 6px 8px; }
+    }
+
+    .page { max-width: 1120px; margin: 0 auto 40px; padding: 48px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+
+    .header { border-bottom: 3px solid var(--gray-900); padding-bottom: 16px; margin-bottom: 32px; }
+    .header h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.5px; color: var(--gray-900); margin-bottom: 4px; }
+    .header-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-500); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .context-box { background: var(--gray-100); border-left: 4px solid var(--gray-500); padding: 14px 18px; margin-bottom: 28px; font-size: 13px; color: var(--gray-700); }
+    .context-box strong { color: var(--gray-900); }
+
+    .approval-note { background: var(--amber-50); border: 1px solid var(--amber-border); border-left: 4px solid var(--amber-600); padding: 14px 18px; font-size: 13px; color: var(--gray-700); margin-bottom: 24px; }
+    .approval-note strong { color: var(--amber-600); }
+
+    .section-label { font-size: 15px; font-weight: 800; color: var(--gray-900); margin: 32px 0 6px; letter-spacing: -0.3px; }
+    .section-label.first { margin-top: 0; }
+    .section-sublabel { font-size: 12px; color: var(--gray-500); margin-bottom: 14px; }
+
+    .product-block { margin-top: 36px; }
+    .product-block:first-of-type { margin-top: 0; }
+    .product-block-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+    .product-number { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); }
+    .product-title { font-size: 16px; font-weight: 800; color: var(--gray-900); letter-spacing: -0.3px; }
+    .product-divider { border: none; border-top: 2px solid var(--gray-300); margin: 0 0 20px; }
+
+    .billing-tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 3px; margin-left: 10px; vertical-align: middle; }
+    .billing-stripe { background: var(--t2-light); color: var(--t2); }
+    .billing-invoice { background: var(--amber-50); color: var(--amber-600); border: 1px solid var(--amber-border); }
+
+    /* PRICING TABLES */
+    .price-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; font-size: 12.5px; }
+    .price-table thead th { padding: 8px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-100); color: var(--gray-700); text-align: left; border-bottom: 2px solid var(--gray-300); }
+    .price-table thead th.right { text-align: right; }
+    .price-table thead th.center { text-align: center; }
+    .price-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--gray-300); vertical-align: middle; }
+    .price-table tbody tr:nth-child(even) td { background: #f9fafb; }
+    .price-table tbody td:first-child { font-weight: 600; }
+    .price-table td.right { text-align: right; font-weight: 700; }
+    .price-table td.center { text-align: center; }
+    .price-table .free-row td { background: var(--t1-light) !important; }
+    .price-table .contact-row td { color: var(--gray-500); font-style: italic; }
+    .price-table .contact-row td:first-child { font-style: normal; }
+
+    /* SIGNAL TIER TABLE */
+    .signal-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12.5px; }
+    .signal-table thead th { padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--gray-300); text-align: left; }
+    .signal-table thead th.tier-col { background: var(--gray-100); color: var(--gray-700); width: 22%; }
+    .signal-table thead th.monthly-col { background: #f0f4fb; color: var(--t2); text-align: right; }
+    .signal-table thead th.quarterly-col { background: #ddeaf8; color: var(--t2); text-align: right; }
+    .signal-table thead th.annual-col { background: var(--t1-light); color: var(--t1); text-align: right; }
+    .signal-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--gray-300); vertical-align: middle; }
+    .signal-table tbody td:first-child { font-weight: 700; }
+    .signal-table tbody td.price-cell { text-align: right; font-weight: 700; font-size: 13px; }
+    .signal-table tbody tr:nth-child(even) td { background: #f9fafb; }
+    .signal-table tfoot td { padding: 10px 14px; font-size: 11.5px; color: var(--gray-700); border-top: 2px solid var(--gray-300); background: var(--gray-100); }
+
+    /* FEATURE LIST */
+    .feature-list { margin: 0; padding: 0 0 0 14px; font-size: 12px; color: var(--gray-700); line-height: 1.75; }
+
+    /* DATABASE TIER TABLE */
+    .tier-db-table { width: 100%; border-collapse: collapse; margin-bottom: 0; font-size: 12.5px; }
+    .tier-db-table thead th { padding: 8px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-100); color: var(--gray-700); text-align: left; border-bottom: 2px solid var(--gray-300); }
+    .tier-db-table thead th.center { text-align: center; }
+    .tier-db-table tbody td { padding: 10px 12px; border-bottom: 1px solid var(--gray-300); vertical-align: top; font-size: 12.5px; }
+    .tier-db-table tbody td:first-child { font-weight: 700; width: 25%; }
+    .tier-db-table tbody td.contact-cell { text-align: center; color: var(--gray-500); font-style: italic; white-space: nowrap; }
+    .tier-db-table tbody tr:nth-child(even) td { background: #f9fafb; }
+
+    /* STACKING EXAMPLE */
+    .stacking-example { background: var(--gray-100); border: 1px solid var(--gray-300); padding: 18px 22px; margin-bottom: 0; }
+    .stacking-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-700); margin-bottom: 10px; }
+    .stacking-line { font-size: 13px; color: var(--gray-700); margin-bottom: 4px; }
+    .stacking-total { margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--gray-300); font-size: 13px; font-weight: 700; color: var(--gray-900); }
+
+    /* RESELLER TWO-COLUMN */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .col-box { border: 1px solid var(--gray-300); padding: 22px 24px; }
+    .col-box-title { font-size: 14px; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
+    .col-box-subtitle { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-500); margin-bottom: 14px; }
+    .col-box ul { padding-left: 16px; font-size: 12.5px; color: var(--gray-700); line-height: 1.9; }
+    .col-box li.sub { list-style: none; padding-left: 14px; }
+    .col-box li.spacer { margin-top: 6px; }
+
+    /* BILLING SUMMARY TAGS */
+    .tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+    .tag-stripe { background: var(--t2-light); color: var(--t2); }
+    .tag-invoice { background: var(--amber-50); color: var(--amber-600); border: 1px solid var(--amber-border); }
+
+    .section-rule { border: none; border-top: 1px solid var(--gray-300); margin: 36px 0; }
+
+    .footnote { font-size: 11px; font-style: italic; color: #9ca3af; line-height: 1.6; margin-top: 20px; }
+  </style>
+</head>
+<body>
+
+<div id="pw-gate">
+  <div id="pw-box">
+    <p id="pw-wordmark">pharosIQ</p>
+    <h2>Internal Pricing Reference</h2>
+    <p>This document is confidential. Enter the access password to continue.</p>
+    <label for="pw-input">Password</label>
+    <input id="pw-input" type="password" autocomplete="off" placeholder="Enter password">
+    <p id="pw-error">Incorrect password. Try again.</p>
+    <button id="pw-submit">Access Document</button>
+  </div>
+</div>
+
+<div id="doc-content">
+
+<!-- ==================== PAGE 1: OVERVIEW + PRODUCT 1 ==================== -->
+<div class="page">
+  <div class="header">
+    <h1>pharosIQ DaaS: Internal Pricing Reference</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>April 2026</span>
+    </div>
+  </div>
+
+  <div class="context-box">
+    <strong>Billing channels:</strong> Two channels handle all revenue. <strong>Stripe</strong> processes AtlasIQ Intelligence Suite purchases, TAL-Matched Signal Delivery subscriptions, and Title Expansion Engine purchases. <strong>pharosIQ direct invoicing</strong> handles all Full Database Access deals and all Reseller Program deals. SurgeEngine does not touch those transactions. Each product section below is labeled with its billing channel. CFO needs a separate invoicing workflow for any product marked "pharosIQ Invoice."
+  </div>
+
+  <!-- PRODUCT 1 -->
+  <div class="product-block">
+    <div class="product-block-header">
+      <span class="product-number">Product 1 of 5</span>
+      <span class="product-title">AtlasIQ Intelligence Suite</span>
+      <span class="billing-tag billing-stripe">Stripe</span>
+    </div>
+    <hr class="product-divider">
+
+    <div class="context-box" style="border-left-color: var(--t2);">
+      <strong>Structure:</strong> One-time purchases. No subscriptions, no expiration. Three report types. The Account Architect is the only report available as a self-serve pack; the other two require a direct conversation to purchase. Stripe processes all three.
+    </div>
+
+    <p class="section-label first">The Account Architect — Flagship Sales Intel Report</p>
+    <p class="section-sublabel">Pack pricing. Self-serve Stripe checkout. Free tier: 1 report on signup, Account Architect only.</p>
+
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Pack</th>
+          <th>Reports</th>
+          <th class="right">Unit Price</th>
+          <th class="right">Total</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="free-row">
+          <td>Free Tier</td>
+          <td>1</td>
+          <td class="right">$0</td>
+          <td class="right">$0</td>
+          <td>Account Architect only. Granted on signup. No payment required.</td>
+        </tr>
+        <tr>
+          <td>Single</td>
+          <td>1</td>
+          <td class="right">$250</td>
+          <td class="right">$250</td>
+          <td>Self-serve Stripe checkout.</td>
+        </tr>
+        <tr>
+          <td>Starter 5-Pack</td>
+          <td>5</td>
+          <td class="right">$200</td>
+          <td class="right">$1,000</td>
+          <td>Saves $250 vs. 5 singles. Reports do not expire.</td>
+        </tr>
+        <tr>
+          <td>Growth 20-Pack</td>
+          <td>20</td>
+          <td class="right">$125</td>
+          <td class="right">$2,500</td>
+          <td>Saves $2,500 vs. 20 singles.</td>
+        </tr>
+        <tr>
+          <td>Enterprise 50-Pack</td>
+          <td>50</td>
+          <td class="right">$100</td>
+          <td class="right">$5,000</td>
+          <td>Saves $7,500 vs. 50 singles.</td>
+        </tr>
+        <tr class="contact-row">
+          <td>Volume 50+</td>
+          <td>50+</td>
+          <td class="right">Contact sales</td>
+          <td class="right">Negotiated</td>
+          <td>Custom volume pricing. Direct deal required.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">The ABM Strategist — 1:1 ABM Orchestration</p>
+    <p class="section-sublabel">Single report only. No packs. No free tier. Contact sales to initiate; Stripe processes payment.</p>
+
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Offering</th>
+          <th class="right">Price</th>
+          <th>Purchase Path</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Single Report</td>
+          <td class="right">$1,000</td>
+          <td>Contact sales to initiate. No self-serve checkout.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">The Deal DNA — ICP from Closed-Won Uploads</p>
+    <p class="section-sublabel">Single report only. No packs. No free tier. Contact sales to initiate; Stripe processes payment.</p>
+
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Offering</th>
+          <th class="right">Price</th>
+          <th>Purchase Path</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Single Report</td>
+          <td class="right">$3,500</td>
+          <td>Contact sales to initiate. No self-serve checkout.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== PAGE 2: PRODUCT 2 ==================== -->
+<div class="page">
+  <div class="header">
+    <h1>DaaS Raw Data: TAL-Matched Signal Delivery</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>Product 2 of 5</span>
+    </div>
+  </div>
+
+  <span class="billing-tag billing-stripe" style="margin-bottom: 20px; display: inline-block; font-size: 11px; padding: 3px 10px;">Stripe</span>
+
+  <div class="context-box">
+    <strong>Structure:</strong> Annual contracts only. Data is filtered to the buyer's target account list (TAL). Three signal tiers, three billing frequencies. The buyer commits to an annual term; billing frequency determines the monthly rate. Monthly rate shown in all columns. Quarterly billing means one invoice every 3 months at the reduced rate. Annual upfront is a single invoice for the full year at the lowest rate.
+  </div>
+
+  <p class="section-label first">Pricing by Tier and Billing Frequency</p>
+  <p class="section-sublabel">All amounts shown as monthly rate. Annual commitment required across all tiers.</p>
+
+  <table class="signal-table">
+    <thead>
+      <tr>
+        <th class="tier-col">Tier</th>
+        <th class="monthly-col">Monthly Billing<br><span style="font-weight: 500; font-size: 10px; text-transform: none; letter-spacing: 0;">(billed monthly)</span></th>
+        <th class="quarterly-col">Quarterly Billing<br><span style="font-weight: 500; font-size: 10px; text-transform: none; letter-spacing: 0;">Save 10%</span></th>
+        <th class="annual-col">Annual Upfront<br><span style="font-weight: 500; font-size: 10px; text-transform: none; letter-spacing: 0;">Save 20%</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Market Signals</td>
+        <td class="price-cell">$5,000/mo</td>
+        <td class="price-cell">$4,500/mo</td>
+        <td class="price-cell">$4,000/mo</td>
+      </tr>
+      <tr>
+        <td>Buyer Signals</td>
+        <td class="price-cell">$10,000/mo</td>
+        <td class="price-cell">$9,000/mo</td>
+        <td class="price-cell">$8,000/mo</td>
+      </tr>
+      <tr>
+        <td>Pipeline Signals</td>
+        <td class="price-cell">$15,000/mo</td>
+        <td class="price-cell">$13,500/mo</td>
+        <td class="price-cell">$12,000/mo</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4"><strong>Annual contract value reference:</strong> Market Signals: $48K (upfront) to $60K (monthly). Buyer Signals: $96K to $120K. Pipeline Signals: $144K to $180K.</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p class="section-label">What Each Tier Delivers</p>
+  <p class="section-sublabel">Tiers are additive. Each tier includes everything in the tier below it.</p>
+
+  <table class="price-table">
+    <thead>
+      <tr>
+        <th style="width: 22%;">Tier</th>
+        <th>Signals Included</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Market Signals</td>
+        <td>
+          <ul class="feature-list">
+            <li>Top 10 intent topics per account</li>
+            <li>Topic scores (surge strength)</li>
+            <li>Peripheral topics (adjacent interest signals)</li>
+            <li>Top competitors appearing in the signal mix</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td>Buyer Signals</td>
+        <td>
+          <ul class="feature-list">
+            <li>Everything in Market Signals, plus:</li>
+            <li>Buying group size at surging accounts</li>
+            <li>Roles and departments active in research</li>
+            <li>Buying committee formation indicators</li>
+            <li>Content types consumed</li>
+            <li>Asset views and review site activity</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td>Pipeline Signals</td>
+        <td>
+          <ul class="feature-list">
+            <li>Everything in Market and Buyer Signals, plus:</li>
+            <li>Journey stage classification</li>
+            <li>Business need identification</li>
+            <li>Engagement locations and channel activity</li>
+          </ul>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== PAGE 3: PRODUCT 3 + PRODUCT 4 ==================== -->
+<div class="page">
+  <div class="header">
+    <h1>DaaS Raw Data: Full Database Access</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>Product 3 of 5</span>
+    </div>
+  </div>
+
+  <span class="billing-tag billing-invoice" style="margin-bottom: 16px; display: inline-block; font-size: 11px; padding: 3px 10px;">pharosIQ Invoice</span>
+
+  <div class="approval-note">
+    <strong>CFO workflow required:</strong> No fixed pricing on any tier in this product line. All deals are priced by volume and use case, negotiated directly, and invoiced through pharosIQ. SurgeEngine does not process these transactions. Every deal here needs a separate invoicing workflow.
+  </div>
+
+  <div class="context-box">
+    <strong>Scope:</strong> Unrestricted access to the full pharosIQ data universe (360M+ contacts, 650+ intent categories). No target account list filter applied. These are enterprise and platform deals only.
+  </div>
+
+  <p class="section-label first">Tiers</p>
+
+  <table class="tier-db-table">
+    <thead>
+      <tr>
+        <th>Tier</th>
+        <th>What the Buyer Gets</th>
+        <th class="center">Pricing</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Tier 1: Accounts + Intent Topics</td>
+        <td>Account-level intent signals only. No PII, no persona detail. No contact restrictions. Open to all buyer types including competitors.</td>
+        <td class="contact-cell">Contact sales</td>
+      </tr>
+      <tr>
+        <td>Tier 2: Persona + Intent Topics</td>
+        <td>Everything in Tier 1, plus audience behavioral profiles: industry, title function, seniority band, company size, intent topic, engagement source. No named contacts.</td>
+        <td class="contact-cell">Contact sales</td>
+      </tr>
+      <tr>
+        <td>Tier 3: Contacts + Intent</td>
+        <td>Everything in Tier 2, plus named contact records: name, title, email, company, engagement source, intent topic. Restricted to non-competitors.</td>
+        <td class="contact-cell">Contact sales</td>
+      </tr>
+      <tr>
+        <td>Tier 4: Contacts + Content</td>
+        <td>Everything in Tier 3, plus specific content assets consumed (whitepaper, webinar, content piece). The complete behavioral fingerprint. Enterprise only. Approval required.</td>
+        <td class="contact-cell">Contact sales</td>
+      </tr>
+      <tr>
+        <td>CPL: Lead Distribution</td>
+        <td>Contact-level intent leads priced per lead. Monthly minimum against CPL rate. Annual term. For platforms routing intent-qualified leads to downstream buyers.</td>
+        <td class="contact-cell">Contact sales</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <hr class="section-rule">
+
+  <!-- PRODUCT 4 -->
+  <div class="product-block">
+    <div class="product-block-header">
+      <span class="product-number">Product 4 of 5</span>
+      <span class="product-title">Title Expansion Engine (powered by Jobson)</span>
+      <span class="billing-tag billing-stripe">Stripe</span>
+    </div>
+    <hr class="product-divider">
+
+    <div class="context-box" style="border-left-color: var(--t2);">
+      <strong>Structure:</strong> One-time purchases. Modular by title and language. A buyer starts with a title in one language, then adds languages as separate one-time purchases. The "All Titles, All Languages" SKU covers the full Jobson library (15+ languages). No subscriptions, no expiration.
+    </div>
+
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Offering</th>
+          <th class="right">Price</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="free-row">
+          <td>Free Tier</td>
+          <td class="right">$0</td>
+          <td>First 50 English variations on any title. No account required.</td>
+        </tr>
+        <tr>
+          <td>Single Title, One Language</td>
+          <td class="right">$500</td>
+          <td>One-time purchase. Stripe checkout.</td>
+        </tr>
+        <tr>
+          <td>Additional Language (add-on)</td>
+          <td class="right">+$100 per language</td>
+          <td>Add-on to any owned title. One-time per language. Stackable.</td>
+        </tr>
+        <tr class="contact-row">
+          <td>All Titles, All Languages</td>
+          <td class="right">Contact sales</td>
+          <td>Full Jobson library. 15+ languages. One-time purchase. Direct deal.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="stacking-example">
+      <p class="stacking-title">Stacking Example</p>
+      <p class="stacking-line">"Head of Marketing" in English: $500</p>
+      <p class="stacking-line">+ Spanish (add-on): $100</p>
+      <p class="stacking-line">+ German (add-on): $100</p>
+      <p class="stacking-total">Total for one title in three languages: $700</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 4: PRODUCT 5 + BILLING SUMMARY ==================== -->
+<div class="page">
+  <div class="header">
+    <h1>Reseller Program</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>Product 5 of 5</span>
+    </div>
+  </div>
+
+  <span class="billing-tag billing-invoice" style="margin-bottom: 16px; display: inline-block; font-size: 11px; padding: 3px 10px;">pharosIQ Invoice</span>
+
+  <div class="approval-note">
+    <strong>CFO workflow required:</strong> Both reseller tracks are invoiced directly through pharosIQ. SurgeEngine does not process these transactions. White-label deals are fully custom and require a negotiated contract for each partner.
+  </div>
+
+  <p class="section-label first">Program Tracks</p>
+
+  <div class="two-col">
+    <div class="col-box">
+      <p class="col-box-title">Co-Branded</p>
+      <p class="col-box-subtitle">"Powered by pharosIQ" attribution</p>
+      <ul>
+        <li>Wholesale pricing at 50% off standard Intelligence Suite rates</li>
+        <li>"Powered by pharosIQ" attribution on all reports</li>
+        <li>Licensing fee required (less than white-label; scaled to program value)</li>
+        <li>Annual minimum term</li>
+        <li>Invoiced through pharosIQ</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <p class="col-box-title">White-Label / Private Label</p>
+      <p class="col-box-subtitle">Custom contract, negotiated per partner</p>
+      <ul>
+        <li>Three-component contract structure:</li>
+        <li class="sub">1. Private label fee (scaled to company size and program value)</li>
+        <li class="sub">2. Monthly minimum against wholesale rates (50% off standard)</li>
+        <li class="sub">3. Annual or multi-year term</li>
+        <li class="spacer">No standard rate card. Every deal is different.</li>
+        <li>Invoiced through pharosIQ</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="context-box">
+    A small agency and a global distribution platform are structured very differently. There is no default white-label price. All white-label deals require a direct conversation and a custom contract before any pricing is committed.
+  </div>
+
+  <hr class="section-rule">
+
+  <!-- BILLING SUMMARY -->
+  <p class="section-label">Billing Channel Summary</p>
+  <p class="section-sublabel">Quick reference for workflow routing</p>
+
+  <table class="price-table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th class="center" style="width: 160px;">Billing Channel</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>AtlasIQ Intelligence Suite (Account Architect, ABM Strategist, Deal DNA)</td>
+        <td class="center"><span class="tag tag-stripe">Stripe</span></td>
+        <td>Account Architect packs are self-serve. ABM Strategist and Deal DNA require a direct conversation to initiate but are still processed through Stripe.</td>
+      </tr>
+      <tr>
+        <td>DaaS Raw Data: TAL-Matched Signal Delivery</td>
+        <td class="center"><span class="tag tag-stripe">Stripe</span></td>
+        <td>Annual contracts with monthly, quarterly, or upfront billing cadence.</td>
+      </tr>
+      <tr>
+        <td>DaaS Raw Data: Full Database Access</td>
+        <td class="center"><span class="tag tag-invoice">pharosIQ Invoice</span></td>
+        <td>All tiers including CPL. Separate invoicing workflow required for every deal.</td>
+      </tr>
+      <tr>
+        <td>Title Expansion Engine (powered by Jobson)</td>
+        <td class="center"><span class="tag tag-stripe">Stripe</span></td>
+        <td>Self-serve for single title and language add-ons. "All Titles, All Languages" requires direct contact but is still processed through Stripe.</td>
+      </tr>
+      <tr>
+        <td>Reseller Program (co-branded and white-label)</td>
+        <td class="center"><span class="tag tag-invoice">pharosIQ Invoice</span></td>
+        <td>Both tracks. No SurgeEngine involvement. Direct invoicing on all reseller deals.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="footnote">Pricing current as of April 2026. Subject to change. For white-label and full database deals, the executed contract is the authoritative source. Contact Tina Bean for deal structuring questions.</p>
+</div>
+
+</div> <!-- /doc-content -->
+
+<script>
+  (function() {
+    var CORRECT = 'daas-revenue-$$$';
+    var SESSION_KEY = 'daas_v2_auth';
+
+    function unlock() {
+      document.getElementById('pw-gate').classList.add('hidden');
+      document.getElementById('doc-content').style.display = 'block';
+      sessionStorage.setItem(SESSION_KEY, '1');
+    }
+
+    // Already authenticated this session
+    if (sessionStorage.getItem(SESSION_KEY) === '1') {
+      unlock();
+      return;
+    }
+
+    document.getElementById('pw-submit').addEventListener('click', function() {
+      var val = document.getElementById('pw-input').value;
+      if (val === CORRECT) {
+        unlock();
+      } else {
+        document.getElementById('pw-input').classList.add('error');
+        document.getElementById('pw-error').style.display = 'block';
+        document.getElementById('pw-input').value = '';
+        document.getElementById('pw-input').focus();
+      }
+    });
+
+    document.getElementById('pw-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('pw-submit').click();
+      if (document.getElementById('pw-input').classList.contains('error')) {
+        document.getElementById('pw-input').classList.remove('error');
+        document.getElementById('pw-error').style.display = 'none';
+      }
+    });
+  })();
+</script>
+
+</body>
+</html>

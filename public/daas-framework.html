@@ -24,6 +24,38 @@
       color: var(--gray-900); line-height: 1.5; background: #fff;
     }
 
+    /* PASSWORD GATE */
+    #pw-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #f3f4f6;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #pw-gate.hidden { display: none; }
+    #pw-box {
+      background: #fff; border: 1px solid var(--gray-300);
+      padding: 40px 44px; width: 380px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    #pw-box h2 { font-size: 16px; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
+    #pw-box p { font-size: 12.5px; color: var(--gray-500); margin-bottom: 24px; }
+    #pw-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-700); display: block; margin-bottom: 6px; }
+    #pw-input {
+      width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-300);
+      font-family: inherit; font-size: 14px; color: var(--gray-900);
+      margin-bottom: 12px; outline: none;
+    }
+    #pw-input:focus { border-color: var(--t2); }
+    #pw-input.error { border-color: var(--red-600); }
+    #pw-error { font-size: 12px; color: var(--red-600); margin-bottom: 12px; display: none; }
+    #pw-submit {
+      width: 100%; padding: 10px; background: var(--gray-900); color: #fff;
+      border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.3px;
+    }
+    #pw-submit:hover { background: var(--gray-700); }
+    #pw-wordmark { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); margin-bottom: 20px; }
+    #doc-content { display: none; }
+
     @media print {
       body { font-size: 10px; }
       .page { box-shadow: none; padding: 32px; page-break-after: always; }
@@ -191,6 +223,20 @@
   </style>
 </head>
 <body>
+
+<div id="pw-gate">
+  <div id="pw-box">
+    <p id="pw-wordmark">pharosIQ</p>
+    <h2>DaaS Product Framework</h2>
+    <p>This document is confidential. Enter the access password to continue.</p>
+    <label for="pw-input">Password</label>
+    <input id="pw-input" type="password" autocomplete="off" placeholder="Enter password">
+    <p id="pw-error">Incorrect password. Try again.</p>
+    <button id="pw-submit">Access Document</button>
+  </div>
+</div>
+
+<div id="doc-content">
 
 <div class="save-banner" id="saveBanner">Saved</div>
 
@@ -1082,5 +1128,46 @@ function startRealtime(url, anonKey) {
     });
 })();
 </script>
+
+</div> <!-- /doc-content -->
+
+<script>
+  (function() {
+    var CORRECT = 'daas-revenue-$$$';
+    var SESSION_KEY = 'daas_v1_auth';
+
+    function unlock() {
+      document.getElementById('pw-gate').classList.add('hidden');
+      document.getElementById('doc-content').style.display = 'block';
+      sessionStorage.setItem(SESSION_KEY, '1');
+    }
+
+    if (sessionStorage.getItem(SESSION_KEY) === '1') {
+      unlock();
+      return;
+    }
+
+    document.getElementById('pw-submit').addEventListener('click', function() {
+      var val = document.getElementById('pw-input').value;
+      if (val === CORRECT) {
+        unlock();
+      } else {
+        document.getElementById('pw-input').classList.add('error');
+        document.getElementById('pw-error').style.display = 'block';
+        document.getElementById('pw-input').value = '';
+        document.getElementById('pw-input').focus();
+      }
+    });
+
+    document.getElementById('pw-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('pw-submit').click();
+      if (document.getElementById('pw-input').classList.contains('error')) {
+        document.getElementById('pw-input').classList.remove('error');
+        document.getElementById('pw-error').style.display = 'none';
+      }
+    });
+  })();
+</script>
+
 </body>
 </html>
