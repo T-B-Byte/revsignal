@@ -132,6 +132,28 @@
     .tier-db-table tbody td.contact-cell { text-align: center; color: var(--gray-500); font-style: italic; white-space: nowrap; }
     .tier-db-table tbody tr:nth-child(even) td { background: #f9fafb; }
 
+    /* FULL TIER CHART (ported from v1) */
+    .tier-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; font-size: 12.5px; }
+    .tier-table thead th { padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--gray-300); text-align: left; }
+    .tier-table thead th:first-child { background: var(--gray-100); color: var(--gray-700); width: 13%; }
+    .tier-table thead th.t1-col { background: var(--t1-light); color: var(--t1); }
+    .tier-table thead th.t2-col { background: var(--t2-light); color: var(--t2); }
+    .tier-table thead th.t3-col { background: var(--t3-light); color: var(--t3); }
+    .tier-table thead th.t4-col { background: var(--t4-light); color: var(--t4); }
+    .tier-table tbody td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid var(--gray-300); font-size: 12px; }
+    .tier-table tbody td:first-child { font-weight: 700; color: var(--gray-700); font-size: 11px; background: var(--gray-100); }
+    .tier-table tbody td.t1 { border-left: 3px solid var(--t1-border); }
+    .tier-table tbody td.t2 { border-left: 3px solid var(--t2-border); }
+    .tier-table tbody td.t3 { border-left: 3px solid var(--t3-border); }
+    .tier-table tbody td.t4 { border-left: 3px solid var(--t4-border); }
+    .tier-table tbody tr:last-child td { border-bottom: 2px solid var(--gray-300); }
+    .acv-tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 3px; margin-top: 4px; }
+    .acv-t1 { background: var(--t1-light); color: var(--t1); }
+    .acv-t2 { background: var(--t2-light); color: var(--t2); }
+    .acv-t3 { background: var(--t3-light); color: var(--t3); }
+    .acv-t4 { background: var(--t4-light); color: var(--t4); }
+    .excluded { color: var(--red-600); font-weight: 600; }
+
     /* STACKING EXAMPLE */
     .stacking-example { background: var(--gray-100); border: 1px solid var(--gray-300); padding: 18px 22px; margin-bottom: 0; }
     .stacking-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-700); margin-bottom: 10px; }
@@ -428,42 +450,86 @@
 
   <p class="section-label first">Tiers</p>
 
-  <table class="tier-db-table">
+  <table class="tier-table">
     <thead>
       <tr>
-        <th>Tier</th>
-        <th>What the Buyer Gets</th>
-        <th class="center">Pricing</th>
+        <th></th>
+        <th class="t1-col">Tier 1: Accounts + Intent Topics</th>
+        <th class="t2-col">Tier 2: Persona + Intent Topics</th>
+        <th class="t3-col">Tier 3: Contacts + Intent</th>
+        <th class="t4-col">Tier 4: Contacts + Content (Enterprise)</th>
       </tr>
     </thead>
     <tbody>
       <tr>
-        <td>Tier 1: Accounts + Intent Topics</td>
-        <td>Account-level intent signals only. No PII, no persona detail. No contact restrictions. Open to all buyer types including competitors.</td>
-        <td class="contact-cell">Contact sales</td>
+        <td>Use cases</td>
+        <td class="t1">Prioritize outbound account lists by real-time surge activity. Feed DSP/programmatic platforms with intent-qualified audiences. Score inbound leads against account-level signals. Power ABM campaign targeting: which accounts to focus on this week.</td>
+        <td class="t2">Build persona-based audience segments for targeted campaigns. Identify buying committee composition at surging accounts. Segment content strategy by seniority and job function. Power persona-level ABM: target the right roles, not just the right accounts.</td>
+        <td class="t3">Enrich CRM with contact-level intent signals for outbound prioritization. Power SDR sequences with named contacts showing active intent. ABM activation: direct outreach to the people driving the surge. Embed contact-level signals into buyer's platform via OEM/API.</td>
+        <td class="t4">Build predictive models on content consumption patterns. Power content recommendation engines with full behavioral fingerprints. Enterprise platform intelligence: complete signal chain embedded in buyer's product. Custom analytics on which content topics drive pipeline conversion.</td>
       </tr>
       <tr>
-        <td>Tier 2: Persona + Intent Topics</td>
-        <td>Everything in Tier 1, plus audience behavioral profiles: industry, title function, seniority band, company size, intent topic, engagement source. No named contacts.</td>
-        <td class="contact-cell">Contact sales</td>
+        <td>Deliverable</td>
+        <td class="t1">Account-level intent signals. Which companies are surging on which topics. No persona detail, no contacts.</td>
+        <td class="t2">Everything in Tier 1, plus audience-level behavioral profiles matched to intent categories: industry, title function, seniority band, company size, intent topic, engagement source.</td>
+        <td class="t3">Everything in Tier 2, plus contact-level records: name, title, email, company, engagement source, intent topic. Delivered via API, flat file, or cloud sync on a rolling 90-day signal window.</td>
+        <td class="t4">Everything in Tier 3, plus the specific content assets consumed (whitepaper, webinar, content piece). The complete behavioral fingerprint.</td>
       </tr>
       <tr>
-        <td>Tier 3: Contacts + Intent</td>
-        <td>Everything in Tier 2, plus named contact records: name, title, email, company, engagement source, intent topic. Restricted to non-competitors.</td>
-        <td class="contact-cell">Contact sales</td>
+        <td>Who buys</td>
+        <td class="t1">Any buyer. No restrictions. Brand Direct, Wholesale, Agency, Martech, lead gen competitors. This is the base layer for all buyer types. Fastest time to value.</td>
+        <td class="t2">Teams that want to understand who inside an account is showing intent, not just that the account is active. Powers persona-based targeting and segmentation. No PII, no restrictions.</td>
+        <td class="t3">Sales and marketing teams activating contact-level data directly: outbound sequences, CRM enrichment, ABM programs. Also available for platform integration via API or OEM.</td>
+        <td class="t4">Enterprise platform companies where pharosIQ data becomes core infrastructure. Full content consumption visibility at scale.</td>
       </tr>
       <tr>
-        <td>Tier 4: Contacts + Content</td>
-        <td>Everything in Tier 3, plus specific content assets consumed (whitepaper, webinar, content piece). The complete behavioral fingerprint. Enterprise only. Approval required.</td>
-        <td class="contact-cell">Contact sales</td>
+        <td>Who is excluded</td>
+        <td class="t1">No one. Tier 1 is the entry product for every buyer type.</td>
+        <td class="t2">No one. No PII, no contacts. Persona-level profiles only. Open to all buyer types including lead gen and competitors.</td>
+        <td class="t3"><span class="excluded">Lead gen businesses, competitors, and any buyer whose model involves reselling or redistributing contact records to third parties. *</span></td>
+        <td class="t4"><span class="excluded">Brand Direct buyers, martech platforms without a large embedded user base, lead gen businesses, any buyer without a platform use case at enterprise scale. *</span></td>
       </tr>
       <tr>
-        <td>CPL: Lead Distribution</td>
-        <td>Contact-level intent leads priced per lead. Monthly minimum against CPL rate. Annual term. For platforms routing intent-qualified leads to downstream buyers.</td>
-        <td class="contact-cell">Contact sales</td>
+        <td>ACV range</td>
+        <td class="t1">$60K to $96K<br><span class="acv-tag acv-t1">$5K-$8K/mo</span></td>
+        <td class="t2">$144K to $300K<br><span class="acv-tag acv-t2">$12K-$25K/mo</span></td>
+        <td class="t3">$300K to $504K<br><span class="acv-tag acv-t3">$25K-$42K/mo</span></td>
+        <td class="t4">$1.2M+ minimum<br><span class="acv-tag acv-t4">$100K+/mo</span></td>
+      </tr>
+      <tr>
+        <td>Delivery</td>
+        <td class="t1">API, flat file, cloud delivery, segment push to DSP, LiveRamp, CDP, SSP.</td>
+        <td class="t2">API, flat file, cloud delivery, segment push to DSP, LiveRamp, CDP, SSP.</td>
+        <td class="t3">API, flat file, cloud sync. Direct activation or OEM/API embed into buyer's platform.</td>
+        <td class="t4">OEM or API at scale. Per-user-block pricing tied to deployment scale.</td>
+      </tr>
+      <tr>
+        <td>Channel conflict</td>
+        <td class="t1">None. Account-level only. No PII, no persona detail. Does not replicate CS product.</td>
+        <td class="t2">None. No PII, no contact-level detail. Persona profiles do not replicate lead gen product.</td>
+        <td class="t3">Low to moderate. Contact + topic signal (no content detail) is defensible. Chris Vriavas confirmed this line on 2026-03-27. Platform embeds require anti-competitive clause.</td>
+        <td class="t4">Highest. Content consumption data is the raw material of lead gen. This tier is only for enterprise platforms where the revenue justifies the exposure. Requires the strongest contractual protections.</td>
+      </tr>
+      <tr>
+        <td>MSA requirement</td>
+        <td class="t1">New DaaS MSA required. Simplest compliance surface: no PII, no persona, minimal downstream restrictions.</td>
+        <td class="t2">New DaaS MSA required (Section 4.2 blocks commercial use for both contact and persona). No PII, fewer downstream restrictions than contact tiers.</td>
+        <td class="t3">Enterprise DaaS MSA with permitted use restrictions, anti-competitive clause, caching addendum, data destruction terms. OEM embeds require downstream flow-down provisions and sub-licensing terms.</td>
+        <td class="t4">Full enterprise platform license. Per-user-block pricing exhibit. Downstream flow-down, sub-licensing, anti-competitive, caching, audit, and data destruction. Jake Ranalli and Tina Bean own the MSA build.</td>
+      </tr>
+      <tr>
+        <td>Upsell path</td>
+        <td class="t1">Every Tier 1 buyer is a Tier 2 prospect. Account signals create the appetite for persona-level resolution.</td>
+        <td class="t2">Every Tier 2 buyer is a Tier 3 prospect. Once they see who is surging, they want the contact records to activate against.</td>
+        <td class="t3">High-volume buyers and platforms with enterprise scale move to Tier 4 for full content consumption visibility.</td>
+        <td class="t4">Ceiling. Renewal, expansion, price escalation tied to user-block growth.</td>
       </tr>
     </tbody>
   </table>
+
+  <p style="font-size:11px;color:var(--gray-500);margin:0 0 20px;font-style:italic;">
+    CPL: Lead Distribution — Contact-level intent leads priced per lead. Monthly minimum against CPL rate. Annual term. For platforms routing intent-qualified leads to downstream buyers. Priced by volume, separate commercial model from the DaaS tiers above.
+  </p>
 
   <hr class="section-rule">
 
