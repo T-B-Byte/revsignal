@@ -68,6 +68,24 @@ const DEFAULT_DOCS: Doc[] = [
     category: "Strategy",
     created: "2026-03-28",
   },
+  {
+    id: "audience-dashboard",
+    title: "Audience Dashboard",
+    description: "SurgeEngine audience dashboard.",
+    url: "https://surgeengine.app/audience-dashboard.html",
+    password: "",
+    category: "SurgeEngine",
+    created: "2026-04-15",
+  },
+  {
+    id: "integrate-field-analysis",
+    title: "DB Field Analysis: New Field Candidates",
+    description: "Database analysis and assessment of new fields to add to the pharosIQ data schema. Presented to Ben Luck (Chief Data Scientist).",
+    url: "https://audience-dashboard-liard.vercel.app/Public/integrate-field-analysis.html",
+    password: "",
+    category: "Data",
+    created: "2026-04-15",
+  },
 ];
 
 const STORAGE_KEY = "revsignal-docs";
