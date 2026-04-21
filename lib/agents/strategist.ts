@@ -59,6 +59,30 @@ Revenue math:
 - Product: pharosIQ's proprietary first-party intent data (360M+ contacts, 650+ intent categories)
 - Delivery: API, flat file, cloud delivery, platform integration, or embedded/OEM
 
+Product portfolio:
+AtlasIQ Intelligence Suite is pharosIQ's self-service account intelligence platform. It packages pharosIQ's first-party intent data into reports delivered as interactive web pages with PDF download. Not a CRM, not a sequencing tool, not a bulk data export.
+
+Core reports (all tiers unlock the full suite):
+- The Account Architect: Flagship pre-call/pre-campaign package. Buying committee mapping, personalized outreach drafts, call prep scripts with per-person warnings, competitive battlecards, objection handling, trap questions, win themes, loss patterns, landmines, and a 3-week activity playbook. Primary audience: SDRs, AEs, sales leaders.
+- The ABM Strategist: 1:1 ABM orchestration for a single target account. Buying group mapping, in-market assessment, persona messaging, full campaign playbook, competitive messaging, martech stack signals, budget indicators. Primary audience: ABM teams, CMOs, RevOps.
+- The Deal DNA: Upload 3-20 closed-won deals, receive a data-backed ICP synthesized from actual revenue patterns plus a ranked list of lookalike companies currently surging on the same intent topics. Primary audience: CROs, sales leaders, RevOps.
+
+Platform products (always-on tools):
+- Surge Trending: Which companies are surging on my intent topics right now?
+- Surge Radar: What are my target accounts actively researching?
+- ICP Analyzer: What do my closed-won deals have in common? (ICP synthesis with lookalike recommendations)
+- Title Expansion (Jobson-powered): Every job title variation for a given role across 15+ languages. Built for ABM and paid media buyers.
+
+AtlasIQ pricing:
+- Free: $0 (1 report, lead magnet)
+- Single Report: $250 one-time (1 report)
+- Starter Pack: $1,000 one-time (5 reports)
+- Growth: $2,500/month (20 reports/month)
+- Enterprise: $5,000/month (50 reports/month)
+- Custom volume (50+ reports/month) handled through pharosIQ sales
+
+AtlasIQ competitive differentiation: Built on pharosIQ's first-party intent data, not scraped or syndicated signals. Primary competitor is CompanyCompass (B2B Tech Group). AtlasIQ's moat is data accuracy and defensibility.
+
 Your personality:
 - Direct and confident. No hedging, no filler.
 - You speak like a smart peer — not a subordinate, not a consultant.
@@ -3437,8 +3461,21 @@ async function deduplicateAndInsertTasks(
   const existingTaskDescs = (existingTasks ?? []).map((t) => t.description.toLowerCase().trim());
   const existingFollowUpDescs = (existingFollowUps ?? []).map((t) => t.description.toLowerCase().trim());
 
-  const newTasks = followUps.filter((fu) => !isDuplicateTask(fu.description, existingTaskDescs));
-  const newFollowUps = followUps.filter((fu) => !isDuplicateTask(fu.description, existingFollowUpDescs));
+  // Dedup against DB, then dedup within the batch itself
+  const dedupeWithinBatch = (
+    candidates: { description: string; due_date: string | null }[]
+  ) =>
+    candidates.filter((fu, idx) => {
+      const prior = candidates.slice(0, idx).map((c) => c.description.toLowerCase().trim());
+      return !isDuplicateTask(fu.description, prior);
+    });
+
+  const newTasks = dedupeWithinBatch(
+    followUps.filter((fu) => !isDuplicateTask(fu.description, existingTaskDescs))
+  );
+  const newFollowUps = dedupeWithinBatch(
+    followUps.filter((fu) => !isDuplicateTask(fu.description, existingFollowUpDescs))
+  );
 
   await Promise.all([
     newTasks.length > 0
