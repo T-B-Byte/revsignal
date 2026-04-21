@@ -18,8 +18,6 @@ interface ThreadChatProps {
   activeDeals?: Pick<Deal, "deal_id" | "company" | "stage">[];
   /** Pre-fills the input on first load (e.g. studio project kickoff message) */
   primeMessage?: string;
-  /** Pre-generated "where we left off" catchup — shown immediately without a network fetch. */
-  initialCatchup?: string | null;
 }
 
 /** Labels for interaction type badges on messages */
@@ -47,7 +45,6 @@ export function ThreadChat({
   dealCompany,
   activeDeals = [],
   primeMessage,
-  initialCatchup,
 }: ThreadChatProps) {
   const router = useRouter();
   const [messages, setMessages] = useState<CoachingMessage[]>(initialMessages);
@@ -2019,11 +2016,7 @@ export function ThreadChat({
         )}
 
         {/* Catch-up banner at bottom so it's visible without scrolling */}
-        <ThreadCatchup
-          threadId={thread.thread_id}
-          messageCount={thread.message_count}
-          initialCatchup={initialCatchup}
-        />
+        <ThreadCatchup threadId={thread.thread_id} />
       </div>
 
       {/* Error */}

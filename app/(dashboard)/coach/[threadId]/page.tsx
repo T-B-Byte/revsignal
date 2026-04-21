@@ -184,7 +184,6 @@ export default async function ThreadPage({
         initialMessages={messages}
         dealCompany={dealCompany}
         activeDeals={activeDeals}
-        initialCatchup={currentThread.catchup_text}
       />
     </CoachShell>
   );
