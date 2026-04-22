@@ -21,11 +21,8 @@ const updateDealRoomSchema = z.object({
     .array(
       z.object({
         demo_type: z.enum([
-          "title_expansion",
           "icp_analyzer",
-          "surge_dossier",
           "audience_dashboard",
-          "closed_won_analyzer",
           "daas_framework",
         ] as const),
         config: z.record(z.string(), z.unknown()).optional(),

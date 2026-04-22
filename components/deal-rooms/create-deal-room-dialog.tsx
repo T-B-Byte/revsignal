@@ -69,9 +69,6 @@ function generateWelcome(companyName: string, productNames: string[]): string {
 }
 
 const AVAILABLE_DEMOS: { demo_type: DemoType; label: string; description: string }[] = [
-  { demo_type: "title_expansion", label: "Title Expansion", description: "Interactive title/persona search" },
-  { demo_type: "surge_dossier", label: "Surge Dossier", description: "AI-synthesized account intelligence" },
-  { demo_type: "closed_won_analyzer", label: "Closed-Won Analyzer", description: "ICP analysis from closed deals" },
   { demo_type: "daas_framework", label: "DaaS Framework", description: "Tiered data product framework" },
 ];
 

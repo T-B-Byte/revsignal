@@ -23,9 +23,6 @@ interface EditDealRoomDialogProps {
 }
 
 const AVAILABLE_DEMOS: { demo_type: DemoType; label: string; description: string }[] = [
-  { demo_type: "title_expansion", label: "Title Expansion", description: "Interactive title/persona search" },
-  { demo_type: "surge_dossier", label: "Surge Dossier", description: "AI-synthesized account intelligence" },
-  { demo_type: "closed_won_analyzer", label: "Closed-Won Analyzer", description: "ICP analysis from closed deals" },
   { demo_type: "daas_framework", label: "DaaS Framework", description: "Tiered data product framework" },
 ];
 
@@ -81,9 +78,9 @@ export function EditDealRoomDialog({
   );
   const [selectedDemos, setSelectedDemos] = useState<DemoType[]>(() => {
     const demos = (room.selected_demos as DealRoomDemoSelection[]) ?? [];
-    return demos.length > 0
-      ? demos.map((d) => d.demo_type)
-      : AVAILABLE_DEMOS.map((d) => d.demo_type);
+    const allowed = new Set(AVAILABLE_DEMOS.map((d) => d.demo_type));
+    const filtered = demos.map((d) => d.demo_type).filter((t) => allowed.has(t));
+    return filtered.length > 0 ? filtered : AVAILABLE_DEMOS.map((d) => d.demo_type);
   });
 
   function handleProductToggle(productId: string) {

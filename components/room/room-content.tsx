@@ -12,9 +12,6 @@ import type { DealRoomDemoSelection } from "@/types/database";
 type Tab = "products" | "quote" | "data-test" | string;
 
 const ALL_DEMOS: Record<string, { label: string; url: string }> = {
-  title_expansion: { label: "Title Expansion", url: "https://surgeengine.app/title-expansion?theme=dark" },
-  surge_dossier: { label: "Surge Dossier", url: "https://surgeengine.app/demo/sap?theme=dark" },
-  closed_won_analyzer: { label: "Closed-Won Analyzer", url: "https://surgeengine.app/closed-won-analyzer?theme=dark" },
   daas_framework: { label: "DaaS Framework", url: "https://revsignal.vercel.app/daas-framework.html?theme=dark" },
 };
 
