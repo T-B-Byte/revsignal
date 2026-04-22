@@ -18,7 +18,7 @@ const customUseCases = [
   {
     title: 'Buying Group AI enrichment',
     description:
-      "First-party contact engagement adds directly observed committee activity alongside Demandbase's account-level signals — especially valuable at enterprise scale.",
+      "First-party contact engagement adds directly observed committee activity alongside Demandbase's account-level signals. Especially valuable at enterprise scale.",
     persona: 'Account Intelligence Platform team',
   },
   {
