@@ -53,6 +53,16 @@ const updateDealRoomSchema = z.object({
     )
     .max(20)
     .optional(),
+  custom_use_cases_intro: z.string().max(1000).optional().nullable(),
+  custom_why_us: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        description: z.string().min(1).max(1000),
+      })
+    )
+    .max(20)
+    .optional(),
   company_logo_url: z.string().url().max(2000).optional().nullable(),
   accent_color: z.string().max(20).regex(/^#[0-9a-fA-F]{3,8}$/, "Must be a valid hex color").optional().nullable(),
   expires_at: z.string().optional().nullable(),
@@ -183,6 +193,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
   if (fields.show_quote_builder !== undefined) updates.show_quote_builder = fields.show_quote_builder;
   if (fields.custom_pricing !== undefined) updates.custom_pricing = fields.custom_pricing;
   if (fields.custom_use_cases !== undefined) updates.custom_use_cases = fields.custom_use_cases;
+  if (fields.custom_use_cases_intro !== undefined) updates.custom_use_cases_intro = fields.custom_use_cases_intro;
+  if (fields.custom_why_us !== undefined) updates.custom_why_us = fields.custom_why_us;
   if (fields.company_logo_url !== undefined) updates.company_logo_url = fields.company_logo_url;
   if (fields.accent_color !== undefined) updates.accent_color = fields.accent_color;
   if (fields.expires_at !== undefined) updates.expires_at = fields.expires_at;

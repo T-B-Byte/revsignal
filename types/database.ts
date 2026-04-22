@@ -1480,6 +1480,11 @@ export interface DealRoomCustomUseCase {
   persona?: string;
 }
 
+export interface DealRoomCustomWhyUs {
+  title: string;
+  description: string;
+}
+
 export interface DealRoomDemoSelection {
   demo_type: DemoType;
   config?: Record<string, unknown>;
@@ -1503,6 +1508,8 @@ export interface DealRoom {
   show_quote_builder: boolean;
   custom_pricing: DealRoomCustomPricing[];
   custom_use_cases: DealRoomCustomUseCase[];
+  custom_use_cases_intro: string | null;
+  custom_why_us: DealRoomCustomWhyUs[];
   company_logo_url: string | null;
   accent_color: string | null;
   view_count: number;

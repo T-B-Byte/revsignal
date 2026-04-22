@@ -81,6 +81,8 @@ export async function POST(_request: NextRequest, { params }: RouteParams) {
       show_quote_builder: source.show_quote_builder,
       custom_pricing: source.custom_pricing,
       custom_use_cases: source.custom_use_cases,
+      custom_use_cases_intro: source.custom_use_cases_intro,
+      custom_why_us: source.custom_why_us,
       company_logo_url: source.company_logo_url,
       accent_color: source.accent_color,
       expires_at: null,

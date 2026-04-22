@@ -56,6 +56,16 @@ const createDealRoomSchema = z.object({
     )
     .max(20)
     .optional(),
+  custom_use_cases_intro: z.string().max(1000).optional().nullable(),
+  custom_why_us: z
+    .array(
+      z.object({
+        title: z.string().min(1).max(200),
+        description: z.string().min(1).max(1000),
+      })
+    )
+    .max(20)
+    .optional(),
   company_logo_url: z.string().url().max(2000).optional().nullable(),
   accent_color: z.string().max(20).regex(/^#[0-9a-fA-F]{3,8}$/, "Must be a valid hex color").optional().nullable(),
   expires_at: z.string().optional().nullable(),
@@ -146,6 +156,8 @@ export async function POST(request: NextRequest) {
       show_quote_builder: parsed.data.show_quote_builder ?? true,
       custom_pricing: parsed.data.custom_pricing ?? [],
       custom_use_cases: parsed.data.custom_use_cases ?? [],
+      custom_use_cases_intro: parsed.data.custom_use_cases_intro ?? null,
+      custom_why_us: parsed.data.custom_why_us ?? [],
       company_logo_url: parsed.data.company_logo_url ?? null,
       accent_color: parsed.data.accent_color ?? null,
       expires_at: parsed.data.expires_at ?? null,

@@ -13,7 +13,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import type { GtmCompanyProfile, GtmProduct, DealRoomCustomPricing, DealRoomCustomUseCase, DemoType } from "@/types/database";
+import type { GtmCompanyProfile, GtmProduct, DealRoomCustomPricing, DealRoomCustomUseCase, DealRoomCustomWhyUs, DemoType } from "@/types/database";
 
 interface CreateDealRoomDialogProps {
   open: boolean;
@@ -114,6 +114,8 @@ export function CreateDealRoomDialog({
   const [expiresAt, setExpiresAt] = useState("");
   const [customPricing, setCustomPricing] = useState<DealRoomCustomPricing[]>([]);
   const [customUseCases, setCustomUseCases] = useState<DealRoomCustomUseCase[]>([]);
+  const [customUseCasesIntro, setCustomUseCasesIntro] = useState<string>("");
+  const [customWhyUs, setCustomWhyUs] = useState<DealRoomCustomWhyUs[]>([]);
   const [selectedDemos, setSelectedDemos] = useState<DemoType[]>(
     AVAILABLE_DEMOS.map((d) => d.demo_type)
   );
@@ -270,6 +272,8 @@ export function CreateDealRoomDialog({
         expires_at: expiresAt || null,
         custom_pricing: customPricing.filter((p) => p.label.trim()),
         custom_use_cases: customUseCases.filter((uc) => uc.title.trim()),
+        custom_use_cases_intro: customUseCasesIntro.trim() || null,
+        custom_why_us: customWhyUs.filter((w) => w.title.trim()),
       };
 
       const res = await fetch("/api/deal-rooms", {
@@ -629,6 +633,12 @@ export function CreateDealRoomDialog({
                 + Add use case
               </button>
             </div>
+            <Textarea
+              value={customUseCasesIntro}
+              onChange={(e) => setCustomUseCasesIntro(e.target.value)}
+              placeholder="Optional lead-in above the use cases (e.g. 'Suggested based on the prospect's current product direction.')"
+              rows={2}
+            />
             {customUseCases.length === 0 && (
               <p className="text-xs text-text-muted">No custom use cases. You can add them later to display in the prospect&apos;s deal room.</p>
             )}
@@ -671,6 +681,55 @@ export function CreateDealRoomDialog({
                   }}
                   placeholder="Persona (optional, e.g., VP Marketing)"
                 />
+              </div>
+            ))}
+          </div>
+
+          {/* Custom Why Us */}
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <label className="block text-sm font-medium text-text-secondary">Why Us (Positive framing only)</label>
+              <button
+                type="button"
+                onClick={() => setCustomWhyUs((prev) => [...prev, { title: "", description: "" }])}
+                className="text-xs text-brand-400 hover:text-brand-300"
+              >
+                + Add statement
+              </button>
+            </div>
+            {customWhyUs.length === 0 && (
+              <p className="text-xs text-text-muted">No custom Why Us statements. Positive positioning only — no comparative framing.</p>
+            )}
+            {customWhyUs.map((w, i) => (
+              <div key={i} className="grid grid-cols-[1fr_auto] gap-2 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+                <Input
+                  value={w.title}
+                  onChange={(e) => {
+                    const next = [...customWhyUs];
+                    next[i] = { ...next[i], title: e.target.value };
+                    setCustomWhyUs(next);
+                  }}
+                  placeholder="Why us title"
+                />
+                <button
+                  type="button"
+                  onClick={() => setCustomWhyUs((prev) => prev.filter((_, j) => j !== i))}
+                  className="self-center text-xs text-red-400 hover:text-red-300"
+                >
+                  Remove
+                </button>
+                <div className="col-span-2">
+                  <Textarea
+                    value={w.description}
+                    onChange={(e) => {
+                      const next = [...customWhyUs];
+                      next[i] = { ...next[i], description: e.target.value };
+                      setCustomWhyUs(next);
+                    }}
+                    placeholder="Supporting statement"
+                    rows={2}
+                  />
+                </div>
               </div>
             ))}
           </div>

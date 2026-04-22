@@ -12,7 +12,7 @@ import type { DealRoomDemoSelection } from "@/types/database";
 type Tab = "products" | "quote" | "data-test" | string;
 
 const ALL_DEMOS: Record<string, { label: string; url: string }> = {
-  daas_framework: { label: "DaaS Framework", url: "https://revsignal.vercel.app/daas-framework.html?theme=dark" },
+  daas_framework: { label: "DaaS Framework", url: "https://revsignal.vercel.app/frameworks/daas-framework" },
 };
 
 interface RoomContentProps {
@@ -43,6 +43,8 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
   const accentColor = (room.accent_color as string) || "#22c55e";
   const customPricing = (room.custom_pricing as { label: string; price: string; unit: string; description: string }[]) || [];
   const customUseCases = (room.custom_use_cases as { title: string; description: string; persona?: string }[]) || [];
+  const customUseCasesIntro = (room.custom_use_cases_intro as string | null) ?? null;
+  const customWhyUs = (room.custom_why_us as { title: string; description: string }[]) || [];
 
   // Build active demos from selected_demos, falling back to all demos if none selected
   const selectedDemos = (room.selected_demos as DealRoomDemoSelection[]) || [];
@@ -134,13 +136,15 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
                   src={`${audienceDashboardUrl}${audienceDashboardUrl?.includes("?") ? "&" : "?"}theme=dark`}
                   className="h-[800px] w-full"
                   title="Audience Intelligence Dashboard"
-                  sandbox="allow-scripts allow-same-origin"
+                  sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-downloads"
+                  loading="lazy"
+                  referrerPolicy="no-referrer-when-downgrade"
                 />
               </div>
             </section>
           )}
 
-          <ProductShowcase products={products} accentColor={accentColor} theme={theme} customUseCases={customUseCases} customPricing={customPricing} />
+          <ProductShowcase products={products} accentColor={accentColor} theme={theme} customUseCases={customUseCases} customUseCasesIntro={customUseCasesIntro} customWhyUs={customWhyUs} customPricing={customPricing} />
 
           <DataCoverage theme={theme} />
         </div>

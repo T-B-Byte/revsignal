@@ -178,6 +178,11 @@ interface CustomUseCase {
   persona?: string;
 }
 
+interface CustomWhyUs {
+  title: string;
+  description: string;
+}
+
 interface CustomPricing {
   label: string;
   price: string;
@@ -190,10 +195,12 @@ interface ProductShowcaseProps {
   accentColor: string;
   theme?: "dark" | "light";
   customUseCases?: CustomUseCase[];
+  customUseCasesIntro?: string | null;
+  customWhyUs?: CustomWhyUs[];
   customPricing?: CustomPricing[];
 }
 
-export function ProductShowcase({ products, accentColor, theme = "dark", customUseCases = [], customPricing = [] }: ProductShowcaseProps) {
+export function ProductShowcase({ products, accentColor, theme = "dark", customUseCases = [], customUseCasesIntro = null, customWhyUs = [], customPricing = [] }: ProductShowcaseProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const t = (dark: string, light: string) => theme === "dark" ? dark : light;
 
@@ -402,9 +409,14 @@ export function ProductShowcase({ products, accentColor, theme = "dark", customU
       {/* Custom Use Cases (room-level, set by Tina) */}
       {customUseCases.length > 0 && (
         <div className={`mt-6 rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
-          <h3 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
+          <h3 className={`mb-2 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
             Use Cases
           </h3>
+          {customUseCasesIntro && (
+            <p className={`mb-4 text-sm leading-relaxed ${t("text-zinc-400", "text-zinc-500")}`}>
+              {customUseCasesIntro}
+            </p>
+          )}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {customUseCases.map((uc, i) => (
               <div key={i} className={`rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}>
@@ -413,6 +425,27 @@ export function ProductShowcase({ products, accentColor, theme = "dark", customU
                 {uc.persona && (
                   <p className={`mt-2 text-xs ${t("text-zinc-600", "text-zinc-400")}`}>For: {uc.persona}</p>
                 )}
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Custom Why Us (room-level, set by Tina) */}
+      {customWhyUs.length > 0 && (
+        <div className={`mt-6 rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
+          <h3 className={`mb-4 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
+            Why Us
+          </h3>
+          <div className="grid gap-3 sm:grid-cols-2">
+            {customWhyUs.map((w, i) => (
+              <div
+                key={i}
+                className={`rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}
+                style={{ borderLeftColor: accentColor, borderLeftWidth: "3px" }}
+              >
+                <p className={`text-sm font-semibold ${t("text-zinc-200", "text-zinc-800")}`}>{w.title}</p>
+                <p className={`mt-1 text-xs leading-relaxed ${t("text-zinc-400", "text-zinc-500")}`}>{w.description}</p>
               </div>
             ))}
           </div>
