@@ -322,6 +322,240 @@ export function buildCeoWeeklyEmail(data: {
   });
 }
 
+// ── Deal Room: Data Test ─────────────────────────────────────────────
+
+/**
+ * Build the internal notification email sent to the room owner when a
+ * prospect submits a data test request through a deal room.
+ */
+export function buildDataTestNotificationEmail(data: {
+  companyName: string;
+  roomSlug: string;
+  scope: "personas_intent" | "full_schema";
+  domainCount: number;
+  domains: string[];
+  prospectName?: string | null;
+  prospectEmail?: string | null;
+  prospectCompany?: string | null;
+  testId: string;
+}): string {
+  const scopeLabel =
+    data.scope === "full_schema" ? "Full Schema (needs approval)" : "Standard (personas + intent)";
+  const scopeBadge = data.scope === "full_schema" ? "badge-yellow" : "badge-green";
+
+  const previewDomains = data.domains.slice(0, 25);
+  const remainder = data.domains.length - previewDomains.length;
+  const domainsHtml = previewDomains
+    .map((d) => `<div style="font-family:ui-monospace,Menlo,monospace;font-size:12px;color:#d4d4d4;padding:2px 0;">${escapeHtml(d)}</div>`)
+    .join("\n");
+
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://revsignal.app";
+
+  const prospectInfoHtml =
+    data.prospectName || data.prospectEmail || data.prospectCompany
+      ? `
+      <h3>Submitted By</h3>
+      <div class="card">
+        ${data.prospectName ? `<div><strong>${escapeHtml(data.prospectName)}</strong></div>` : ""}
+        ${data.prospectCompany ? `<div style="color:#a3a3a3;font-size:13px;">${escapeHtml(data.prospectCompany)}</div>` : ""}
+        ${data.prospectEmail ? `<div style="margin-top:6px;"><a href="mailto:${escapeHtml(data.prospectEmail)}">${escapeHtml(data.prospectEmail)}</a></div>` : ""}
+      </div>
+    `
+      : `<p style="color:#888;font-size:13px;">No contact info provided.</p>`;
+
+  return baseLayout({
+    title: `Data test request — ${data.companyName}`,
+    preheader: `${data.domainCount} domains, ${scopeLabel}`,
+    content: `
+      <h2>New Data Test Request</h2>
+      <div class="card">
+        <div style="font-size:12px;color:#888;margin-bottom:6px;">DEAL ROOM</div>
+        <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:10px;">${escapeHtml(data.companyName)}</div>
+        <span class="badge ${scopeBadge}">${escapeHtml(scopeLabel)}</span>
+        <span style="margin-left:8px;font-size:13px;color:#a3a3a3;">${data.domainCount} domain${data.domainCount === 1 ? "" : "s"}</span>
+      </div>
+
+      ${prospectInfoHtml}
+
+      <h3>Domains</h3>
+      <div class="card">
+        ${domainsHtml}
+        ${remainder > 0 ? `<div style="margin-top:8px;font-size:12px;color:#888;">+ ${remainder} more</div>` : ""}
+      </div>
+
+      <p style="margin-top:20px;">
+        <a href="${appUrl}/deal-rooms" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;font-weight:600;text-decoration:none;">Open Deal Rooms</a>
+      </p>
+
+      <p style="font-size:12px;color:#666;margin-top:16px;">Room slug: ${escapeHtml(data.roomSlug)} · Test ID: ${escapeHtml(data.testId)}</p>
+    `,
+  });
+}
+
+/**
+ * Build the confirmation email sent to the prospect who submitted the
+ * data test request.
+ */
+export function buildDataTestConfirmationEmail(data: {
+  prospectName?: string | null;
+  scope: "personas_intent" | "full_schema";
+  domainCount: number;
+}): string {
+  const greeting = data.prospectName ? `Hi ${escapeHtml(data.prospectName.split(" ")[0])},` : "Hi,";
+  const timing =
+    data.scope === "full_schema"
+      ? "Full schema tests go through a quick approval. You'll hear back within one business day."
+      : "We'll process your domains and send results shortly.";
+
+  return baseLayout({
+    title: "Your data test request",
+    preheader: "We received your data test request",
+    content: `
+      <p>${greeting}</p>
+      <p>Your data test request is in. ${data.domainCount} domain${data.domainCount === 1 ? "" : "s"} submitted.</p>
+      <p>${timing}</p>
+      <p>Reply to this email if you want to add context or ask questions in the meantime.</p>
+      <p style="margin-top:24px;color:#a3a3a3;">Tina<br><span style="color:#666;font-size:12px;">pharosIQ</span></p>
+    `,
+  });
+}
+
+// ── Deal Room: Quote ─────────────────────────────────────────────────
+
+export interface QuoteLineItem {
+  product_name: string;
+  tier: string;
+  quantity?: number;
+  unit_price: number;
+  subtotal: number;
+  notes?: string;
+}
+
+/**
+ * Build the internal notification email sent to the room owner when a
+ * prospect submits a quote from a deal room.
+ */
+export function buildQuoteNotificationEmail(data: {
+  companyName: string;
+  roomSlug: string;
+  items: QuoteLineItem[];
+  totalPrice: number;
+  prospectName?: string | null;
+  prospectEmail?: string | null;
+  prospectTitle?: string | null;
+  prospectNotes?: string | null;
+  quoteId: string;
+}): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "https://revsignal.app";
+
+  const itemsHtml = data.items
+    .map(
+      (it) => `
+      <tr>
+        <td style="padding:10px 8px;border-bottom:1px solid #222;color:#e5e5e5;font-size:13px;">
+          <div style="font-weight:600;">${escapeHtml(it.product_name)}</div>
+          <div style="color:#888;font-size:12px;margin-top:2px;">${escapeHtml(it.tier)}${it.quantity ? ` · Qty ${it.quantity}` : ""}</div>
+          ${it.notes ? `<div style="color:#a3a3a3;font-size:12px;margin-top:4px;">${escapeHtml(it.notes)}</div>` : ""}
+        </td>
+        <td style="padding:10px 8px;border-bottom:1px solid #222;color:#e5e5e5;font-size:13px;text-align:right;white-space:nowrap;">$${it.subtotal.toLocaleString()}</td>
+      </tr>`
+    )
+    .join("\n");
+
+  const prospectInfoHtml =
+    data.prospectName || data.prospectEmail || data.prospectTitle
+      ? `
+      <h3>Submitted By</h3>
+      <div class="card">
+        ${data.prospectName ? `<div><strong>${escapeHtml(data.prospectName)}</strong></div>` : ""}
+        ${data.prospectTitle ? `<div style="color:#a3a3a3;font-size:13px;">${escapeHtml(data.prospectTitle)}</div>` : ""}
+        ${data.prospectEmail ? `<div style="margin-top:6px;"><a href="mailto:${escapeHtml(data.prospectEmail)}">${escapeHtml(data.prospectEmail)}</a></div>` : ""}
+      </div>
+    `
+      : `<p style="color:#888;font-size:13px;">No contact info provided.</p>`;
+
+  const notesHtml = data.prospectNotes
+    ? `<h3>Notes from Prospect</h3><div class="card" style="color:#d4d4d4;font-size:13px;white-space:pre-wrap;">${escapeHtml(data.prospectNotes)}</div>`
+    : "";
+
+  return baseLayout({
+    title: `Quote submitted — ${data.companyName}`,
+    preheader: `$${data.totalPrice.toLocaleString()} · ${data.items.length} line item${data.items.length === 1 ? "" : "s"}`,
+    content: `
+      <h2>New Quote Submitted</h2>
+      <div class="card">
+        <div style="font-size:12px;color:#888;margin-bottom:6px;">DEAL ROOM</div>
+        <div style="font-size:16px;font-weight:600;color:#fff;margin-bottom:10px;">${escapeHtml(data.companyName)}</div>
+        <div class="metric">$${data.totalPrice.toLocaleString()}</div>
+        <div class="metric-label">Total Quoted</div>
+      </div>
+
+      ${prospectInfoHtml}
+
+      <h3>Line Items</h3>
+      <table width="100%" style="border-collapse:collapse;background:#1a1a1a;border:1px solid #262626;border-radius:8px;overflow:hidden;">
+        ${itemsHtml}
+        <tr>
+          <td style="padding:12px 8px;color:#fff;font-weight:600;font-size:13px;">Total</td>
+          <td style="padding:12px 8px;color:#fff;font-weight:600;font-size:14px;text-align:right;">$${data.totalPrice.toLocaleString()}</td>
+        </tr>
+      </table>
+
+      ${notesHtml}
+
+      <p style="margin-top:20px;">
+        <a href="${appUrl}/deal-rooms" style="display:inline-block;padding:10px 20px;background:#2563eb;color:#fff;border-radius:6px;font-weight:600;text-decoration:none;">Open Deal Rooms</a>
+      </p>
+
+      <p style="font-size:12px;color:#666;margin-top:16px;">Room slug: ${escapeHtml(data.roomSlug)} · Quote ID: ${escapeHtml(data.quoteId)}</p>
+    `,
+  });
+}
+
+/**
+ * Build the confirmation email sent to the prospect who submitted the quote.
+ */
+export function buildQuoteConfirmationEmail(data: {
+  prospectName?: string | null;
+  items: QuoteLineItem[];
+  totalPrice: number;
+}): string {
+  const greeting = data.prospectName ? `Hi ${escapeHtml(data.prospectName.split(" ")[0])},` : "Hi,";
+
+  const itemsHtml = data.items
+    .map(
+      (it) => `
+      <tr>
+        <td style="padding:8px;border-bottom:1px solid #222;color:#e5e5e5;font-size:13px;">
+          <div>${escapeHtml(it.product_name)}</div>
+          <div style="color:#888;font-size:12px;">${escapeHtml(it.tier)}${it.quantity ? ` · Qty ${it.quantity}` : ""}</div>
+        </td>
+        <td style="padding:8px;border-bottom:1px solid #222;color:#e5e5e5;font-size:13px;text-align:right;white-space:nowrap;">$${it.subtotal.toLocaleString()}</td>
+      </tr>`
+    )
+    .join("\n");
+
+  return baseLayout({
+    title: "Your quote is in",
+    preheader: `Total: $${data.totalPrice.toLocaleString()}`,
+    content: `
+      <p>${greeting}</p>
+      <p>Your quote came through. Here is what you selected:</p>
+
+      <table width="100%" style="border-collapse:collapse;background:#1a1a1a;border:1px solid #262626;border-radius:8px;overflow:hidden;margin:12px 0;">
+        ${itemsHtml}
+        <tr>
+          <td style="padding:10px 8px;color:#fff;font-weight:600;font-size:13px;">Total</td>
+          <td style="padding:10px 8px;color:#fff;font-weight:600;font-size:14px;text-align:right;">$${data.totalPrice.toLocaleString()}</td>
+        </tr>
+      </table>
+
+      <p>I will review and follow up with next steps shortly. Reply to this email with any questions or adjustments.</p>
+      <p style="margin-top:24px;color:#a3a3a3;">Tina<br><span style="color:#666;font-size:12px;">pharosIQ</span></p>
+    `,
+  });
+}
+
 // ── Utility ──────────────────────────────────────────────────────────
 
 /** Escape HTML entities */

@@ -3,17 +3,27 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
+import {
+  sendDataTestNotification,
+  sendDataTestConfirmation,
+} from "@/lib/sendgrid";
+import {
+  buildDataTestNotificationEmail,
+  buildDataTestConfirmationEmail,
+} from "@/lib/email-templates";
 
 const limiter = rateLimit({ interval: 60_000 });
 
 const domainRegex = /^[a-zA-Z0-9]([a-zA-Z0-9-]*[a-zA-Z0-9])?(\.[a-zA-Z]{2,})+$/;
+
+const MAX_DOMAINS = 500;
 
 const dataTestSchema = z.object({
   password: z.string().min(1).max(200),
   domains: z
     .array(z.string().max(253).regex(domainRegex, "Invalid domain format"))
     .min(1)
-    .max(100),
+    .max(MAX_DOMAINS),
   scope: z.enum(["personas_intent", "full_schema"]).default("personas_intent"),
   prospect_name: z.string().max(200).optional(),
   prospect_email: z.string().email().max(200).optional(),
@@ -22,7 +32,7 @@ const dataTestSchema = z.object({
 
 /**
  * POST /api/room/[slug]/data-test — Submit a data test request
- * Public endpoint. Prospects upload domains (max 100) for a limited data test.
+ * Public endpoint. Prospects upload domains (max 500) for a limited data test.
  * Standard scope (personas_intent) is auto-approved.
  * Full schema scope requires Tina's approval.
  */
@@ -107,6 +117,90 @@ export async function POST(
     if (insertError) {
       console.error("Data test insert error:", insertError.message);
       return NextResponse.json({ error: "Failed to submit data test" }, { status: 500 });
+    }
+
+    // Send notifications in parallel. Never block the API response on email failures.
+    try {
+      const [ownerResult, companyResult] = await Promise.all([
+        supabase
+          .from("user_profiles")
+          .select("email")
+          .eq("user_id", room.user_id)
+          .maybeSingle(),
+        supabase
+          .from("gtm_company_profiles")
+          .select("name")
+          .eq("company_id", room.company_id)
+          .maybeSingle(),
+      ]);
+
+      const ownerEmail = ownerResult.data?.email ?? null;
+      const companyName = companyResult.data?.name ?? "Deal Room";
+
+      const emailTasks: Promise<unknown>[] = [];
+
+      if (ownerEmail) {
+        emailTasks.push(
+          sendDataTestNotification(
+            ownerEmail,
+            companyName,
+            test.domain_count,
+            parsed.data.scope,
+            buildDataTestNotificationEmail({
+              companyName,
+              roomSlug: slug,
+              scope: parsed.data.scope,
+              domainCount: test.domain_count,
+              domains: uniqueDomains,
+              prospectName: parsed.data.prospect_name ?? null,
+              prospectEmail: parsed.data.prospect_email ?? null,
+              prospectCompany: parsed.data.prospect_company ?? null,
+              testId: test.test_id,
+            })
+          )
+        );
+      } else {
+        console.error(
+          "[data-test] No owner email found for user_id:",
+          room.user_id
+        );
+      }
+
+      if (parsed.data.prospect_email && ownerEmail) {
+        emailTasks.push(
+          sendDataTestConfirmation(
+            parsed.data.prospect_email,
+            ownerEmail,
+            buildDataTestConfirmationEmail({
+              prospectName: parsed.data.prospect_name ?? null,
+              scope: parsed.data.scope,
+              domainCount: test.domain_count,
+            })
+          )
+        );
+      }
+
+      const results = await Promise.allSettled(emailTasks);
+      for (const r of results) {
+        if (r.status === "rejected") {
+          console.error("[data-test] Email send rejected:", r.reason);
+        } else if (
+          r.value &&
+          typeof r.value === "object" &&
+          "success" in r.value &&
+          !(r.value as { success: boolean }).success
+        ) {
+          console.error(
+            "[data-test] Email send failed:",
+            (r.value as { error?: string }).error
+          );
+        }
+      }
+    } catch (notifyError) {
+      console.error(
+        "[data-test] Notification pipeline error:",
+        notifyError instanceof Error ? notifyError.message : notifyError
+      );
     }
 
     return NextResponse.json({ test }, { status: 201 });

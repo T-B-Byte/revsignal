@@ -214,6 +214,78 @@ export async function sendCeoWeeklyUpdate(
 }
 
 /**
+ * Send the internal deal-room data test notification to the room owner.
+ */
+export async function sendDataTestNotification(
+  to: string,
+  companyName: string,
+  domainCount: number,
+  scope: "personas_intent" | "full_schema",
+  alertHtml: string
+): Promise<SendResult> {
+  const scopeLabel = scope === "full_schema" ? "full schema" : "standard";
+  return sendEmail({
+    to,
+    subject: `Data test request: ${companyName} (${domainCount} domain${domainCount === 1 ? "" : "s"}, ${scopeLabel})`,
+    html: alertHtml,
+    categories: ["deal-room", "data-test", "notification"],
+  });
+}
+
+/**
+ * Send a data test confirmation to the prospect who submitted the request.
+ * Reply-to is the room owner so the prospect can reach Tina directly.
+ */
+export async function sendDataTestConfirmation(
+  to: string,
+  replyTo: string,
+  confirmationHtml: string
+): Promise<SendResult> {
+  return sendEmail({
+    to,
+    replyTo,
+    subject: "Your data test request is in",
+    html: confirmationHtml,
+    categories: ["deal-room", "data-test", "confirmation"],
+  });
+}
+
+/**
+ * Send the internal deal-room quote submission notification to the room owner.
+ */
+export async function sendQuoteNotification(
+  to: string,
+  companyName: string,
+  totalPrice: number,
+  itemCount: number,
+  alertHtml: string
+): Promise<SendResult> {
+  return sendEmail({
+    to,
+    subject: `Quote submitted: ${companyName} ($${totalPrice.toLocaleString()}, ${itemCount} item${itemCount === 1 ? "" : "s"})`,
+    html: alertHtml,
+    categories: ["deal-room", "quote", "notification"],
+  });
+}
+
+/**
+ * Send a quote confirmation to the prospect who submitted the quote.
+ */
+export async function sendQuoteConfirmation(
+  to: string,
+  replyTo: string,
+  confirmationHtml: string
+): Promise<SendResult> {
+  return sendEmail({
+    to,
+    replyTo,
+    subject: "Your quote is in",
+    html: confirmationHtml,
+    categories: ["deal-room", "quote", "confirmation"],
+  });
+}
+
+/**
  * Send an integration status alert (degraded/disconnected).
  */
 export async function sendIntegrationAlert(

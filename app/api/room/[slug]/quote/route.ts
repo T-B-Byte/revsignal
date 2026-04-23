@@ -3,6 +3,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
+import {
+  sendQuoteNotification,
+  sendQuoteConfirmation,
+} from "@/lib/sendgrid";
+import {
+  buildQuoteNotificationEmail,
+  buildQuoteConfirmationEmail,
+} from "@/lib/email-templates";
 
 const limiter = rateLimit({ interval: 60_000 });
 
@@ -110,6 +118,90 @@ export async function POST(
     if (insertError) {
       console.error("Quote insert error:", insertError.message);
       return NextResponse.json({ error: "Failed to submit quote" }, { status: 500 });
+    }
+
+    // Send notifications in parallel. Never block the API response on email failures.
+    try {
+      const [ownerResult, companyResult] = await Promise.all([
+        supabase
+          .from("user_profiles")
+          .select("email")
+          .eq("user_id", room.user_id)
+          .maybeSingle(),
+        supabase
+          .from("gtm_company_profiles")
+          .select("name")
+          .eq("company_id", room.company_id)
+          .maybeSingle(),
+      ]);
+
+      const ownerEmail = ownerResult.data?.email ?? null;
+      const companyName = companyResult.data?.name ?? "Deal Room";
+
+      const emailTasks: Promise<unknown>[] = [];
+
+      if (ownerEmail) {
+        emailTasks.push(
+          sendQuoteNotification(
+            ownerEmail,
+            companyName,
+            computedTotal,
+            parsed.data.selected_items.length,
+            buildQuoteNotificationEmail({
+              companyName,
+              roomSlug: slug,
+              items: parsed.data.selected_items,
+              totalPrice: computedTotal,
+              prospectName: parsed.data.prospect_name ?? null,
+              prospectEmail: parsed.data.prospect_email ?? null,
+              prospectTitle: parsed.data.prospect_title ?? null,
+              prospectNotes: parsed.data.prospect_notes ?? null,
+              quoteId: quote.quote_id,
+            })
+          )
+        );
+      } else {
+        console.error(
+          "[quote] No owner email found for user_id:",
+          room.user_id
+        );
+      }
+
+      if (parsed.data.prospect_email && ownerEmail) {
+        emailTasks.push(
+          sendQuoteConfirmation(
+            parsed.data.prospect_email,
+            ownerEmail,
+            buildQuoteConfirmationEmail({
+              prospectName: parsed.data.prospect_name ?? null,
+              items: parsed.data.selected_items,
+              totalPrice: computedTotal,
+            })
+          )
+        );
+      }
+
+      const results = await Promise.allSettled(emailTasks);
+      for (const r of results) {
+        if (r.status === "rejected") {
+          console.error("[quote] Email send rejected:", r.reason);
+        } else if (
+          r.value &&
+          typeof r.value === "object" &&
+          "success" in r.value &&
+          !(r.value as { success: boolean }).success
+        ) {
+          console.error(
+            "[quote] Email send failed:",
+            (r.value as { error?: string }).error
+          );
+        }
+      }
+    } catch (notifyError) {
+      console.error(
+        "[quote] Notification pipeline error:",
+        notifyError instanceof Error ? notifyError.message : notifyError
+      );
     }
 
     return NextResponse.json({ quote }, { status: 201 });

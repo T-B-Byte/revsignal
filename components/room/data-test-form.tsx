@@ -2,6 +2,8 @@
 
 import { useState, FormEvent } from "react";
 
+const MAX_DOMAINS = 500;
+
 interface DataTestFormProps {
   slug: string;
   password: string;
@@ -33,7 +35,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
-    if (domainCount === 0 || domainCount > 100) return;
+    if (domainCount === 0 || domainCount > MAX_DOMAINS) return;
 
     setSubmitting(true);
     setError("");
@@ -101,7 +103,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
       <div className={`rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
         <h2 className={`text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>Request a Data Test</h2>
         <p className={`mt-2 text-sm ${t("text-zinc-400", "text-zinc-500")}`}>
-          Upload up to 100 company domains and we&apos;ll show you what our data looks like for your
+          Upload up to {MAX_DOMAINS} company domains and we&apos;ll show you what our data looks like for your
           target accounts. Standard tests include persona matches and intent topic coverage.
         </p>
       </div>
@@ -111,7 +113,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
         <label className={`mb-2 block text-sm font-medium ${t("text-zinc-300", "text-zinc-700")}`}>
           Company Domains
           <span className={`ml-2 text-xs ${t("text-zinc-500", "text-zinc-400")}`}>
-            ({domainCount}/100, one per line)
+            ({domainCount}/{MAX_DOMAINS}, one per line)
           </span>
         </label>
         <textarea
@@ -121,8 +123,8 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
           placeholder={"acme.com\nglobex.corp\ninitec.com\nsoylent.co"}
           className={`w-full rounded-lg border px-4 py-3 font-mono text-sm focus:border-green-500 focus:outline-none ${t("border-slate-600 bg-slate-900 text-zinc-100 placeholder-zinc-600", "border-zinc-300 bg-white text-zinc-900 placeholder-zinc-400")}`}
         />
-        {domainCount > 100 && (
-          <p className="mt-1 text-sm text-red-400">Maximum 100 domains. You have {domainCount}.</p>
+        {domainCount > MAX_DOMAINS && (
+          <p className="mt-1 text-sm text-red-400">Maximum {MAX_DOMAINS} domains. You have {domainCount}.</p>
         )}
       </div>
 
@@ -202,7 +204,7 @@ export function DataTestForm({ slug, password, theme = "dark" }: DataTestFormPro
 
       <button
         type="submit"
-        disabled={submitting || domainCount === 0 || domainCount > 100}
+        disabled={submitting || domainCount === 0 || domainCount > MAX_DOMAINS}
         className="w-full rounded-lg bg-green-600 px-4 py-3 font-medium text-white transition hover:bg-green-500 disabled:opacity-50 disabled:cursor-not-allowed"
       >
         {submitting
