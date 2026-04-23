@@ -12,8 +12,12 @@ import type { DealRoomDemoSelection } from "@/types/database";
 type Tab = "products" | "quote" | "data-test" | string;
 
 const ALL_DEMOS: Record<string, { label: string; url: string }> = {
-  daas_framework: { label: "DaaS Framework", url: "https://revsignal.vercel.app/frameworks/daas-framework" },
+  daas_framework: { label: "Entire File Matching", url: "https://revsignal.vercel.app/frameworks/daas-framework" },
+  tal_matching: { label: "TAL Matching", url: "https://surgeengine.app/pricing/raw-data" },
 };
+
+// Demo tabs that always appear on every room, regardless of selected_demos.
+const ALWAYS_ON_DEMOS = new Set(["tal_matching"]);
 
 interface RoomContentProps {
   room: Record<string, unknown>;
@@ -46,13 +50,21 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
   const customUseCasesIntro = (room.custom_use_cases_intro as string | null) ?? null;
   const customWhyUs = (room.custom_why_us as { title: string; description: string }[]) || [];
 
-  // Build active demos from selected_demos, falling back to all demos if none selected
+  // Build active demos from selected_demos, falling back to all demos if none selected.
+  // Always-on demos (e.g. TAL Matching) are appended for every room so new demos show up
+  // even on rooms created before they existed.
   const selectedDemos = (room.selected_demos as DealRoomDemoSelection[]) || [];
-  const activeDemos = selectedDemos.length > 0
+  const selectedActive = selectedDemos.length > 0
     ? selectedDemos
         .filter((d) => d.demo_type in ALL_DEMOS)
         .map((d) => ({ key: d.demo_type, ...ALL_DEMOS[d.demo_type] }))
-    : Object.entries(ALL_DEMOS).map(([key, val]) => ({ key, ...val }));
+    : Object.entries(ALL_DEMOS)
+        .filter(([key]) => !ALWAYS_ON_DEMOS.has(key))
+        .map(([key, val]) => ({ key, ...val }));
+  const alwaysOn = Array.from(ALWAYS_ON_DEMOS)
+    .filter((key) => key in ALL_DEMOS && !selectedActive.some((d) => d.key === key))
+    .map((key) => ({ key, ...ALL_DEMOS[key] }));
+  const activeDemos = [...selectedActive, ...alwaysOn];
 
   const tabs: { key: Tab; label: string; show: boolean }[] = [
     { key: "products", label: "Solutions", show: true },
