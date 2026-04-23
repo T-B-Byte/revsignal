@@ -226,6 +226,8 @@ export function ProductShowcase({ products, accentColor, theme = "dark", company
         const category = product.category as string | undefined;
         const categoryColor = category ? CATEGORY_COLORS[category] : undefined;
         const customNotes = (product.custom_notes as string | null) || null;
+        const slug = product.slug as string | undefined;
+        const isJobson = slug === "jobson-title-expansion";
 
         return (
           <div
@@ -301,8 +303,42 @@ export function ProductShowcase({ products, accentColor, theme = "dark", company
                   </div>
                 )}
 
-                {/* Data Highlights Visualization */}
-                {category && <ProductVisuals category={category} theme={theme} />}
+                {/* Data Highlights Visualization (Jobson gets a live demo iframe instead) */}
+                {isJobson ? (
+                  <div
+                    className={`mb-6 overflow-hidden rounded-lg border ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}
+                    style={{ borderTopColor: CATEGORY_COLORS.data_products, borderTopWidth: "2px" }}
+                  >
+                    <div className={`flex items-center justify-between gap-2 px-4 py-2.5 ${t("bg-slate-900", "bg-zinc-50")}`}>
+                      <div className="flex items-center gap-2">
+                        <div
+                          className="h-2.5 w-2.5 rounded-full shrink-0"
+                          style={{ backgroundColor: CATEGORY_COLORS.data_products }}
+                        />
+                        <h4 className={`text-sm font-semibold ${t("text-zinc-200", "text-zinc-800")}`}>
+                          Live Title Expansion Demo
+                        </h4>
+                      </div>
+                      <a
+                        href="https://surgeengine.app/title-expansion"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className={`text-xs font-medium underline-offset-2 hover:underline ${t("text-zinc-400", "text-zinc-500")}`}
+                      >
+                        Open in new tab
+                      </a>
+                    </div>
+                    <iframe
+                      src="https://surgeengine.app/title-expansion"
+                      title="Jobson Title Expansion Demo"
+                      loading="lazy"
+                      className="block h-[720px] w-full border-0 bg-white"
+                      sandbox="allow-scripts allow-same-origin allow-forms allow-popups"
+                    />
+                  </div>
+                ) : (
+                  category && <ProductVisuals category={category} theme={theme} />
+                )}
 
                 {/* Key Stats */}
                 {keyStats.length > 0 && (
