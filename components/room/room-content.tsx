@@ -144,7 +144,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
             </section>
           )}
 
-          <ProductShowcase products={products} accentColor={accentColor} theme={theme} customUseCases={customUseCases} customUseCasesIntro={customUseCasesIntro} customWhyUs={customWhyUs} customPricing={customPricing} />
+          <ProductShowcase products={products} accentColor={accentColor} theme={theme} companyName={companyName} customUseCases={customUseCases} customUseCasesIntro={customUseCasesIntro} customWhyUs={customWhyUs} customPricing={customPricing} />
 
           <DataCoverage theme={theme} />
         </div>

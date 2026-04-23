@@ -64,6 +64,12 @@ export function EditDealRoomDialog({
   const [selectedProducts, setSelectedProducts] = useState<string[]>(
     (room.selected_products ?? []).map((p) => p.product_id)
   );
+  // Preserve any per-product custom_notes set outside this UI (e.g. via script).
+  const initialNotesByProductId = new Map<string, string>(
+    (room.selected_products ?? [])
+      .filter((p) => typeof (p as { custom_notes?: unknown }).custom_notes === "string" && (p as { custom_notes?: string }).custom_notes!.trim().length > 0)
+      .map((p) => [p.product_id, (p as { custom_notes: string }).custom_notes])
+  );
   const [showAudienceDashboard, setShowAudienceDashboard] = useState(room.show_audience_dashboard);
   const [showQuoteBuilder, setShowQuoteBuilder] = useState(room.show_quote_builder);
   const [accentColor, setAccentColor] = useState(room.accent_color ?? "");
@@ -113,10 +119,12 @@ export function EditDealRoomDialog({
         status,
         custom_header: customHeader.trim() || null,
         welcome_message: welcomeMessage.trim() || null,
-        selected_products: selectedProducts.map((id, i) => ({
-          product_id: id,
-          display_order: i,
-        })),
+        selected_products: selectedProducts.map((id, i) => {
+          const note = initialNotesByProductId.get(id);
+          return note
+            ? { product_id: id, display_order: i, custom_notes: note }
+            : { product_id: id, display_order: i };
+        }),
         selected_demos: selectedDemos.map((dt) => ({ demo_type: dt })),
         show_audience_dashboard: showAudienceDashboard,
         show_quote_builder: showQuoteBuilder,

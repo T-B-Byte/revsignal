@@ -194,13 +194,14 @@ interface ProductShowcaseProps {
   products: Record<string, unknown>[];
   accentColor: string;
   theme?: "dark" | "light";
+  companyName?: string;
   customUseCases?: CustomUseCase[];
   customUseCasesIntro?: string | null;
   customWhyUs?: CustomWhyUs[];
   customPricing?: CustomPricing[];
 }
 
-export function ProductShowcase({ products, accentColor, theme = "dark", customUseCases = [], customUseCasesIntro = null, customWhyUs = [], customPricing = [] }: ProductShowcaseProps) {
+export function ProductShowcase({ products, accentColor, theme = "dark", companyName, customUseCases = [], customUseCasesIntro = null, customWhyUs = [], customPricing = [] }: ProductShowcaseProps) {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const t = (dark: string, light: string) => theme === "dark" ? dark : light;
 
@@ -224,6 +225,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark", customU
         const differentiators = (product.differentiators as { vs_competitor: string; advantage: string }[]) || [];
         const category = product.category as string | undefined;
         const categoryColor = category ? CATEGORY_COLORS[category] : undefined;
+        const customNotes = (product.custom_notes as string | null) || null;
 
         return (
           <div
@@ -281,6 +283,24 @@ export function ProductShowcase({ products, accentColor, theme = "dark", customU
             {/* Expanded Details */}
             {isExpanded && (
               <div className={`border-t p-6 pt-4 ${t("border-slate-700", "border-zinc-200")}`}>
+                {/* Per-room custom note: how this fits the prospect */}
+                {customNotes && (
+                  <div
+                    className={`mb-6 rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}
+                    style={{ borderLeftColor: accentColor, borderLeftWidth: "3px" }}
+                  >
+                    <p
+                      className="mb-1 text-[11px] font-semibold uppercase tracking-wider"
+                      style={{ color: accentColor }}
+                    >
+                      {companyName ? `How this fits ${companyName}` : "How this fits"}
+                    </p>
+                    <p className={`text-sm leading-relaxed ${t("text-zinc-200", "text-zinc-800")}`}>
+                      {customNotes}
+                    </p>
+                  </div>
+                )}
+
                 {/* Data Highlights Visualization */}
                 {category && <ProductVisuals category={category} theme={theme} />}
 

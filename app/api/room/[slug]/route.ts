@@ -83,9 +83,20 @@ export async function POST(
 
     // Fetch selected products (guard against unexpected types)
     const rawProducts = room.selected_products;
-    const productIds = (Array.isArray(rawProducts) ? rawProducts : [])
-      .map((p: { product_id?: string }) => p.product_id)
-      .filter(Boolean);
+    const selectionsById = new Map<string, { display_order: number; custom_notes: string | null }>();
+    for (const p of (Array.isArray(rawProducts) ? rawProducts : []) as Array<{
+      product_id?: string;
+      display_order?: unknown;
+      custom_notes?: unknown;
+    }>) {
+      if (typeof p?.product_id === "string") {
+        selectionsById.set(p.product_id, {
+          display_order: typeof p.display_order === "number" ? p.display_order : 0,
+          custom_notes: typeof p.custom_notes === "string" && p.custom_notes.trim() ? p.custom_notes : null,
+        });
+      }
+    }
+    const productIds = Array.from(selectionsById.keys());
 
     let products: Record<string, unknown>[] = [];
     if (productIds.length > 0) {
@@ -95,7 +106,12 @@ export async function POST(
           "product_id, name, slug, category, tagline, value_prop, problem_statement, key_stats, features, benefits, use_cases, differentiators, pricing_tiers, packaging_notes, target_personas, demo_type"
         )
         .in("product_id", productIds);
-      products = data ?? [];
+      products = (data ?? [])
+        .map((p) => {
+          const sel = selectionsById.get(p.product_id as string);
+          return { ...p, custom_notes: sel?.custom_notes ?? null, display_order: sel?.display_order ?? 0 };
+        })
+        .sort((a, b) => (a.display_order as number) - (b.display_order as number));
     }
 
     // Return room data (exclude password_hash and internal fields)

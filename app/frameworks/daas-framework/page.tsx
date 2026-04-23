@@ -123,27 +123,8 @@ export default function DaasFrameworkPage() {
               </td>
             </tr>
 
-            {/* Coverage */}
-            <tr>
-              <td className="px-5 py-5 font-semibold text-zinc-700 align-top">
-                Includes
-              </td>
-              <td className="px-5 py-5 align-top text-zinc-600">
-                Up to 30,000 accounts
-              </td>
-              <td className="px-5 py-5 align-top text-zinc-600">
-                Up to 30,000 accounts
-              </td>
-              <td className="px-5 py-5 align-top text-zinc-600">
-                Up to 30,000 accounts
-              </td>
-              <td className="px-5 py-5 align-top text-zinc-600">
-                Up to 30,000 accounts
-              </td>
-            </tr>
-
             {/* Delivery */}
-            <tr className="bg-zinc-50">
+            <tr>
               <td className="px-5 py-5 font-semibold text-zinc-700 align-top">
                 Delivery
               </td>
