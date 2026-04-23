@@ -165,13 +165,29 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
       )}
 
       {activeTab === "quote" && showQuoteBuilder && (
-        <QuoteBuilder
-          products={products}
-          slug={slug}
-          password={password}
-          theme={theme}
-          customPricing={customPricing}
-        />
+        <div className={`rounded-xl border p-10 text-center ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
+          <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-full bg-green-600/15 text-green-400">
+            <svg className="h-7 w-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.8}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 8v4l2.5 2.5M12 21a9 9 0 110-18 9 9 0 010 18z" />
+            </svg>
+          </div>
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-[0.2em] text-green-400">
+            Coming soon
+          </p>
+          <h2 className={`text-2xl font-bold tracking-tight ${t("text-zinc-50", "text-zinc-900")}`}>
+            Build a Quote
+          </h2>
+          <p className={`mx-auto mt-3 max-w-lg text-sm leading-relaxed ${t("text-zinc-400", "text-zinc-600")}`}>
+            Self-service quoting is almost ready. In the meantime, email{" "}
+            <a
+              href="mailto:tbean@pharosiq.com"
+              className="font-medium text-green-400 underline-offset-2 hover:underline"
+            >
+              tbean@pharosiq.com
+            </a>{" "}
+            with the packages you&apos;re interested in and we&apos;ll send pricing the same day.
+          </p>
+        </div>
       )}
 
       {/* Demo tabs */}
