@@ -12,7 +12,7 @@ import type { DealRoomDemoSelection } from "@/types/database";
 type Tab = "products" | "quote" | "data-test" | string;
 
 const ALL_DEMOS: Record<string, { label: string; url: string }> = {
-  daas_framework: { label: "Entire File Matching", url: "https://revsignal.vercel.app/frameworks/daas-framework" },
+  daas_framework: { label: "Entire File", url: "https://revsignal.vercel.app/frameworks/daas-framework" },
   tal_matching: { label: "TAL Matching", url: "https://surgeengine.app/pricing/raw-data" },
 };
 
