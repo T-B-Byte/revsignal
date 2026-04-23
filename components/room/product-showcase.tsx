@@ -464,22 +464,40 @@ export function ProductShowcase({ products, accentColor, theme = "dark", company
 
       {/* Custom Use Cases (room-level, set by Tina) */}
       {customUseCases.length > 0 && (
-        <div className={`mt-6 rounded-xl border p-6 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}>
-          <h3 className={`mb-2 text-lg font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>
+        <div
+          className={`mt-8 rounded-xl border p-8 ${t("border-slate-700 bg-slate-800", "border-zinc-200 bg-white shadow-sm")}`}
+          style={{ borderLeftColor: accentColor, borderLeftWidth: "4px" }}
+        >
+          <p
+            className="mb-2 text-[11px] font-semibold uppercase tracking-[0.15em]"
+            style={{ color: accentColor }}
+          >
+            {companyName ? `Tailored for ${companyName}` : "Tailored use cases"}
+          </p>
+          <h3 className={`mb-3 text-2xl font-bold tracking-tight ${t("text-zinc-50", "text-zinc-900")}`}>
             Use Cases
           </h3>
           {customUseCasesIntro && (
-            <p className={`mb-4 text-sm leading-relaxed ${t("text-zinc-400", "text-zinc-500")}`}>
+            <p className={`mb-6 text-base leading-relaxed ${t("text-zinc-300", "text-zinc-600")}`}>
               {customUseCasesIntro}
             </p>
           )}
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {customUseCases.map((uc, i) => (
-              <div key={i} className={`rounded-lg border p-4 ${t("border-slate-700 bg-slate-900", "border-zinc-200 bg-zinc-50")}`}>
-                <p className={`text-sm font-medium ${t("text-zinc-200", "text-zinc-800")}`}>{uc.title}</p>
-                <p className={`mt-1 text-xs leading-relaxed ${t("text-zinc-400", "text-zinc-500")}`}>{uc.description}</p>
+              <div
+                key={i}
+                className={`rounded-lg border p-4 transition ${t("border-slate-700 bg-slate-900 hover:border-slate-600", "border-zinc-200 bg-zinc-50 hover:border-zinc-300")}`}
+                style={{ borderTopColor: accentColor, borderTopWidth: "2px" }}
+              >
+                <p className={`text-sm font-semibold ${t("text-zinc-100", "text-zinc-900")}`}>{uc.title}</p>
+                <p className={`mt-1.5 text-xs leading-relaxed ${t("text-zinc-400", "text-zinc-600")}`}>{uc.description}</p>
                 {uc.persona && (
-                  <p className={`mt-2 text-xs ${t("text-zinc-600", "text-zinc-400")}`}>For: {uc.persona}</p>
+                  <p
+                    className="mt-3 text-[10px] font-semibold uppercase tracking-wider"
+                    style={{ color: accentColor }}
+                  >
+                    For: {uc.persona}
+                  </p>
                 )}
               </div>
             ))}
