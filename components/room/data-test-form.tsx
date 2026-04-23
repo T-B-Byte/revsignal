@@ -25,10 +25,10 @@ export function DataTestForm({ theme = "dark" }: DataTestFormProps) {
       <p className={`mx-auto mt-3 max-w-lg text-sm leading-relaxed ${t("text-zinc-400", "text-zinc-600")}`}>
         Self-service data tests are almost ready. In the meantime, email{" "}
         <a
-          href="mailto:tina@pharosiq.com"
+          href="mailto:tbean@pharosiq.com"
           className="font-medium text-green-400 underline-offset-2 hover:underline"
         >
-          tina@pharosiq.com
+          tbean@pharosiq.com
         </a>{" "}
         with your target domain list and we&apos;ll run the test manually within one business day.
       </p>
