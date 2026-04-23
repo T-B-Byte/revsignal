@@ -48,6 +48,7 @@ supabase/.temp/
 /public/*.xlsx
 /public/*.xls
 /public/*.docx
+!/public/pharosIQ-DPA.docx
 /public/*.zip
 /public/*.png
 /public/Contracts/

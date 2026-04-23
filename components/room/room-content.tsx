@@ -5,11 +5,12 @@ import { ProductShowcase } from "./product-showcase";
 import { QuoteBuilder } from "./quote-builder";
 import { DataTestForm } from "./data-test-form";
 import { DataCoverage } from "./data-coverage";
+import { DpaDownload } from "./dpa-download";
 import { TINA_CALENDAR_URL } from "@/types/database";
 
 import type { DealRoomDemoSelection } from "@/types/database";
 
-type Tab = "products" | "quote" | "data-test" | string;
+type Tab = "products" | "quote" | "data-test" | "dpa" | string;
 
 const ALL_DEMOS: Record<string, { label: string; url: string }> = {
   daas_framework: { label: "Entire File", url: "https://revsignal.vercel.app/frameworks/daas-framework" },
@@ -70,7 +71,8 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
     { key: "products", label: "Solutions", show: true },
     ...activeDemos.map((d) => ({ key: d.key, label: d.label, show: true })),
     { key: "quote", label: "Build a Quote", show: showQuoteBuilder },
-    { key: "data-test", label: "Data Test", show: true },
+    { key: "data-test", label: "Data Test Request", show: true },
+    { key: "dpa", label: "DPA", show: true },
   ];
 
   return (
@@ -188,6 +190,10 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
 
       {activeTab === "data-test" && (
         <DataTestForm slug={slug} password={password} theme={theme} />
+      )}
+
+      {activeTab === "dpa" && (
+        <DpaDownload theme={theme} accentColor={accentColor} companyName={companyName} />
       )}
 
       {/* Footer */}
