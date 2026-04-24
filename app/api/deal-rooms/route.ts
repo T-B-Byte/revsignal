@@ -9,8 +9,8 @@ const createDealRoomSchema = z.object({
   company_id: z.string().regex(UUID_REGEX, "Invalid company_id format"),
   slug: z.string().min(1).max(200).regex(/^[a-z0-9][a-z0-9-]*[a-z0-9]$/, "Slug must be lowercase alphanumeric with hyphens only"),
   password: z.string().min(4).max(100),
-  custom_header: z.string().max(500).optional(),
-  welcome_message: z.string().max(2000).optional(),
+  custom_header: z.string().max(500).optional().nullable(),
+  welcome_message: z.string().max(2000).optional().nullable(),
   selected_products: z
     .array(
       z.object({

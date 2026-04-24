@@ -22,6 +22,19 @@ interface EditDealRoomDialogProps {
   products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type">[];
 }
 
+function formatIssues(
+  issues: Array<{ path?: Array<string | number>; message?: string }> | undefined
+): string {
+  if (!issues || issues.length === 0) return "";
+  return issues
+    .map((i) => {
+      const path = Array.isArray(i.path) ? i.path.join(".") : "";
+      const msg = i.message ?? "invalid";
+      return path ? `${path}: ${msg}` : msg;
+    })
+    .join("; ");
+}
+
 const AVAILABLE_DEMOS: { demo_type: DemoType; label: string; description: string }[] = [
   { demo_type: "daas_framework", label: "DaaS Framework", description: "Tiered data product framework" },
 ];
@@ -130,10 +143,16 @@ export function EditDealRoomDialog({
         show_quote_builder: showQuoteBuilder,
         accent_color: accentColor || null,
         expires_at: expiresAt || null,
-        custom_pricing: customPricing.filter((p) => p.label.trim()),
-        custom_use_cases: customUseCases.filter((uc) => uc.title.trim()),
+        custom_pricing: customPricing.filter(
+          (p) => p.label.trim() && p.price.trim()
+        ),
+        custom_use_cases: customUseCases.filter(
+          (uc) => uc.title.trim() && uc.description.trim()
+        ),
         custom_use_cases_intro: customUseCasesIntro.trim() || null,
-        custom_why_us: customWhyUs.filter((w) => w.title.trim()),
+        custom_why_us: customWhyUs.filter(
+          (w) => w.title.trim() && w.description.trim()
+        ),
       };
 
       // Only include password if changed from stored value
@@ -149,7 +168,9 @@ export function EditDealRoomDialog({
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error ?? `Failed to update deal room (${res.status})`);
+        const detail = formatIssues(data?.issues);
+        const base = data?.error ?? `Failed to update deal room (${res.status})`;
+        setError(detail ? `${base}: ${detail}` : base);
         return;
       }
 

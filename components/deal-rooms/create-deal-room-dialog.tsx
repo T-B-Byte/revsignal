@@ -23,6 +23,19 @@ interface CreateDealRoomDialogProps {
   existingRoomCompanyIds?: string[];
 }
 
+function formatIssues(
+  issues: Array<{ path?: Array<string | number>; message?: string }> | undefined
+): string {
+  if (!issues || issues.length === 0) return "";
+  return issues
+    .map((i) => {
+      const path = Array.isArray(i.path) ? i.path.join(".") : "";
+      const msg = i.message ?? "invalid";
+      return path ? `${path}: ${msg}` : msg;
+    })
+    .join("; ");
+}
+
 function slugify(name: string): string {
   const now = new Date();
   const monthYear = now
@@ -270,10 +283,16 @@ export function CreateDealRoomDialog({
         show_quote_builder: showQuoteBuilder,
         accent_color: accentColor || null,
         expires_at: expiresAt || null,
-        custom_pricing: customPricing.filter((p) => p.label.trim()),
-        custom_use_cases: customUseCases.filter((uc) => uc.title.trim()),
+        custom_pricing: customPricing.filter(
+          (p) => p.label.trim() && p.price.trim()
+        ),
+        custom_use_cases: customUseCases.filter(
+          (uc) => uc.title.trim() && uc.description.trim()
+        ),
         custom_use_cases_intro: customUseCasesIntro.trim() || null,
-        custom_why_us: customWhyUs.filter((w) => w.title.trim()),
+        custom_why_us: customWhyUs.filter(
+          (w) => w.title.trim() && w.description.trim()
+        ),
       };
 
       const res = await fetch("/api/deal-rooms", {
@@ -284,7 +303,9 @@ export function CreateDealRoomDialog({
 
       if (!res.ok) {
         const data = await res.json().catch(() => null);
-        setError(data?.error ?? `Failed to create deal room (${res.status})`);
+        const detail = formatIssues(data?.issues);
+        const base = data?.error ?? `Failed to create deal room (${res.status})`;
+        setError(detail ? `${base}: ${detail}` : base);
         return;
       }
 
