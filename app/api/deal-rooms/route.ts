@@ -56,12 +56,12 @@ const createDealRoomSchema = z.object({
     )
     .max(20)
     .optional(),
-  custom_use_cases_intro: z.string().max(1000).optional().nullable(),
+  custom_use_cases_intro: z.string().max(5000).optional().nullable(),
   custom_why_us: z
     .array(
       z.object({
         title: z.string().min(1).max(200),
-        description: z.string().min(1).max(1000),
+        description: z.string().min(1).max(5000),
       })
     )
     .max(20)
