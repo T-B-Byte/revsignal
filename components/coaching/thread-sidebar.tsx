@@ -20,6 +20,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
   const [viewMode, setViewMode] = useState<ViewMode>("deals");
   const [showArchived, setShowArchived] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [settledQuery, setSettledQuery] = useState("");
   const [contentMatchIds, setContentMatchIds] = useState<Set<string>>(new Set());
   const [contentSnippets, setContentSnippets] = useState<Record<string, string>>({});
   const [isSearching, setIsSearching] = useState(false);
@@ -31,16 +32,11 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
   } | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  // Debounced content search
+  // Debounced content search. Commits results via `settledQuery` so the
+  // visible list only updates once the full search has resolved — prevents
+  // mid-search layout shift that causes misclicks.
   const searchContent = useCallback(async (query: string) => {
     searchAbortRef.current?.abort();
-
-    if (!query || query.length < 2) {
-      setContentMatchIds(new Set());
-      setContentSnippets({});
-      setIsSearching(false);
-      return;
-    }
 
     setIsSearching(true);
     const controller = new AbortController();
@@ -53,26 +49,41 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
       );
       if (!res.ok) throw new Error("Search failed");
       const data = await res.json();
+      if (controller.signal.aborted) return;
       setContentMatchIds(new Set(data.thread_ids));
       setContentSnippets(data.snippets);
+      setSettledQuery(query);
     } catch (e: unknown) {
       if (e instanceof DOMException && e.name === "AbortError") return;
       setContentMatchIds(new Set());
       setContentSnippets({});
+      setSettledQuery(query);
     } finally {
       if (!controller.signal.aborted) setIsSearching(false);
     }
   }, []);
 
   useEffect(() => {
+    // Queries under 2 chars don't hit the server; commit immediately so
+    // metadata filtering is instant (and clearing the field is instant).
+    if (searchQuery.length < 2) {
+      searchAbortRef.current?.abort();
+      setContentMatchIds(new Set());
+      setContentSnippets({});
+      setIsSearching(false);
+      setSettledQuery(searchQuery);
+      return;
+    }
     const timer = setTimeout(() => searchContent(searchQuery), 300);
     return () => clearTimeout(timer);
   }, [searchQuery, searchContent]);
 
-  // Filter threads: metadata match OR content match
+  // Filter threads: metadata match OR content match. Use settledQuery so
+  // metadata and content matches commit together — avoids the list
+  // reflowing twice per keystroke.
   const filteredThreads = useMemo(() => threads.filter((t) => {
-    if (!searchQuery) return true;
-    const q = searchQuery.toLowerCase();
+    if (!settledQuery) return true;
+    const q = settledQuery.toLowerCase();
     const metadataMatch =
       t.title?.toLowerCase().includes(q) ||
       t.contact_name?.toLowerCase().includes(q) ||
@@ -84,7 +95,9 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
           p.role?.toLowerCase().includes(q)
       );
     return metadataMatch || contentMatchIds.has(t.thread_id);
-  }), [threads, searchQuery, contentMatchIds]);
+  }), [threads, settledQuery, contentMatchIds]);
+
+  const isSearchPending = searchQuery.length >= 2 && searchQuery !== settledQuery;
 
   const activeThreads = useMemo(() => filteredThreads.filter((t) => !t.is_archived), [filteredThreads]);
   const archivedThreads = useMemo(() => filteredThreads.filter((t) => t.is_archived), [filteredThreads]);
@@ -237,12 +250,16 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
 
       {/* Thread list */}
       <div className="flex-1 overflow-y-auto">
-        {activeThreads.length === 0 && (
+        {isSearchPending && (
           <div className="px-4 py-8 text-center">
-            {searchQuery ? (
-              <p className="text-xs text-text-muted">
-                {isSearching ? "Searching..." : "No matching conversations."}
-              </p>
+            <p className="text-xs text-text-muted">Searching…</p>
+          </div>
+        )}
+
+        {!isSearchPending && activeThreads.length === 0 && (
+          <div className="px-4 py-8 text-center">
+            {settledQuery ? (
+              <p className="text-xs text-text-muted">No matching conversations.</p>
             ) : (
               <>
                 <p className="text-xs text-text-muted">No conversations yet.</p>
@@ -257,7 +274,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
           </div>
         )}
 
-        {grouped.map(({ label, sublabel, threads: groupThreads, color }) => (
+        {!isSearchPending && grouped.map(({ label, sublabel, threads: groupThreads, color }) => (
           <div key={label}>
             {/* Group header */}
             <div className="sticky top-0 z-10 bg-surface-secondary/95 backdrop-blur-sm px-4 py-1.5 border-b border-border-primary">
@@ -288,7 +305,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
                 viewMode={viewMode}
                 isActive={currentThreadId === thread.thread_id}
                 isConfirmingDelete={confirmDelete === thread.thread_id}
-                contentSnippet={searchQuery.length >= 2 ? contentSnippets[thread.thread_id] : undefined}
+                contentSnippet={settledQuery.length >= 2 ? contentSnippets[thread.thread_id] : undefined}
                 onClick={() => router.push(`/coach/${thread.thread_id}`)}
                 onContextMenu={(e) => handleContextMenu(e, thread)}
                 onConfirmDelete={() => handleConfirmDelete(thread.thread_id)}
@@ -299,7 +316,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
         ))}
 
         {/* Archived section */}
-        {archivedThreads.length > 0 && (
+        {!isSearchPending && archivedThreads.length > 0 && (
           <div className="border-t border-border-primary">
             <button
               onClick={() => setShowArchived(!showArchived)}
@@ -315,7 +332,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
                   viewMode={viewMode}
                   isActive={currentThreadId === thread.thread_id}
                   isConfirmingDelete={confirmDelete === thread.thread_id}
-                  contentSnippet={searchQuery.length >= 2 ? contentSnippets[thread.thread_id] : undefined}
+                  contentSnippet={settledQuery.length >= 2 ? contentSnippets[thread.thread_id] : undefined}
                   onClick={() => router.push(`/coach/${thread.thread_id}`)}
                   onContextMenu={(e) => handleContextMenu(e, thread)}
                   onConfirmDelete={() => handleConfirmDelete(thread.thread_id)}
