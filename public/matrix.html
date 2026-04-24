@@ -28,7 +28,7 @@
     @media print {
       body { font-size: 10px; }
       .page { box-shadow: none; padding: 32px; }
-      .save-banner, .password-overlay { display: none; }
+      .save-banner, .error-banner, .password-overlay { display: none; }
       select.cell-dropdown { display: none; }
       .print-value { display: block !important; }
     }
@@ -41,6 +41,8 @@
     .context-box strong { color: var(--gray-900); }
     .save-banner { position: fixed; top: 0; left: 0; right: 0; background: var(--t1); color: #fff; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; transform: translateY(-100%); transition: transform 0.3s ease; z-index: 100; }
     .save-banner.visible { transform: translateY(0); }
+    .error-banner { position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: #fff; text-align: center; padding: 10px; font-size: 13px; font-weight: 600; z-index: 101; }
+    .error-banner.visible { display: block; }
 
     /* ACCOUNT MATRIX */
     .accounts-table { width: 100%; table-layout: auto; border-collapse: collapse; font-size: 12px; margin-bottom: 24px; }
@@ -143,6 +145,7 @@
 </div>
 
 <div class="save-banner" id="saveBanner">Saved</div>
+<div class="error-banner" id="errorBanner"></div>
 
 <!-- ACCOUNT MATRIX -->
 <div class="page" id="mainContent" style="display:none;">
@@ -310,6 +313,8 @@ var accounts = [
 function loadLocal(key) { try { var v = JSON.parse(localStorage.getItem(key)); return v && Object.keys(v).length ? v : null; } catch(e) { return null; } }
 function loadLocalOr(key, fallbackKey) { return loadLocal(key) || loadLocal(fallbackKey) || {}; }
 function showSave() { var b = document.getElementById('saveBanner'); b.classList.add('visible'); setTimeout(function() { b.classList.remove('visible'); }, 1500); }
+function showError(msg) { var b = document.getElementById('errorBanner'); if (!b) return; b.textContent = msg; b.classList.add('visible'); }
+function hideError() { var b = document.getElementById('errorBanner'); if (b) b.classList.remove('visible'); }
 
 var _pendingSync = {};
 var _syncTimer = null;
@@ -326,7 +331,10 @@ function syncToServer(column, data) {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload)
-    }).catch(function(err) { console.warn('Server sync failed:', err); });
+    }).then(function(r) {
+      if (!r.ok) { showError('Cannot save to server (HTTP ' + r.status + '). Changes are only in this browser.'); return; }
+      hideError();
+    }).catch(function(err) { showError('Cannot save to server. Changes are only in this browser.'); console.warn('Server sync failed:', err); });
   }, 500);
   showSave();
 }
@@ -540,6 +548,7 @@ function startRealtime(url, anonKey) {
     })
     .catch(function(err) {
       console.warn('Server load failed, using localStorage:', err);
+      showError('Cannot reach server. Showing cached values from this browser only. Changes will NOT persist.');
       state.checks = loadLocalOr(PREFIX + 'checks', PREFIX + 'checks-v4');
       state.acvs = loadLocalOr(PREFIX + 'acvs', PREFIX + 'acvs-v4');
       state.leads = loadLocalOr(PREFIX + 'leads', PREFIX + 'leads-v4');

@@ -42,7 +42,9 @@ export async function updateSession(request: NextRequest) {
     pathname.startsWith("/room/") ||
     pathname.startsWith("/api/room/") ||
     // Shareable framework documents embedded in deal room iframes
-    pathname.startsWith("/frameworks/");
+    pathname.startsWith("/frameworks/") ||
+    // Shared state for public /matrix.html and /daas-framework.html
+    pathname === "/api/daas-framework";
 
   // Protect all non-public routes — redirect to login if not authenticated
   if (!user && !isPublicRoute) {
