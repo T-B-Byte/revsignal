@@ -578,8 +578,9 @@ export function ThreadChat({
       const mentions = extractMentions(trimmed);
       if (mentions.length > 0) {
         const sourceThreadName = thread.contact_name || thread.title;
-        // Strip @mentions from the content for the cross-post
-        const cleanContent = trimmed.replace(/@(\w+(?:\s+\w+)?)/g, "$1");
+        // Strip @mentions from the content for the cross-post.
+        // Negative lookbehind skips email-address @s (e.g. steve@example.com).
+        const cleanContent = trimmed.replace(/(?<![\w.])@(\w+(?:\s+\w+)?)/g, "$1");
         fetch("/api/coaching/threads/cross-post", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -617,8 +618,10 @@ export function ThreadChat({
 
   /** Extract @mentions from message text. Returns array of names. */
   function extractMentions(text: string): string[] {
-    // Match @Name or @FirstName LastName patterns
-    const regex = /@(\w+(?:\s+\w+)?)/g;
+    // Match @Name or @FirstName LastName. Negative lookbehind skips @s preceded
+    // by a word char or dot so email addresses (steve.markle@tdsynnex.com)
+    // don't get treated as mentions.
+    const regex = /(?<![\w.])@(\w+(?:\s+\w+)?)/g;
     const mentions: string[] = [];
     let match;
     while ((match = regex.exec(text)) !== null) {

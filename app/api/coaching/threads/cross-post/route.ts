@@ -52,18 +52,24 @@ export async function POST(request: NextRequest) {
   const threads = existingThreads ?? [];
   const crossPosted: { thread_id: string; name: string; created: boolean }[] = [];
 
+  // Normalize company names so "TD Synnex" matches a mention of "tdsynnex".
+  const normalize = (s: string) => s.toLowerCase().replace(/[\s.,&/-]+/g, "");
+
   for (const mention of mentions) {
     const mentionLower = mention.toLowerCase();
+    const mentionNormalized = normalize(mention);
 
-    // Try to find a matching thread by contact_name or title
+    // Try to find a matching thread by contact_name, title, or company
     const match = threads.find((t) => {
       const contactMatch = t.contact_name?.toLowerCase().includes(mentionLower);
       const titleMatch = t.title?.toLowerCase().includes(mentionLower);
+      const companyMatch =
+        t.company && normalize(t.company).includes(mentionNormalized);
       // Also check first name match (e.g., "@Ben" matches "Ben Luck")
       const firstNameMatch = t.contact_name
         ?.toLowerCase()
         .split(/\s+/)[0] === mentionLower;
-      return contactMatch || titleMatch || firstNameMatch;
+      return contactMatch || titleMatch || companyMatch || firstNameMatch;
     });
 
     let targetThreadId: string;
