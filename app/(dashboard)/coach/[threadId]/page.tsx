@@ -98,12 +98,15 @@ export default async function ThreadPage({
         .eq("user_id", user.id)
         .in("stage", ACTIVE_STAGES)
         .order("last_activity_date", { ascending: false }),
+      // Fetch the most recent 200 messages (descending) and reverse for display.
+      // Previously limited to the OLDEST 50, which truncated recent activity
+      // on long threads.
       supabase
         .from("coaching_conversations")
         .select("*")
         .eq("thread_id", threadId)
-        .order("created_at", { ascending: true })
-        .limit(50),
+        .order("created_at", { ascending: false })
+        .limit(200),
     ]);
 
   if (!threadResult.data) {
@@ -114,7 +117,9 @@ export default async function ThreadPage({
   const threads = (threadsResult.data ?? []) as CoachingThreadWithDeal[];
   const activeDeals =
     (dealsResult.data as Pick<Deal, "deal_id" | "company" | "stage">[]) || [];
-  const messages = (messagesResult.data as CoachingMessage[]) || [];
+  const messages = ((messagesResult.data as CoachingMessage[]) || [])
+    .slice()
+    .reverse();
 
   // Enrich threads with follow-up counts and task counts
   const threadIds = threads.map((t) => t.thread_id);
