@@ -50,7 +50,7 @@ const createDealRoomSchema = z.object({
     .array(
       z.object({
         title: z.string().min(1).max(200),
-        description: z.string().min(1).max(1000),
+        description: z.string().min(1).max(5000),
         persona: z.string().max(200).optional(),
       })
     )
