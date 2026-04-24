@@ -1,0 +1,1182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex, nofollow">
+  <title>DaaS Go-to-Market</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --t1: #2d7a4f; --t1-light: #e6f5ee; --t1-border: #7dd3a8;
+      --t2: #2a5fa5; --t2-light: #e0edfa; --t2-border: #93b4f4;
+      --t3: #9333ea; --t3-light: #f3e8ff; --t3-border: #c084fc;
+      --t4: #dc2626; --t4-light: #fef2f2; --t4-border: #fca5a5;
+      --gray-900: #111827; --gray-700: #374151; --gray-500: #6b7280;
+      --gray-300: #d1d5db; --gray-100: #f3f4f6;
+      --amber-600: #d97706; --amber-50: #fffbeb; --amber-border: #fcd34d;
+      --red-600: #dc2626; --red-50: #fef2f2; --red-border: #fca5a5;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-900); line-height: 1.5; background: #fff;
+    }
+
+    /* PASSWORD GATE */
+    #pw-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: #f3f4f6;
+      display: flex; align-items: center; justify-content: center;
+    }
+    #pw-gate.hidden { display: none; }
+    #pw-box {
+      background: #fff; border: 1px solid var(--gray-300);
+      padding: 40px 44px; width: 380px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    #pw-box h2 { font-size: 16px; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
+    #pw-box p { font-size: 12.5px; color: var(--gray-500); margin-bottom: 24px; }
+    #pw-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-700); display: block; margin-bottom: 6px; }
+    #pw-input {
+      width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-300);
+      font-family: inherit; font-size: 14px; color: var(--gray-900);
+      margin-bottom: 12px; outline: none;
+    }
+    #pw-input:focus { border-color: var(--t2); }
+    #pw-input.error { border-color: var(--red-600); }
+    #pw-error { font-size: 12px; color: var(--red-600); margin-bottom: 12px; display: none; }
+    #pw-submit {
+      width: 100%; padding: 10px; background: var(--gray-900); color: #fff;
+      border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.3px;
+    }
+    #pw-submit:hover { background: var(--gray-700); }
+    #pw-wordmark { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); margin-bottom: 20px; }
+    #doc-content { display: none; }
+
+    @media print {
+      body { font-size: 10px; }
+      .page { box-shadow: none; padding: 32px; page-break-after: always; }
+      .page:last-child { page-break-after: auto; }
+      .price-table, .signal-table, .accounts-table { font-size: 10px; }
+      .price-table td, .price-table th, .signal-table td, .signal-table th { padding: 6px 8px; }
+      .save-banner, .error-banner { display: none; }
+      select.cell-dropdown { display: none; }
+      .print-value { display: block !important; }
+    }
+
+    .page { max-width: 1120px; margin: 0 auto 40px; padding: 48px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+    .page.wide { max-width: none; padding: 48px 24px; }
+
+    .header { border-bottom: 3px solid var(--gray-900); padding-bottom: 16px; margin-bottom: 32px; }
+    .header h1 { font-size: 21px; font-weight: 800; letter-spacing: -0.5px; color: var(--gray-900); margin-bottom: 4px; }
+    .header-meta { display: flex; justify-content: space-between; font-size: 12px; color: var(--gray-500); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .context-box { background: var(--gray-100); border-left: 4px solid var(--gray-500); padding: 14px 18px; margin-bottom: 28px; font-size: 13px; color: var(--gray-700); }
+    .context-box strong { color: var(--gray-900); }
+
+    .approval-note { background: var(--amber-50); border: 1px solid var(--amber-border); border-left: 4px solid var(--amber-600); padding: 14px 18px; font-size: 13px; color: var(--gray-700); margin-bottom: 24px; }
+    .approval-note strong { color: var(--amber-600); }
+
+    .section-label { font-size: 15px; font-weight: 800; color: var(--gray-900); margin: 32px 0 6px; letter-spacing: -0.3px; }
+    .section-label.first { margin-top: 0; }
+    .section-sublabel { font-size: 12px; color: var(--gray-500); margin-bottom: 14px; }
+
+    .product-block { margin-top: 36px; }
+    .product-block:first-of-type { margin-top: 0; }
+    .product-block-header { display: flex; align-items: baseline; gap: 10px; margin-bottom: 4px; }
+    .product-number { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); }
+    .product-title { font-size: 16px; font-weight: 800; color: var(--gray-900); letter-spacing: -0.3px; }
+    .product-divider { border: none; border-top: 2px solid var(--gray-300); margin: 0 0 20px; }
+
+    .billing-tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 3px; margin-left: 10px; vertical-align: middle; }
+    .billing-stripe { background: var(--t2-light); color: var(--t2); }
+    .billing-invoice { background: var(--amber-50); color: var(--amber-600); border: 1px solid var(--amber-border); }
+
+    /* PRICING TABLES */
+    .price-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; font-size: 12.5px; }
+    .price-table thead th { padding: 8px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-100); color: var(--gray-700); text-align: left; border-bottom: 2px solid var(--gray-300); }
+    .price-table thead th.right { text-align: right; }
+    .price-table thead th.center { text-align: center; }
+    .price-table tbody td { padding: 9px 12px; border-bottom: 1px solid var(--gray-300); vertical-align: middle; }
+    .price-table tbody tr:nth-child(even) td { background: #f9fafb; }
+    .price-table tbody td:first-child { font-weight: 600; }
+    .price-table td.right { text-align: right; font-weight: 700; }
+    .price-table td.center { text-align: center; }
+    .price-table .free-row td { background: var(--t1-light) !important; }
+    .price-table .contact-row td { color: var(--gray-500); font-style: italic; }
+    .price-table .contact-row td:first-child { font-style: normal; }
+
+    /* SIGNAL TIER TABLE */
+    .signal-table { width: 100%; border-collapse: collapse; margin-bottom: 10px; font-size: 12.5px; }
+    .signal-table thead th { padding: 10px 14px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--gray-300); text-align: left; }
+    .signal-table thead th.tier-col { background: var(--gray-100); color: var(--gray-700); width: 22%; }
+    .signal-table thead th.monthly-col { background: #f0f4fb; color: var(--t2); text-align: right; }
+    .signal-table thead th.quarterly-col { background: #ddeaf8; color: var(--t2); text-align: right; }
+    .signal-table thead th.annual-col { background: var(--t1-light); color: var(--t1); text-align: right; }
+    .signal-table tbody td { padding: 10px 14px; border-bottom: 1px solid var(--gray-300); vertical-align: middle; }
+    .signal-table tbody td:first-child { font-weight: 700; }
+    .signal-table tbody td.price-cell { text-align: right; font-weight: 700; font-size: 13px; }
+    .signal-table tbody tr:nth-child(even) td { background: #f9fafb; }
+    .signal-table tfoot td { padding: 10px 14px; font-size: 11.5px; color: var(--gray-700); border-top: 2px solid var(--gray-300); background: var(--gray-100); }
+
+    /* FEATURE LIST */
+    .feature-list { margin: 0; padding: 0 0 0 14px; font-size: 12px; color: var(--gray-700); line-height: 1.75; }
+
+    /* FULL TIER CHART */
+    .tier-table { width: 100%; border-collapse: collapse; margin-bottom: 28px; font-size: 12.5px; }
+    .tier-table thead th { padding: 10px 12px; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 2px solid var(--gray-300); text-align: left; }
+    .tier-table thead th:first-child { background: var(--gray-100); color: var(--gray-700); width: 13%; }
+    .tier-table thead th.t1-col { background: var(--t1-light); color: var(--t1); }
+    .tier-table thead th.t2-col { background: var(--t2-light); color: var(--t2); }
+    .tier-table thead th.t3-col { background: var(--t3-light); color: var(--t3); }
+    .tier-table thead th.t4-col { background: var(--t4-light); color: var(--t4); }
+    .tier-table tbody td { padding: 10px 12px; vertical-align: top; border-bottom: 1px solid var(--gray-300); font-size: 12px; }
+    .tier-table tbody td:first-child { font-weight: 700; color: var(--gray-700); font-size: 11px; background: var(--gray-100); }
+    .tier-table tbody td.t1 { border-left: 3px solid var(--t1-border); }
+    .tier-table tbody td.t2 { border-left: 3px solid var(--t2-border); }
+    .tier-table tbody td.t3 { border-left: 3px solid var(--t3-border); }
+    .tier-table tbody td.t4 { border-left: 3px solid var(--t4-border); }
+    .tier-table tbody tr:last-child td { border-bottom: 2px solid var(--gray-300); }
+    .acv-tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 7px; border-radius: 3px; margin-top: 4px; }
+    .acv-t1 { background: var(--t1-light); color: var(--t1); }
+    .acv-t2 { background: var(--t2-light); color: var(--t2); }
+    .acv-t3 { background: var(--t3-light); color: var(--t3); }
+    .acv-t4 { background: var(--t4-light); color: var(--t4); }
+    .excluded { color: var(--red-600); font-weight: 600; }
+
+    /* STACKING EXAMPLE */
+    .stacking-example { background: var(--gray-100); border: 1px solid var(--gray-300); padding: 18px 22px; margin-bottom: 0; }
+    .stacking-title { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-700); margin-bottom: 10px; }
+    .stacking-line { font-size: 13px; color: var(--gray-700); margin-bottom: 4px; }
+    .stacking-total { margin-top: 12px; padding-top: 12px; border-top: 2px solid var(--gray-300); font-size: 13px; font-weight: 700; color: var(--gray-900); }
+
+    /* RESELLER TWO-COLUMN */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 24px; }
+    .col-box { border: 1px solid var(--gray-300); padding: 22px 24px; }
+    .col-box-title { font-size: 14px; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
+    .col-box-subtitle { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-500); margin-bottom: 14px; }
+    .col-box ul { padding-left: 16px; font-size: 12.5px; color: var(--gray-700); line-height: 1.9; }
+    .col-box li.sub { list-style: none; padding-left: 14px; }
+    .col-box li.spacer { margin-top: 6px; }
+
+    /* BILLING SUMMARY TAGS */
+    .tag { display: inline-block; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; padding: 2px 8px; border-radius: 3px; white-space: nowrap; }
+    .tag-stripe { background: var(--t2-light); color: var(--t2); }
+    .tag-invoice { background: var(--amber-50); color: var(--amber-600); border: 1px solid var(--amber-border); }
+
+    .section-rule { border: none; border-top: 1px solid var(--gray-300); margin: 36px 0; }
+
+    .footnote { font-size: 11px; font-style: italic; color: #9ca3af; line-height: 1.6; margin-top: 20px; }
+
+    /* SAVE / ERROR BANNERS (matrix) */
+    .save-banner { position: fixed; top: 0; left: 0; right: 0; background: var(--t1); color: #fff; text-align: center; padding: 8px; font-size: 13px; font-weight: 600; transform: translateY(-100%); transition: transform 0.3s ease; z-index: 100; }
+    .save-banner.visible { transform: translateY(0); }
+    .error-banner { position: fixed; top: 0; left: 0; right: 0; background: #dc2626; color: #fff; text-align: center; padding: 10px; font-size: 13px; font-weight: 600; z-index: 101; display: none; }
+    .error-banner.visible { display: block; }
+
+    /* ACCOUNT MATRIX */
+    .accounts-table { width: 100%; table-layout: auto; border-collapse: collapse; font-size: 12px; margin-bottom: 24px; }
+    .accounts-table thead th { padding: 8px 8px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; background: var(--gray-100); color: var(--gray-700); text-align: left; border-bottom: 2px solid var(--gray-300); }
+    .accounts-table thead th:nth-child(1) { width: 24px; }
+    .accounts-table thead th:nth-child(2) { width: 180px; white-space: nowrap; }
+    .accounts-table thead th.check-col { text-align: center; }
+    .accounts-table thead th.check-col.t1-header { background: var(--t1-light); color: var(--t1); }
+    .accounts-table thead th.check-col.t2-header { background: var(--t2-light); color: var(--t2); }
+    .accounts-table thead th.check-col.t3-header { background: var(--t3-light); color: var(--t3); }
+    .accounts-table thead th.check-col.t4-header { background: var(--t4-light); color: var(--t4); }
+    .accounts-table thead th.stage-col { text-align: center; background: #fef3c7; color: #92400e; font-size: 7px; line-height: 1.3; padding: 4px 1px; width: 52px; min-width: 52px; max-width: 52px; white-space: normal; overflow-wrap: break-word; hyphens: none; }
+    .accounts-table tbody td { padding: 5px 6px; border-bottom: 1px solid #e5e7eb; vertical-align: middle; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .accounts-table tbody td:nth-child(1) { padding-right: 2px; width: 24px; }
+    .accounts-table tbody td:nth-child(2) { white-space: nowrap; font-size: 12px; font-weight: 700; padding-left: 2px; text-align: left; }
+    .accounts-table tbody td.check-cell { text-align: center; }
+    .accounts-table tbody td.stage-cell { text-align: center; }
+    .accounts-table tbody td.dropdown-cell { text-align: center; padding: 4px 3px; width: 1%; white-space: nowrap; }
+    .accounts-table tbody td.acv-display-cell { text-align: right; padding: 4px 6px; width: 1%; white-space: nowrap; }
+    .acv-value { font-size: 12px; font-weight: 700; color: var(--gray-900); }
+    .accounts-table tbody tr:hover { background: var(--gray-100); }
+    .accounts-table tbody tr.highlight { background: #fffbeb; }
+    .accounts-table tbody tr.highlight td { font-weight: 600; }
+    .totals-row td { font-weight: 700 !important; border-top: 2px solid var(--gray-900); border-bottom: none !important; padding-top: 10px; }
+
+    .auth-check, .cpl-check { width: 18px; height: 18px; cursor: pointer; accent-color: var(--t1); border-radius: 3px; }
+    .cpl-check { accent-color: var(--t2); }
+    .auth-check.t2-check { accent-color: var(--t2); }
+    .auth-check.t3-check { accent-color: var(--t3); }
+    .auth-check.t4-check { accent-color: var(--t4); }
+    .auth-check:disabled { cursor: not-allowed; opacity: 0.4; }
+    .stage-check { width: 16px; height: 16px; cursor: pointer; accent-color: #d97706; border-radius: 3px; }
+
+    select.cell-dropdown { width: auto; padding: 3px 2px; border: 1px solid var(--gray-300); border-radius: 4px; font-family: inherit; font-size: 11px; background: #fff; color: var(--gray-900); cursor: pointer; }
+    select.cell-dropdown:focus { outline: none; border-color: var(--t2); }
+    .print-value { display: none; font-size: 11px; font-weight: 600; text-align: center; }
+
+    .cat-badge { display: inline-block; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 3px; white-space: nowrap; }
+    .cat-crm { background: #dbeafe; color: #1e40af; }
+    .cat-abm { background: #ede9fe; color: #5b21b6; }
+    .cat-intent { background: #fce7f3; color: #9d174d; }
+    .cat-data { background: #d1fae5; color: #065f46; }
+    .cat-map { background: #fef3c7; color: #92400e; }
+    .cat-sales { background: #e0e7ff; color: #3730a3; }
+    .cat-content { background: #f3e8ff; color: #6b21a8; }
+    .cat-mail { background: #ffe4e6; color: #9f1239; }
+    .cat-demand { background: #cffafe; color: #155e75; }
+    .cat-abm-conv { background: #fdf2f8; color: #831843; }
+    .cat-identity { background: #ccfbf1; color: #134e4a; }
+    .cat-enrichment { background: #dcfce7; color: #166534; }
+    .cat-agency { background: #fef3c7; color: #78350f; }
+    .cat-visitor { background: #fce7f3; color: #831843; }
+    .cat-distrib { background: #e0f2fe; color: #075985; }
+    .restricted-flag { font-size: 9px; font-weight: 700; color: var(--red-600); text-transform: uppercase; margin-left: 4px; }
+    .auth-summary { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; padding: 12px 18px; background: var(--gray-100); border-radius: 6px; font-size: 13px; font-weight: 600; }
+    .auth-summary .t1-count { color: var(--t1); }
+    .auth-summary .t2-count { color: var(--t2); }
+    .auth-summary .t3-count { color: var(--t3); }
+    .auth-summary .t4-count { color: var(--t4); }
+    .auth-summary .total-count { color: var(--gray-700); margin-left: auto; }
+  </style>
+</head>
+<body>
+
+<div id="pw-gate">
+  <div id="pw-box">
+    <p id="pw-wordmark">pharosIQ</p>
+    <h2>DaaS Go-to-Market</h2>
+    <p>This document is confidential. Enter the access password to continue.</p>
+    <label for="pw-input">Password</label>
+    <input id="pw-input" type="password" autocomplete="off" placeholder="Enter password">
+    <p id="pw-error">Incorrect password. Try again.</p>
+    <button id="pw-submit">Access Document</button>
+  </div>
+</div>
+
+<div id="doc-content">
+
+<div class="save-banner" id="saveBanner">Saved</div>
+<div class="error-banner" id="errorBanner"></div>
+
+<!-- ==================== PAGE 1: OVERVIEW + PRODUCT 1 ==================== -->
+<div class="page">
+  <div class="header">
+    <h1>DaaS Go-to-Market</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>April 2026</span>
+    </div>
+  </div>
+
+  <div class="context-box">
+    <strong>Billing channels:</strong> Two channels handle all revenue. <strong>Stripe</strong> processes AtlasIQ Intelligence Suite purchases, TAL-Matched Signal Delivery subscriptions, and Title Expansion Engine purchases. <strong>pharosIQ direct invoicing</strong> handles all Full Database Access deals and all Reseller Program deals. SurgeEngine does not touch those transactions. Each product section below is labeled with its billing channel. CFO needs a separate invoicing workflow for any product marked "pharosIQ Invoice."
+  </div>
+
+  <!-- PRODUCT 1 -->
+  <div class="product-block">
+    <div class="product-block-header">
+      <span class="product-number">Product 1 of 5</span>
+      <span class="product-title">AtlasIQ Intelligence Suite</span>
+      <span class="billing-tag billing-stripe">Stripe</span>
+    </div>
+    <hr class="product-divider">
+
+    <div class="context-box" style="border-left-color: var(--t2);">
+      <strong>Structure:</strong> One-time purchases. No subscriptions, no expiration. Three report types. The Account Architect is the only report available as a self-serve pack; the other two require a direct conversation to purchase. Stripe processes all three.
+    </div>
+
+    <p class="section-label first">The Account Architect — Flagship Sales Intel Report</p>
+    <p class="section-sublabel">Pack pricing. Self-serve Stripe checkout. Free tier: 1 report on signup, Account Architect only.</p>
+
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Pack</th>
+          <th>Reports</th>
+          <th class="right">Unit Price</th>
+          <th class="right">Total</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="free-row">
+          <td>Free Tier</td>
+          <td>1</td>
+          <td class="right">$0</td>
+          <td class="right">$0</td>
+          <td>Account Architect only. Granted on signup. No payment required.</td>
+        </tr>
+        <tr>
+          <td>Single</td>
+          <td>1</td>
+          <td class="right">$250</td>
+          <td class="right">$250</td>
+          <td>Self-serve Stripe checkout.</td>
+        </tr>
+        <tr>
+          <td>Starter 5-Pack</td>
+          <td>5</td>
+          <td class="right">$200</td>
+          <td class="right">$1,000</td>
+          <td>Saves $250 vs. 5 singles. Reports do not expire.</td>
+        </tr>
+        <tr>
+          <td>Growth 20-Pack</td>
+          <td>20</td>
+          <td class="right">$125</td>
+          <td class="right">$2,500</td>
+          <td>Saves $2,500 vs. 20 singles.</td>
+        </tr>
+        <tr>
+          <td>Enterprise 50-Pack</td>
+          <td>50</td>
+          <td class="right">$100</td>
+          <td class="right">$5,000</td>
+          <td>Saves $7,500 vs. 50 singles.</td>
+        </tr>
+        <tr class="contact-row">
+          <td>Volume 50+</td>
+          <td>50+</td>
+          <td class="right">Contact sales</td>
+          <td class="right">Negotiated</td>
+          <td>Custom volume pricing. Direct deal required.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">The ABM Strategist — 1:1 ABM Orchestration</p>
+    <p class="section-sublabel">Single report only. No packs. No free tier. Contact sales to initiate; Stripe processes payment.</p>
+
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Offering</th>
+          <th class="right">Price</th>
+          <th>Purchase Path</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Single Report</td>
+          <td class="right">$1,000</td>
+          <td>Contact sales to initiate. No self-serve checkout.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="section-label">The Deal DNA — ICP from Closed-Won Uploads</p>
+    <p class="section-sublabel">Single report only. No packs. No free tier. Contact sales to initiate; Stripe processes payment.</p>
+
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Offering</th>
+          <th class="right">Price</th>
+          <th>Purchase Path</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Single Report</td>
+          <td class="right">$3,500</td>
+          <td>Contact sales to initiate. No self-serve checkout.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ==================== PAGE 2: PRODUCT 2 ==================== -->
+<div class="page">
+  <div class="header">
+    <h1>DaaS Raw Data: TAL-Matched Signal Delivery</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>Product 2 of 5</span>
+    </div>
+  </div>
+
+  <span class="billing-tag billing-stripe" style="margin-bottom: 20px; display: inline-block; font-size: 11px; padding: 3px 10px;">Stripe</span>
+
+  <div class="context-box">
+    <strong>Structure:</strong> Annual contracts only. Data is filtered to the buyer's target account list (TAL). Three signal tiers, three billing frequencies. The buyer commits to an annual term; billing frequency determines the monthly rate. Monthly rate shown in all columns. Quarterly billing means one invoice every 3 months at the reduced rate. Annual upfront is a single invoice for the full year at the lowest rate.
+  </div>
+
+  <p class="section-label first">Pricing by Tier and Billing Frequency</p>
+  <p class="section-sublabel">All amounts shown as monthly rate. Annual commitment required across all tiers.</p>
+
+  <table class="signal-table">
+    <thead>
+      <tr>
+        <th class="tier-col">Tier</th>
+        <th class="monthly-col">Monthly Billing<br><span style="font-weight: 500; font-size: 10px; text-transform: none; letter-spacing: 0;">(billed monthly)</span></th>
+        <th class="quarterly-col">Quarterly Billing<br><span style="font-weight: 500; font-size: 10px; text-transform: none; letter-spacing: 0;">Save 10%</span></th>
+        <th class="annual-col">Annual Upfront<br><span style="font-weight: 500; font-size: 10px; text-transform: none; letter-spacing: 0;">Save 20%</span></th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Market Signals</td>
+        <td class="price-cell">$5,000/mo</td>
+        <td class="price-cell">$4,500/mo</td>
+        <td class="price-cell">$4,000/mo</td>
+      </tr>
+      <tr>
+        <td>Buyer Signals</td>
+        <td class="price-cell">$10,000/mo</td>
+        <td class="price-cell">$9,000/mo</td>
+        <td class="price-cell">$8,000/mo</td>
+      </tr>
+      <tr>
+        <td>Pipeline Signals</td>
+        <td class="price-cell">$15,000/mo</td>
+        <td class="price-cell">$13,500/mo</td>
+        <td class="price-cell">$12,000/mo</td>
+      </tr>
+    </tbody>
+    <tfoot>
+      <tr>
+        <td colspan="4"><strong>Annual contract value reference:</strong> Market Signals: $48K (upfront) to $60K (monthly). Buyer Signals: $96K to $120K. Pipeline Signals: $144K to $180K.</td>
+      </tr>
+    </tfoot>
+  </table>
+
+  <p class="section-label">What Each Tier Delivers</p>
+  <p class="section-sublabel">Tiers are additive. Each tier includes everything in the tier below it.</p>
+
+  <table class="price-table">
+    <thead>
+      <tr>
+        <th style="width: 22%;">Tier</th>
+        <th>Signals Included</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Market Signals</td>
+        <td>
+          <ul class="feature-list">
+            <li>Top 10 intent topics per account</li>
+            <li>Topic scores (surge strength)</li>
+            <li>Peripheral topics (adjacent interest signals)</li>
+            <li>Top competitors appearing in the signal mix</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td>Buyer Signals</td>
+        <td>
+          <ul class="feature-list">
+            <li>Everything in Market Signals, plus:</li>
+            <li>Buying group size at surging accounts</li>
+            <li>Roles and departments active in research</li>
+            <li>Buying committee formation indicators</li>
+            <li>Content types consumed</li>
+            <li>Asset views and review site activity</li>
+          </ul>
+        </td>
+      </tr>
+      <tr>
+        <td>Pipeline Signals</td>
+        <td>
+          <ul class="feature-list">
+            <li>Everything in Market and Buyer Signals, plus:</li>
+            <li>Journey stage classification</li>
+            <li>Business need identification</li>
+            <li>Engagement locations and channel activity</li>
+          </ul>
+        </td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- ==================== PAGE 3: PRODUCT 3 + PRODUCT 4 ==================== -->
+<div class="page">
+  <div class="header">
+    <h1>DaaS Raw Data: Full Database Access</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>Product 3 of 5</span>
+    </div>
+  </div>
+
+  <span class="billing-tag billing-invoice" style="margin-bottom: 16px; display: inline-block; font-size: 11px; padding: 3px 10px;">pharosIQ Invoice</span>
+
+  <div class="approval-note">
+    <strong>CFO workflow required:</strong> No fixed pricing on any tier in this product line. All deals are priced by volume and use case, negotiated directly, and invoiced through pharosIQ. SurgeEngine does not process these transactions. Every deal here needs a separate invoicing workflow.
+  </div>
+
+  <div class="context-box">
+    <strong>Scope:</strong> Unrestricted access to the full pharosIQ data universe (360M+ contacts, 650+ intent categories). No target account list filter applied. These are enterprise and platform deals only.
+  </div>
+
+  <p class="section-label first">Tiers</p>
+
+  <table class="tier-table">
+    <thead>
+      <tr>
+        <th></th>
+        <th class="t1-col">Tier 1: Accounts + Intent Topics</th>
+        <th class="t2-col">Tier 2: Persona + Intent Topics</th>
+        <th class="t3-col">Tier 3: Contacts + Intent</th>
+        <th class="t4-col">Tier 4: Contacts + Content (Enterprise)</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>Use cases</td>
+        <td class="t1">Prioritize outbound account lists by real-time surge activity. Feed DSP/programmatic platforms with intent-qualified audiences. Score inbound leads against account-level signals. Power ABM campaign targeting: which accounts to focus on this week.</td>
+        <td class="t2">Build persona-based audience segments for targeted campaigns. Identify buying committee composition at surging accounts. Segment content strategy by seniority and job function. Power persona-level ABM: target the right roles, not just the right accounts.</td>
+        <td class="t3">Enrich CRM with contact-level intent signals for outbound prioritization. Power SDR sequences with named contacts showing active intent. ABM activation: direct outreach to the people driving the surge. Embed contact-level signals into buyer's platform via OEM/API.</td>
+        <td class="t4">Build predictive models on content consumption patterns. Power content recommendation engines with full behavioral fingerprints. Enterprise platform intelligence: complete signal chain embedded in buyer's product. Custom analytics on which content topics drive pipeline conversion.</td>
+      </tr>
+      <tr>
+        <td>Deliverable</td>
+        <td class="t1">Account-level intent signals. Which companies are surging on which topics. No persona detail, no contacts.</td>
+        <td class="t2">Everything in Tier 1, plus audience-level behavioral profiles matched to intent categories: industry, title function, seniority band, company size, intent topic, engagement source.</td>
+        <td class="t3">Everything in Tier 2, plus contact-level records: name, title, email, company, engagement source, intent topic. Delivered via API, flat file, or cloud sync on a rolling 90-day signal window.</td>
+        <td class="t4">Everything in Tier 3, plus the specific content assets consumed (whitepaper, webinar, content piece). The complete behavioral fingerprint.</td>
+      </tr>
+      <tr>
+        <td>Who buys</td>
+        <td class="t1">Any buyer. No restrictions. Brand Direct, Wholesale, Agency, Martech, lead gen competitors. This is the base layer for all buyer types. Fastest time to value.</td>
+        <td class="t2">Teams that want to understand who inside an account is showing intent, not just that the account is active. Powers persona-based targeting and segmentation. No PII, no restrictions.</td>
+        <td class="t3">Sales and marketing teams activating contact-level data directly: outbound sequences, CRM enrichment, ABM programs. Also available for platform integration via API or OEM.</td>
+        <td class="t4">Enterprise platform companies where pharosIQ data becomes core infrastructure. Full content consumption visibility at scale.</td>
+      </tr>
+      <tr>
+        <td>Who is excluded</td>
+        <td class="t1">No one. Tier 1 is the entry product for every buyer type.</td>
+        <td class="t2">No one. No PII, no contacts. Persona-level profiles only. Open to all buyer types including lead gen and competitors.</td>
+        <td class="t3"><span class="excluded">Lead gen businesses, competitors, and any buyer whose model involves reselling or redistributing contact records to third parties. *</span></td>
+        <td class="t4"><span class="excluded">Brand Direct buyers, martech platforms without a large embedded user base, lead gen businesses, any buyer without a platform use case at enterprise scale. *</span></td>
+      </tr>
+      <tr>
+        <td>ACV range</td>
+        <td class="t1">$60K to $96K<br><span class="acv-tag acv-t1">$5K-$8K/mo</span></td>
+        <td class="t2">$144K to $300K<br><span class="acv-tag acv-t2">$12K-$25K/mo</span></td>
+        <td class="t3">$300K to $504K<br><span class="acv-tag acv-t3">$25K-$42K/mo</span></td>
+        <td class="t4">$1.2M+ minimum<br><span class="acv-tag acv-t4">$100K+/mo</span></td>
+      </tr>
+      <tr>
+        <td>Delivery</td>
+        <td class="t1">API, flat file, cloud delivery, segment push to DSP, LiveRamp, CDP, SSP.</td>
+        <td class="t2">API, flat file, cloud delivery, segment push to DSP, LiveRamp, CDP, SSP.</td>
+        <td class="t3">API, flat file, cloud sync. Direct activation or OEM/API embed into buyer's platform.</td>
+        <td class="t4">OEM or API at scale. Per-user-block pricing tied to deployment scale.</td>
+      </tr>
+      <tr>
+        <td>Channel conflict</td>
+        <td class="t1">None. Account-level only. No PII, no persona detail. Does not replicate CS product.</td>
+        <td class="t2">None. No PII, no contact-level detail. Persona profiles do not replicate lead gen product.</td>
+        <td class="t3">Low to moderate. Contact + topic signal (no content detail) is defensible. Chris Vriavas confirmed this line on 2026-03-27. Platform embeds require anti-competitive clause.</td>
+        <td class="t4">Highest. Content consumption data is the raw material of lead gen. This tier is only for enterprise platforms where the revenue justifies the exposure. Requires the strongest contractual protections.</td>
+      </tr>
+      <tr>
+        <td>MSA requirement</td>
+        <td class="t1">New DaaS MSA required. Simplest compliance surface: no PII, no persona, minimal downstream restrictions.</td>
+        <td class="t2">New DaaS MSA required (Section 4.2 blocks commercial use for both contact and persona). No PII, fewer downstream restrictions than contact tiers.</td>
+        <td class="t3">Enterprise DaaS MSA with permitted use restrictions, anti-competitive clause, caching addendum, data destruction terms. OEM embeds require downstream flow-down provisions and sub-licensing terms.</td>
+        <td class="t4">Full enterprise platform license. Per-user-block pricing exhibit. Downstream flow-down, sub-licensing, anti-competitive, caching, audit, and data destruction. Jake Ranalli and Tina Bean own the MSA build.</td>
+      </tr>
+      <tr>
+        <td>Upsell path</td>
+        <td class="t1">Every Tier 1 buyer is a Tier 2 prospect. Account signals create the appetite for persona-level resolution.</td>
+        <td class="t2">Every Tier 2 buyer is a Tier 3 prospect. Once they see who is surging, they want the contact records to activate against.</td>
+        <td class="t3">High-volume buyers and platforms with enterprise scale move to Tier 4 for full content consumption visibility.</td>
+        <td class="t4">Ceiling. Renewal, expansion, price escalation tied to user-block growth.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p style="font-size:11px;color:var(--gray-500);margin:0 0 20px;font-style:italic;">
+    CPL: Lead Distribution — Contact-level intent leads priced per lead. Monthly minimum against CPL rate. Annual term. For platforms routing intent-qualified leads to downstream buyers. Priced by volume, separate commercial model from the DaaS tiers above.
+  </p>
+
+  <hr class="section-rule">
+
+  <!-- PRODUCT 4 -->
+  <div class="product-block">
+    <div class="product-block-header">
+      <span class="product-number">Product 4 of 5</span>
+      <span class="product-title">Title Expansion Engine (powered by Jobson)</span>
+      <span class="billing-tag billing-stripe">Stripe</span>
+    </div>
+    <hr class="product-divider">
+
+    <div class="context-box" style="border-left-color: var(--t2);">
+      <strong>Structure:</strong> One-time purchases. Modular by title and language. A buyer starts with a title in one language, then adds languages as separate one-time purchases. The "All Titles, All Languages" SKU covers the full Jobson library (15+ languages). No subscriptions, no expiration.
+    </div>
+
+    <table class="price-table">
+      <thead>
+        <tr>
+          <th>Offering</th>
+          <th class="right">Price</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="free-row">
+          <td>Free Tier</td>
+          <td class="right">$0</td>
+          <td>First 50 English variations on any title. No account required.</td>
+        </tr>
+        <tr>
+          <td>Single Title, One Language</td>
+          <td class="right">$500</td>
+          <td>One-time purchase. Stripe checkout.</td>
+        </tr>
+        <tr>
+          <td>Additional Language (add-on)</td>
+          <td class="right">+$100 per language</td>
+          <td>Add-on to any owned title. One-time per language. Stackable.</td>
+        </tr>
+        <tr class="contact-row">
+          <td>All Titles, All Languages</td>
+          <td class="right">Contact sales</td>
+          <td>Full Jobson library. 15+ languages. One-time purchase. Direct deal.</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="stacking-example">
+      <p class="stacking-title">Stacking Example</p>
+      <p class="stacking-line">"Head of Marketing" in English: $500</p>
+      <p class="stacking-line">+ Spanish (add-on): $100</p>
+      <p class="stacking-line">+ German (add-on): $100</p>
+      <p class="stacking-total">Total for one title in three languages: $700</p>
+    </div>
+  </div>
+</div>
+
+<!-- ==================== PAGE 4: PRODUCT 5 + BILLING SUMMARY ==================== -->
+<div class="page">
+  <div class="header">
+    <h1>Reseller Program</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>Product 5 of 5</span>
+    </div>
+  </div>
+
+  <span class="billing-tag billing-invoice" style="margin-bottom: 16px; display: inline-block; font-size: 11px; padding: 3px 10px;">pharosIQ Invoice</span>
+
+  <div class="approval-note">
+    <strong>CFO workflow required:</strong> Both reseller tracks are invoiced directly through pharosIQ. SurgeEngine does not process these transactions. White-label deals are fully custom and require a negotiated contract for each partner.
+  </div>
+
+  <p class="section-label first">Program Tracks</p>
+
+  <div class="two-col">
+    <div class="col-box">
+      <p class="col-box-title">Co-Branded</p>
+      <p class="col-box-subtitle">"Powered by pharosIQ" attribution</p>
+      <ul>
+        <li>Wholesale pricing at 50% off standard Intelligence Suite rates</li>
+        <li>"Powered by pharosIQ" attribution on all reports</li>
+        <li>Licensing fee required (less than white-label; scaled to program value)</li>
+        <li>Annual minimum term</li>
+        <li>Invoiced through pharosIQ</li>
+      </ul>
+    </div>
+    <div class="col-box">
+      <p class="col-box-title">White-Label / Private Label</p>
+      <p class="col-box-subtitle">Custom contract, negotiated per partner</p>
+      <ul>
+        <li>Three-component contract structure:</li>
+        <li class="sub">1. Private label fee (scaled to company size and program value)</li>
+        <li class="sub">2. Monthly minimum against wholesale rates (50% off standard)</li>
+        <li class="sub">3. Annual or multi-year term</li>
+        <li class="spacer">No standard rate card. Every deal is different.</li>
+        <li>Invoiced through pharosIQ</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="context-box">
+    A small agency and a global distribution platform are structured very differently. There is no default white-label price. All white-label deals require a direct conversation and a custom contract before any pricing is committed.
+  </div>
+
+  <hr class="section-rule">
+
+  <!-- BILLING SUMMARY -->
+  <p class="section-label">Billing Channel Summary</p>
+  <p class="section-sublabel">Quick reference for workflow routing</p>
+
+  <table class="price-table">
+    <thead>
+      <tr>
+        <th>Product</th>
+        <th class="center" style="width: 160px;">Billing Channel</th>
+        <th>Notes</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td>AtlasIQ Intelligence Suite (Account Architect, ABM Strategist, Deal DNA)</td>
+        <td class="center"><span class="tag tag-stripe">Stripe</span></td>
+        <td>Account Architect packs are self-serve. ABM Strategist and Deal DNA require a direct conversation to initiate but are still processed through Stripe.</td>
+      </tr>
+      <tr>
+        <td>DaaS Raw Data: TAL-Matched Signal Delivery</td>
+        <td class="center"><span class="tag tag-stripe">Stripe</span></td>
+        <td>Annual contracts with monthly, quarterly, or upfront billing cadence.</td>
+      </tr>
+      <tr>
+        <td>DaaS Raw Data: Full Database Access</td>
+        <td class="center"><span class="tag tag-invoice">pharosIQ Invoice</span></td>
+        <td>All tiers including CPL. Separate invoicing workflow required for every deal.</td>
+      </tr>
+      <tr>
+        <td>Title Expansion Engine (powered by Jobson)</td>
+        <td class="center"><span class="tag tag-stripe">Stripe</span></td>
+        <td>Self-serve for single title and language add-ons. "All Titles, All Languages" requires direct contact but is still processed through Stripe.</td>
+      </tr>
+      <tr>
+        <td>Reseller Program (co-branded and white-label)</td>
+        <td class="center"><span class="tag tag-invoice">pharosIQ Invoice</span></td>
+        <td>Both tracks. No SurgeEngine involvement. Direct invoicing on all reseller deals.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p class="footnote">Pricing current as of April 2026. Subject to change. For white-label and full database deals, the executed contract is the authoritative source. Contact Tina Bean for deal structuring questions.</p>
+</div>
+
+<!-- ==================== PAGE 5: ACCOUNT MATRIX ==================== -->
+<div class="page wide">
+  <div class="header">
+    <h1>Martech Target Accounts: Authorization Matrix</h1>
+    <div class="header-meta">
+      <span>pharosIQ Confidential — Internal Use Only</span>
+      <span>April 2026</span>
+    </div>
+  </div>
+
+  <div class="context-box">
+    <strong>Purpose:</strong> For each target account, assign the authorized tier, estimated ACV, who makes the intro, and the buyer type. Track pipeline stage. All selections persist automatically.
+  </div>
+
+  <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px;font-size:11px;">
+    <div style="background:var(--t1-light);border-left:3px solid var(--t1);padding:8px 10px;">
+      <div style="font-weight:700;color:var(--t1);margin-bottom:4px;">T1: Persona + Intent</div>
+      <div style="color:var(--gray-700);line-height:1.4;">No PII. Account/persona signals, intent topics, seniority bands. Any buyer. <strong>$60K-$96K</strong></div>
+    </div>
+    <div style="background:var(--t2-light);border-left:3px solid var(--t2);padding:8px 10px;">
+      <div style="font-weight:700;color:var(--t2);margin-bottom:4px;">T2: Contacts + Intent</div>
+      <div style="color:var(--gray-700);line-height:1.4;">Named contacts: name, title, email, company, intent topic. Brand Direct only. <strong>$144K-$300K</strong></div>
+    </div>
+    <div style="background:var(--t3-light);border-left:3px solid var(--t3);padding:8px 10px;">
+      <div style="font-weight:700;color:var(--t3);margin-bottom:4px;">T3: Contacts + Intent (OEM)</div>
+      <div style="color:var(--gray-700);line-height:1.4;">Contact records + intent, embedded into buyer's platform via OEM/API. Martech platforms. <strong>$300K-$504K</strong></div>
+    </div>
+    <div style="background:var(--t4-light);border-left:3px solid var(--t4);padding:8px 10px;">
+      <div style="font-weight:700;color:var(--t4);margin-bottom:4px;">T4: Contacts + Content</div>
+      <div style="color:var(--gray-700);line-height:1.4;">Everything: contacts, content consumed, full behavioral fingerprint. Enterprise platforms only. <strong>$1.2M+</strong></div>
+    </div>
+  </div>
+
+  <div class="auth-summary">
+    <span class="t1-count">T1: <span id="t1Count">0</span></span>
+    <span class="t2-count">T2: <span id="t2Count">0</span></span>
+    <span class="t3-count">T3: <span id="t3Count">0</span></span>
+    <span class="t4-count">T4: <span id="t4Count">0</span></span>
+    <span class="total-count">Accounts: <span id="totalAccounts">0</span> | Total ACV: <span id="totalAcv">$0</span></span>
+  </div>
+
+  <table class="accounts-table">
+    <thead>
+      <tr>
+        <th>#</th>
+        <th>Account</th>
+        <th>Category</th>
+        <th class="check-col">CPL</th>
+        <th class="check-col t1-header">T1</th>
+        <th class="check-col t2-header">T2</th>
+        <th class="check-col t3-header">T3</th>
+        <th class="check-col t4-header">T4</th>
+        <th>Current Customer Type</th>
+        <th>ACV</th>
+        <th>Intro</th>
+        <th class="stage-col">Made<br>Contact</th>
+        <th class="stage-col">Meeting<br>Set</th>
+        <th class="stage-col">Qualified</th>
+        <th class="stage-col">Data<br>Test</th>
+        <th class="stage-col">Negoti-<br>ation</th>
+        <th class="stage-col">Closed</th>
+      </tr>
+    </thead>
+    <tbody id="accountsBody">
+    </tbody>
+  </table>
+
+  <div class="context-box" style="border-left-color: var(--red-600); margin-bottom: 20px;">
+    <strong>Excluded:</strong> Intentsify excluded entirely per Jeff. Triblio (acquired by IDG/Foundry, 2020), Terminus (acquired by DemandScience, 2023), and N.Rich (too small) removed from targets.
+  </div>
+
+  <div class="approval-note">
+    <strong>Requesting:</strong> Jeff's approval on tier assignments for all accounts on this list. Tina will coordinate with Marty on any accounts where pharosIQ has existing relationships.
+  </div>
+</div>
+
+</div> <!-- /doc-content -->
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<script>
+// ============================================================
+// Password gate
+// ============================================================
+(function() {
+  var CORRECT = 'daas-revenue-$$$';
+  var SESSION_KEY = 'daas_gtm_auth';
+
+  function unlock() {
+    document.getElementById('pw-gate').classList.add('hidden');
+    document.getElementById('doc-content').style.display = 'block';
+    sessionStorage.setItem(SESSION_KEY, '1');
+    if (typeof bootMatrix === 'function') bootMatrix();
+  }
+
+  if (sessionStorage.getItem(SESSION_KEY) === '1') {
+    unlock();
+    return;
+  }
+
+  document.getElementById('pw-submit').addEventListener('click', function() {
+    var val = document.getElementById('pw-input').value;
+    if (val === CORRECT) {
+      unlock();
+    } else {
+      document.getElementById('pw-input').classList.add('error');
+      document.getElementById('pw-error').style.display = 'block';
+      document.getElementById('pw-input').value = '';
+      document.getElementById('pw-input').focus();
+    }
+  });
+
+  document.getElementById('pw-input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') document.getElementById('pw-submit').click();
+    if (document.getElementById('pw-input').classList.contains('error')) {
+      document.getElementById('pw-input').classList.remove('error');
+      document.getElementById('pw-error').style.display = 'none';
+    }
+  });
+})();
+
+// ============================================================
+// Matrix state persistence: Supabase API (primary) + localStorage (cache)
+// Shared state with /matrix.html and /daas-framework.html via the same API row
+// ============================================================
+var API_URL = '/api/daas-framework';
+var PREFIX = 'daasfw-';
+
+var TIERS = ['t1', 't2', 't3', 't4'];
+var STAGES = ['made_contact', 'meeting_set', 'interested', 'data_test', 'negotiation', 'closed'];
+
+var LEADS_OPTIONS = ['', 'Current Direct', 'Wholesale', 'Through Agency'];
+var INTRO_OPTIONS = ['', 'Chris', 'Jeff', 'Marty', 'Raj', 'Singh', 'Tina'];
+var TIER_ACV_RANGES = { t1: '$60K-$96K', t2: '$144K-$300K', t3: '$300K-$504K', t4: '$1.2M+' };
+var TIER_ACV_DEFAULTS = { t1: '$60,000', t2: '$144,000', t3: '$300,000', t4: '$1,200,000' };
+
+var state = { checks: {}, acvs: {}, leads: {}, intros: {}, stages: {}, decisions: {}, cpl_values: {} };
+
+var accounts = [
+  { name: 'HubSpot', cat: 'CRM/MAP', catClass: 'cat-crm', restricted: false },
+  { name: 'Salesforce (AppExchange)', cat: 'CRM/MAP', catClass: 'cat-crm', restricted: false },
+  { name: 'Madison Logic', cat: 'Intent Data (Competitor)', catClass: 'cat-intent', restricted: false },
+  { name: '6sense', cat: 'ABM Platform', catClass: 'cat-abm', restricted: false },
+  { name: 'Demandbase', cat: 'ABM Platform', catClass: 'cat-abm', restricted: false },
+  { name: 'TechTarget', cat: 'Intent Data (Competitor)', catClass: 'cat-intent', restricted: false },
+  { name: 'Foundry (IDG)', cat: 'Intent/Demand Gen', catClass: 'cat-demand', restricted: false },
+  { name: 'ZoomInfo', cat: 'Data/Intelligence', catClass: 'cat-data', restricted: false },
+  { name: 'Bombora', cat: 'Intent Data (Competitor)', catClass: 'cat-intent', restricted: false },
+  { name: 'Clearbit (Breeze/HubSpot)', cat: 'Data Enrichment', catClass: 'cat-enrichment', restricted: false },
+  { name: 'LiveRamp', cat: 'Data/Identity', catClass: 'cat-identity', restricted: false },
+  { name: 'Eloqua (Oracle)', cat: 'MAP', catClass: 'cat-map', restricted: false },
+  { name: 'Clay', cat: 'Data/Intelligence', catClass: 'cat-data', restricted: false },
+  { name: 'Apollo.io', cat: 'Sales Intelligence', catClass: 'cat-sales', restricted: false },
+  { name: 'Integrate', cat: 'Lead Routing', catClass: 'cat-demand', restricted: false, added: true },
+  { name: 'WPP', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'Publicis Groupe', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'Omnicom', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'IPG (Interpublic)', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'Dentsu', cat: 'Agency Holding Co', catClass: 'cat-agency', restricted: false, added: true },
+  { name: 'LeadScale', cat: 'Lead Routing', catClass: 'cat-demand', restricted: false, added: true },
+  { name: 'Enhancio', cat: 'Lead Routing', catClass: 'cat-demand', restricted: false, added: true },
+  { name: 'Converter', cat: 'Lead Routing', catClass: 'cat-demand', restricted: false, added: true },
+  { name: 'Lusha', cat: 'Data/Intelligence', catClass: 'cat-data', restricted: false },
+  { name: 'DemandScience', cat: 'Intent/Demand Gen', catClass: 'cat-demand', restricted: false },
+  { name: 'LeadIQ', cat: 'Sales Intelligence', catClass: 'cat-sales', restricted: false },
+  { name: 'Metadata.io', cat: 'ABM/Demand Gen', catClass: 'cat-abm', restricted: false },
+  { name: 'RollWorks', cat: 'ABM Platform', catClass: 'cat-abm', restricted: false },
+  { name: 'Qualified', cat: 'Conversational ABM', catClass: 'cat-abm-conv', restricted: false },
+  { name: '6signal', cat: 'Data/Intelligence', catClass: 'cat-data', restricted: false },
+  { name: 'NetLine', cat: 'Content/Demand Gen', catClass: 'cat-demand', restricted: false },
+  { name: 'Postal.io', cat: 'Direct Mail/ABM', catClass: 'cat-mail', restricted: false },
+  { name: 'Reachdesk', cat: 'Direct Mail/ABM', catClass: 'cat-mail', restricted: false },
+  { name: 'Sendoso', cat: 'Direct Mail/ABM', catClass: 'cat-mail', restricted: false },
+  { name: 'Alyce', cat: 'Direct Mail/ABM', catClass: 'cat-mail', restricted: false },
+  { name: 'PathFactory', cat: 'Content Intelligence', catClass: 'cat-content', restricted: false },
+  { name: 'Uberflip', cat: 'Content Intelligence', catClass: 'cat-content', restricted: false },
+  { name: 'Warmly', cat: 'Visitor ID / Rev Orch', catClass: 'cat-visitor', restricted: false },
+  { name: 'RB2B', cat: 'Visitor ID / Rev Orch', catClass: 'cat-visitor', restricted: false },
+  { name: 'Breakout', cat: 'Visitor ID / Rev Orch', catClass: 'cat-visitor', restricted: false },
+  { name: 'TD SYNNEX', cat: 'IT Distribution / Channel', catClass: 'cat-distrib', restricted: false },
+  { name: 'Ingram Micro', cat: 'IT Distribution / Channel', catClass: 'cat-distrib', restricted: false },
+  { name: 'Arrow Electronics', cat: 'IT Distribution / Channel', catClass: 'cat-distrib', restricted: false },
+];
+
+function loadLocal(key) { try { var v = JSON.parse(localStorage.getItem(key)); return v && Object.keys(v).length ? v : null; } catch(e) { return null; } }
+function loadLocalOr(key, fallbackKey) { return loadLocal(key) || loadLocal(fallbackKey) || {}; }
+function showSave() { var b = document.getElementById('saveBanner'); if (!b) return; b.classList.add('visible'); setTimeout(function() { b.classList.remove('visible'); }, 1500); }
+function showError(msg) { var b = document.getElementById('errorBanner'); if (!b) return; b.textContent = msg; b.classList.add('visible'); }
+function hideError() { var b = document.getElementById('errorBanner'); if (b) b.classList.remove('visible'); }
+
+var _pendingSync = {};
+var _syncTimer = null;
+var _lastWriteTime = 0;
+function syncToServer(column, data) {
+  localStorage.setItem(PREFIX + column, JSON.stringify(data));
+  _pendingSync[column] = data;
+  if (_syncTimer) clearTimeout(_syncTimer);
+  _syncTimer = setTimeout(function() {
+    var payload = Object.assign({}, _pendingSync);
+    _pendingSync = {};
+    _lastWriteTime = Date.now();
+    fetch(API_URL, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    }).then(function(r) {
+      if (!r.ok) { showError('Cannot save to server (HTTP ' + r.status + '). Changes are only in this browser.'); return; }
+      hideError();
+    }).catch(function(err) { showError('Cannot save to server. Changes are only in this browser.'); console.warn('Server sync failed:', err); });
+  }, 500);
+  showSave();
+}
+
+function save(column, data) { state[column] = data; syncToServer(column, data); }
+function acvNum(s) { if (!s) return 0; return parseInt(s.replace(/[$,]/g, ''), 10) || 0; }
+function fmtTotal(n) { if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M'; if (n >= 1000) return '$' + (n / 1000).toFixed(0) + 'K'; return '$' + n; }
+function fmtAcv(s) { if (!s) return '—'; var n = acvNum(s); if (n >= 1000000) return '$' + (n / 1000000).toFixed(1) + 'M'; return '$' + n.toLocaleString(); }
+
+function makeDropdown(options, stateObj, key) {
+  var saved = stateObj[key] || '';
+  var html = '<select class="cell-dropdown" data-storekey="' + key + '">';
+  for (var i = 0; i < options.length; i++) {
+    var o = options[i]; var sel = o === saved ? ' selected' : ''; var label = o === '' ? '—' : o;
+    html += '<option value="' + o + '"' + sel + '>' + label + '</option>';
+  }
+  html += '</select><span class="print-value" style="display:none">' + (saved || '—') + '</span>';
+  return html;
+}
+
+function updateCounts() {
+  var counts = {t1:0,t2:0,t3:0,t4:0}; var total = 0;
+  for (var i = 0; i < accounts.length; i++) {
+    var k = i.toString();
+    for (var t = 0; t < TIERS.length; t++) { if (state.checks[k + '-' + TIERS[t]]) counts[TIERS[t]]++; }
+    total += acvNum(state.acvs[k] || '');
+  }
+  document.getElementById('t1Count').textContent = counts.t1;
+  document.getElementById('t2Count').textContent = counts.t2;
+  document.getElementById('t3Count').textContent = counts.t3;
+  document.getElementById('t4Count').textContent = counts.t4;
+  document.getElementById('totalAccounts').textContent = accounts.length;
+  document.getElementById('totalAcv').textContent = fmtTotal(total);
+}
+
+function render() {
+  var tbody = document.getElementById('accountsBody'); tbody.innerHTML = '';
+
+  for (var i = 0; i < accounts.length; i++) {
+    var a = accounts[i]; var k = i.toString(); var row = document.createElement('tr');
+    if (a.added) row.className = 'highlight';
+    var flags = '';
+    if (a.restricted) flags += '<span class="restricted-flag">T1 only</span>';
+
+    var tierCells = '';
+    for (var t = 0; t < TIERS.length; t++) {
+      var tierKey = k + '-' + TIERS[t];
+      var checked = state.checks[tierKey] ? ' checked' : '';
+      var disabled = (a.restricted && TIERS[t] !== 't1') ? ' disabled title="Restricted to Tier 1"' : '';
+      var cls = t > 0 ? ' ' + TIERS[t] + '-check' : '';
+      tierCells += '<td class="check-cell"><input type="checkbox" class="auth-check' + cls + '" data-idx="' + k + '" data-tier="' + TIERS[t] + '"' + checked + disabled + '></td>';
+    }
+
+    var stageCells = '';
+    for (var s = 0; s < STAGES.length; s++) {
+      var stageChecked = state.stages[k + '-' + STAGES[s]] ? ' checked' : '';
+      stageCells += '<td class="stage-cell"><input type="checkbox" class="stage-check" data-idx="' + k + '" data-stage="' + STAGES[s] + '"' + stageChecked + '></td>';
+    }
+
+    var savedAcv = state.acvs[k] || '';
+    var acvDisplay = '<span class="acv-value" data-idx="' + k + '">' + (savedAcv ? fmtAcv(savedAcv) : '—') + '</span>';
+    var acvRangeHtml = '';
+    for (var t2 = 0; t2 < TIERS.length; t2++) {
+      if (state.checks[k + '-' + TIERS[t2]]) {
+        acvRangeHtml = ' <span class="acv-range" style="font-size:10px;font-weight:400;font-style:italic;color:var(--gray-500);">(' + TIER_ACV_RANGES[TIERS[t2]] + ')</span>';
+        break;
+      }
+    }
+
+    var isLeadRouting = a.cat === 'Lead Routing';
+    var cplCell = '<td class="check-cell">';
+    if (isLeadRouting) {
+      var cplChecked = state.checks[k + '-cpl'] ? ' checked' : '';
+      cplCell += '<input type="checkbox" class="cpl-check auth-check-style" data-idx="' + k + '"' + cplChecked + '>';
+    }
+    cplCell += '</td>';
+
+    row.innerHTML =
+      '<td>' + (i + 1) + '</td>' +
+      '<td>' + a.name + flags + '</td>' +
+      '<td><span class="cat-badge ' + a.catClass + '">' + a.cat + '</span></td>' +
+      cplCell +
+      tierCells +
+      '<td class="dropdown-cell">' + makeDropdown(LEADS_OPTIONS, state.leads, k) + '</td>' +
+      '<td class="acv-display-cell">' + acvDisplay + acvRangeHtml + '</td>' +
+      '<td class="dropdown-cell">' + makeDropdown(INTRO_OPTIONS, state.intros, k) + '</td>' +
+      stageCells;
+
+    tbody.appendChild(row);
+  }
+
+  var totalsRow = document.createElement('tr'); totalsRow.className = 'totals-row';
+  totalsRow.innerHTML = '<td></td><td>Total: ' + accounts.length + ' Accounts</td><td></td>' +
+    '<td></td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>' +
+    '<td></td><td></td><td></td><td></td><td></td><td></td>';
+  tbody.appendChild(totalsRow);
+
+  tbody.querySelectorAll('.auth-check').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      var idx = this.dataset.idx;
+      var tier = this.dataset.tier;
+      var row = this.closest('tr');
+      var acvValueSpan = row.querySelector('.acv-value');
+      var acvCell = row.querySelector('.acv-display-cell');
+      var rangeSpan = acvCell ? acvCell.querySelector('.acv-range') : null;
+
+      if (this.checked) {
+        for (var t = 0; t < TIERS.length; t++) {
+          if (TIERS[t] !== tier) {
+            state.checks[idx + '-' + TIERS[t]] = false;
+            var other = tbody.querySelector('.auth-check[data-idx="' + idx + '"][data-tier="' + TIERS[t] + '"]');
+            if (other) other.checked = false;
+          }
+        }
+      }
+      state.checks[idx + '-' + tier] = this.checked;
+      save('checks', state.checks);
+
+      if (this.checked) {
+        var defaultAcv = TIER_ACV_DEFAULTS[tier] || '';
+        state.acvs[idx] = defaultAcv;
+        save('acvs', state.acvs);
+        if (acvValueSpan) acvValueSpan.textContent = defaultAcv ? fmtAcv(defaultAcv) : '—';
+        if (!rangeSpan && acvCell) {
+          rangeSpan = document.createElement('span');
+          rangeSpan.className = 'acv-range';
+          acvCell.appendChild(rangeSpan);
+        }
+        if (rangeSpan) {
+          rangeSpan.style.cssText = 'font-size:10px;font-weight:400;font-style:italic;color:var(--gray-500);margin-left:4px;';
+          rangeSpan.textContent = '(' + TIER_ACV_RANGES[tier] + ')';
+        }
+      } else {
+        var anyChecked = false;
+        for (var t2 = 0; t2 < TIERS.length; t2++) {
+          if (state.checks[idx + '-' + TIERS[t2]]) anyChecked = true;
+        }
+        if (!anyChecked) {
+          state.acvs[idx] = '';
+          save('acvs', state.acvs);
+          if (acvValueSpan) acvValueSpan.textContent = '—';
+          if (rangeSpan) rangeSpan.textContent = '';
+        }
+      }
+      updateCounts();
+    });
+  });
+
+  tbody.querySelectorAll('.cpl-check').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      state.checks[this.dataset.idx + '-cpl'] = this.checked;
+      save('checks', state.checks);
+    });
+  });
+
+  tbody.querySelectorAll('.stage-check').forEach(function(cb) {
+    cb.addEventListener('change', function() {
+      state.stages[this.dataset.idx + '-' + this.dataset.stage] = this.checked;
+      save('stages', state.stages);
+    });
+  });
+
+  tbody.querySelectorAll('.cell-dropdown').forEach(function(sel) {
+    sel.addEventListener('change', function() {
+      var storeKey = this.dataset.storekey;
+      var pv = this.parentNode.querySelector('.print-value');
+      if (pv) pv.textContent = this.value || '—';
+      var cell = this.parentNode; var row = cell.parentNode; var cells = row.children;
+      var cellIdx = Array.prototype.indexOf.call(cells, cell);
+      if (cellIdx === 8) { state.leads[storeKey] = this.value; save('leads', state.leads); }
+      else if (cellIdx === 10) { state.intros[storeKey] = this.value; save('intros', state.intros); }
+    });
+  });
+
+  updateCounts();
+}
+
+function startRealtime(url, anonKey) {
+  if (!url || !anonKey || typeof supabase === 'undefined') return;
+  var sb = supabase.createClient(url, anonKey);
+  sb.channel('daas-matrix')
+    .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'daas_framework_state', filter: 'id=eq.default' }, function(payload) {
+      if (Date.now() - _lastWriteTime < 3000) return;
+      var d = payload.new;
+      state.checks = d.checks || {};
+      state.acvs = d.acvs || {};
+      state.leads = d.leads || {};
+      state.intros = d.intros || {};
+      state.stages = d.stages || {};
+      render();
+    })
+    .subscribe();
+}
+
+var _matrixBooted = false;
+function bootMatrix() {
+  if (_matrixBooted) return;
+  _matrixBooted = true;
+  fetch(API_URL)
+    .then(function(r) { return r.ok ? r.json() : Promise.reject('API error'); })
+    .then(function(data) {
+      state.checks = data.checks || {};
+      state.acvs = data.acvs || {};
+      state.leads = data.leads || {};
+      state.intros = data.intros || {};
+      state.stages = data.stages || {};
+      state.decisions = data.decisions || {};
+      state.cpl_values = data.cpl_values || {};
+      render();
+      if (data._realtime) startRealtime(data._realtime.url, data._realtime.anonKey);
+    })
+    .catch(function(err) {
+      console.warn('Server load failed, using localStorage:', err);
+      showError('Cannot reach server. Showing cached values from this browser only. Changes will NOT persist.');
+      state.checks = loadLocalOr(PREFIX + 'checks', PREFIX + 'checks-v4');
+      state.acvs = loadLocalOr(PREFIX + 'acvs', PREFIX + 'acvs-v4');
+      state.leads = loadLocalOr(PREFIX + 'leads', PREFIX + 'leads-v4');
+      state.intros = loadLocalOr(PREFIX + 'intros', PREFIX + 'intros-v4');
+      state.stages = loadLocalOr(PREFIX + 'stages', PREFIX + 'stages-v4');
+      state.decisions = loadLocal(PREFIX + 'decisions') || {};
+      state.cpl_values = loadLocal(PREFIX + 'cpl_values') || {};
+      render();
+    });
+}
+</script>
+</body>
+</html>

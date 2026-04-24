@@ -33,6 +33,15 @@ const DEFAULT_DOCS: Doc[] = [
     created: "2026-04-13",
   },
   {
+    id: "daas-go-to-market",
+    title: "DaaS Go-to-Market",
+    description: "Combined internal doc: all 5 products with pricing and billing channels, plus the live target account authorization matrix at the bottom. Matrix shares Supabase state with /matrix.html.",
+    url: "https://revsignal.vercel.app/daas-go-to-market.html",
+    password: "daas-revenue-$$$",
+    category: "Strategy",
+    created: "2026-04-23",
+  },
+  {
     id: "battlecards",
     title: "Competitive Battle Cards",
     description: "8 competitor battlecards for pharosIQ Lead Gen / Demand Gen sales team. Compares campaign delivery, lead quality, CPL, targeting precision, and signal provenance vs. DemandScience, Anteriad, Intentsify, TechTarget, Madison Logic, ProspectBase, DigitalZone, DemandWorks.",

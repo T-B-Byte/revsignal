@@ -21,6 +21,7 @@ All shareable documents hosted on surgeengine.app, RevSignal, and related domain
 | `revsignal.vercel.app/frameworks/ibm` | IBM: DaaS Tiered Licensing Model (4 tiers, 30K accounts) | None | 2026-04-06 |
 | `revsignal.vercel.app/daas-framework.html` | Full DaaS Product Framework (tiers, surge products, account matrix) | `daas-revenue-$$$` | 2026-03-30 |
 | `revsignal.vercel.app/daas-framework-v2.html` | Internal CFO-facing pricing reference (actual prices, billing channels) | `daas-revenue-$$$` | 2026-04-13 |
+| `revsignal.vercel.app/daas-go-to-market.html` | Combined DaaS doc: v2 pricing reference + live account matrix at bottom (shared Supabase state) | `daas-revenue-$$$` | 2026-04-23 |
 | `revsignal.vercel.app/matrix.html` | Account matrix standalone (shared Supabase state with daas-framework) | `revenue2026` | 2026-04-05 |
 | `revsignal.vercel.app/battlecards.html` | 8 competitor battlecards for pharosIQ Lead Gen / Demand Gen sales team | `BattleCard1` | 2026-03-31 |
 | `revsignal.vercel.app/daas-product-definition.html` | Original contact vs. persona comparison doc (legacy, superseded by DaaS Framework) | None | 2026-03-28 |
@@ -32,5 +33,5 @@ All shareable documents hosted on surgeengine.app, RevSignal, and related domain
 | `audience-dashboard-liard.vercel.app/Public/integrate-field-analysis.html` | DB field analysis: new field candidates for pharosIQ schema. Presented to Ben Luck. | None | 2026-04-15 |
 
 ## Notes
-- `matrix.html` and `daas-framework.html` share the same Supabase backend (`daas_framework_state` table). Changes on one reflect on the other in realtime.
+- `matrix.html`, `daas-framework.html`, and `daas-go-to-market.html` share the same Supabase backend (`daas_framework_state` table). Changes on any one reflect on the others in realtime.
 - All surgeengine.app pages blocked from Google indexing via `robots.ts` (disallow all).
