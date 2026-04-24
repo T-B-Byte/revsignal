@@ -320,7 +320,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark", company
                         </h4>
                       </div>
                       <a
-                        href="https://surgeengine.app/title-expansion"
+                        href="https://atlasiq.pharosiq.com/title-expansion"
                         target="_blank"
                         rel="noopener noreferrer"
                         className={`text-xs font-medium underline-offset-2 hover:underline ${t("text-zinc-400", "text-zinc-500")}`}
@@ -329,7 +329,7 @@ export function ProductShowcase({ products, accentColor, theme = "dark", company
                       </a>
                     </div>
                     <iframe
-                      src="https://surgeengine.app/title-expansion"
+                      src="https://atlasiq.pharosiq.com/title-expansion"
                       title="Jobson Title Expansion Demo"
                       loading="lazy"
                       className="block h-[720px] w-full border-0 bg-white"

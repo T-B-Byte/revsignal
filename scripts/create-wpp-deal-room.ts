@@ -245,7 +245,7 @@ async function main() {
     selected_products: selectedProducts,
     selected_demos: [{ demo_type: 'daas_framework' }],
     show_audience_dashboard: true,
-    audience_dashboard_url: 'https://surgeengine.app/audience-dashboard.html',
+    audience_dashboard_url: 'https://atlasiq.pharosiq.com/audience-dashboard.html',
     show_quote_builder: true,
     custom_pricing: [],
     custom_use_cases: customUseCases,
@@ -274,7 +274,7 @@ async function main() {
   console.log(`  Room ID:  ${room.room_id}`);
   console.log(`  Slug:     ${room.slug}`);
   console.log(`  Password: ${password}`);
-  console.log(`  URL:      https://surgeengine.app/room/${room.slug}`);
+  console.log(`  URL:      https://atlasiq.pharosiq.com/room/${room.slug}`);
   console.log(`            (or your prod RevSignal domain — confirm path /room/${room.slug})`);
 }
 

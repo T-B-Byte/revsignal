@@ -81,7 +81,7 @@ const DEFAULT_DOCS: Doc[] = [
     id: "audience-dashboard",
     title: "Audience Dashboard",
     description: "SurgeEngine audience dashboard.",
-    url: "https://surgeengine.app/audience-dashboard.html",
+    url: "https://atlasiq.pharosiq.com/audience-dashboard.html",
     password: "",
     category: "SurgeEngine",
     created: "2026-04-15",

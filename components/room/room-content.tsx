@@ -14,7 +14,7 @@ type Tab = "products" | "quote" | "data-test" | "dpa" | string;
 
 const ALL_DEMOS: Record<string, { label: string; url: string }> = {
   daas_framework: { label: "Entire File", url: "https://revsignal.vercel.app/frameworks/daas-framework" },
-  tal_matching: { label: "TAL Matching", url: "https://surgeengine.app/pricing/raw-data" },
+  tal_matching: { label: "TAL Matching", url: "https://atlasiq.pharosiq.com/pricing/raw-data" },
 };
 
 // Demo tabs that always appear on every room, regardless of selected_demos.
