@@ -274,7 +274,7 @@ async function main() {
   console.log(`  Room ID:  ${room.room_id}`);
   console.log(`  Slug:     ${room.slug}`);
   console.log(`  Password: ${password}`);
-  console.log(`  URL:      https://atlasiq.pharosiq.com/room/${room.slug}`);
+  console.log(`  URL:      https://revsignal.vercel.app/room/${room.slug}`);
   console.log(`            (or your prod RevSignal domain — confirm path /room/${room.slug})`);
 }
 
