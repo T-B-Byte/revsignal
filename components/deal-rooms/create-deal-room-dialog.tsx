@@ -180,7 +180,10 @@ export function CreateDealRoomDialog({
       const newId = data.company?.company_id;
       if (newId) {
         setCompanyId(newId);
-        // Refresh the page to pick up the new company in the list
+        setSlug(slugify(newCompanyName.trim()));
+        setPassword(generatePassword());
+        setCustomHeader(`Built for ${newCompanyName.trim()}`);
+        setWelcomeMessage(generateWelcome(newCompanyName.trim(), []));
         router.refresh();
       }
       setShowAddCompany(false);
