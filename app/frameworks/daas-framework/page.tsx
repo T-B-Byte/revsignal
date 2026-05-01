@@ -156,8 +156,8 @@ export default function DaasFrameworkPage() {
           <div className="text-xs text-zinc-500 mt-1">Full contact universe</div>
         </div>
         <div className="border border-zinc-200 rounded-lg p-5 text-center">
-          <div className="text-2xl font-bold text-zinc-900">650+</div>
-          <div className="text-xs text-zinc-500 mt-1">Intent categories</div>
+          <div className="text-2xl font-bold text-zinc-900">8,756</div>
+          <div className="text-xs text-zinc-500 mt-1">Intent topics</div>
         </div>
         <div className="border border-zinc-200 rounded-lg p-5 text-center">
           <div className="text-2xl font-bold text-zinc-900">First-party</div>

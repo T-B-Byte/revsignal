@@ -7,9 +7,11 @@ const createDealBodySchema = z.object({
   acv: z.number().nonnegative().optional(),
   stage: z
     .enum([
+      "conversation",
       "lead",
       "qualified",
       "discovery",
+      "demo_booked",
       "poc_trial",
       "proposal",
       "negotiation",
