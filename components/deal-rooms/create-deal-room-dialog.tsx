@@ -340,7 +340,7 @@ export function CreateDealRoomDialog({
           <DialogClose onClose={handleClose} />
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="flex flex-col max-h-[80vh]">
+        <form onSubmit={handleSubmit} autoComplete="off" className="flex flex-col max-h-[80vh]">
          <div className="p-6 space-y-5 overflow-y-auto flex-1">
           {error && (
             <div className="p-3 text-sm text-status-red bg-status-red/10 border border-status-red/20 rounded-md">
@@ -417,6 +417,9 @@ export function CreateDealRoomDialog({
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Visitors will enter this to access the room"
                 className="flex-1 font-mono"
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore
                 required
               />
               <Button

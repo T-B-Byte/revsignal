@@ -1,5 +1,6 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
@@ -65,51 +66,62 @@ export async function POST(
       return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
     }
 
-    // Increment view count and update last_viewed_at (optimistic concurrency check)
-    await supabase
-      .from("deal_rooms")
-      .update({
-        view_count: (room.view_count || 0) + 1,
-        last_viewed_at: new Date().toISOString(),
-      })
-      .eq("room_id", room.room_id)
-      .eq("view_count", room.view_count);
+    // Check if the request comes from the authenticated room owner (dashboard preview).
+    // Owner previews don't count as prospect opens and generate no logs or notifications.
+    const serverClient = await createClient();
+    const { data: { user: sessionUser } } = await serverClient.auth.getUser();
+    const isOwnerPreview = sessionUser?.id === room.user_id;
 
-    const accessIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
-    const accessUserAgent = request.headers.get("user-agent")?.slice(0, 500) || null;
+    let logId: string | null = null;
 
-    // Log access — capture log_id so the client can tie tab clicks to this session
-    const { data: logEntry } = await supabase.from("deal_room_access_log").insert({
-      room_id: room.room_id,
-      ip_address: accessIp,
-      user_agent: accessUserAgent,
-    }).select("log_id").single();
-    const logId = logEntry?.log_id ?? null;
+    if (!isOwnerPreview) {
+      // Increment view count and update last_viewed_at (optimistic concurrency check)
+      await supabase
+        .from("deal_rooms")
+        .update({
+          view_count: (room.view_count || 0) + 1,
+          last_viewed_at: new Date().toISOString(),
+        })
+        .eq("room_id", room.room_id)
+        .eq("view_count", room.view_count);
 
-    // Fire access notification — non-blocking, never delays the unlock response
-    const newViewCount = (room.view_count || 0) + 1;
-    const companyName = (room.gtm_company_profiles as { name?: string } | null)?.name ?? slug;
-    void (async () => {
-      try {
-        const { data } = await supabase
-          .from("user_profiles")
-          .select("email")
-          .eq("user_id", room.user_id)
-          .maybeSingle();
-        if (data?.email) {
-          await sendDealRoomAccessNotification(
-            data.email,
-            companyName,
-            slug,
-            newViewCount,
-            accessIp,
-            accessUserAgent
-          );
+      const accessIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+      const accessUserAgent = request.headers.get("user-agent")?.slice(0, 500) || null;
+
+      // Log access — capture log_id so the client can tie tab clicks to this session
+      const { data: logEntry } = await supabase.from("deal_room_access_log").insert({
+        room_id: room.room_id,
+        ip_address: accessIp,
+        user_agent: accessUserAgent,
+      }).select("log_id").single();
+      logId = logEntry?.log_id ?? null;
+
+      // Send access notification after the response is sent.
+      // after() keeps the serverless function alive until the callback completes.
+      const newViewCount = (room.view_count || 0) + 1;
+      const companyName = (room.gtm_company_profiles as { name?: string } | null)?.name ?? slug;
+      after(async () => {
+        try {
+          const { data } = await supabase
+            .from("user_profiles")
+            .select("email")
+            .eq("user_id", room.user_id)
+            .maybeSingle();
+          if (data?.email) {
+            await sendDealRoomAccessNotification(
+              data.email,
+              companyName,
+              slug,
+              newViewCount,
+              accessIp,
+              accessUserAgent
+            );
+          }
+        } catch {
+          // Non-critical
         }
-      } catch {
-        // Non-critical — never block the unlock response
-      }
-    })();
+      });
+    }
 
     // Fetch selected products (guard against unexpected types)
     const rawProducts = room.selected_products;

@@ -587,13 +587,15 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         </div>
       )}
 
-      <CreateDealRoomDialog
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
-        companies={companies}
-        products={products}
-        existingRoomCompanyIds={rooms.map((r) => r.company_id)}
-      />
+      {showCreate && (
+        <CreateDealRoomDialog
+          open={showCreate}
+          onClose={() => setShowCreate(false)}
+          companies={companies}
+          products={products}
+          existingRoomCompanyIds={rooms.map((r) => r.company_id)}
+        />
+      )}
 
       {editRoom && (
         <EditDealRoomDialog

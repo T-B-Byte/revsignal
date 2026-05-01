@@ -216,6 +216,9 @@ export function EditDealRoomDialog({
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="Room password"
                 className="flex-1 font-mono"
+                autoComplete="new-password"
+                data-lpignore="true"
+                data-1p-ignore
               />
               <Button
                 type="button"
