@@ -57,6 +57,20 @@ const FILES: DownloadFile[] = [
       "Useful for projecting intent activity within shorter time horizons",
     ],
   },
+  {
+    filename: "/taxonomy_bombora_mapping.csv",
+    downloadAs: "PharosIQ_Bombora_Taxonomy_Mapping.csv",
+    fileType: "CSV",
+    title: "PharosIQ to Bombora Taxonomy Mapping",
+    description:
+      "Maps all 8,756 PharosIQ intent topics to their closest equivalents in the Bombora Topic Taxonomy (April 2026 edition, 20,132 topics). For each PharosIQ topic, the file includes the best-matching Bombora topic name, its unique Bombora topic ID, theme and category, a confidence score (0–100), match type, and an excerpt of Bombora’s topic description for validation.",
+    bullets: [
+      "1,220 exact matches (14%) — ready for direct activation",
+      "993 high/medium-confidence fuzzy matches (11%) — suitable after a quick review",
+      "5,994 low-confidence matches (69%) — warrant manual verification",
+      "549 topics (6%) with no viable Bombora equivalent — may require custom topic requests",
+    ],
+  },
 ];
 
 export function Downloads({ theme, accentColor }: DownloadsProps) {
