@@ -91,7 +91,7 @@ const DEFAULT_DOCS: Doc[] = [
     title: "Salesforce DaaS Setup",
     description: "Meeting prep for the Salesforce admin team. Covers new DaaS License record type, pipeline stages, custom fields, product catalog entries, and billing/contract configuration questions.",
     url: "https://revsignal.vercel.app/salesforce-daas-setup.html",
-    password: "",
+    password: "sfdc-daas-2026",
     category: "Operations",
     created: "2026-05-01",
   },

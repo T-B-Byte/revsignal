@@ -25,7 +25,7 @@ All shareable documents hosted on surgeengine.app, RevSignal, and related domain
 | `revsignal.vercel.app/matrix.html` | Account matrix standalone (shared Supabase state with daas-framework) | `revenue2026` | 2026-04-05 |
 | `revsignal.vercel.app/battlecards.html` | 8 competitor battlecards for pharosIQ Lead Gen / Demand Gen sales team | `BattleCard1` | 2026-03-31 |
 | `revsignal.vercel.app/daas-product-definition.html` | Original contact vs. persona comparison doc (legacy, superseded by DaaS Framework) | None | 2026-03-28 |
-| `revsignal.vercel.app/salesforce-daas-setup.html` | Salesforce setup meeting prep: DaaS record type, stages, custom fields, product catalog, billing notes | None | 2026-05-01 |
+| `revsignal.vercel.app/salesforce-daas-setup.html` | Salesforce setup meeting prep: DaaS record type, stages, custom fields, product catalog, billing notes | `sfdc-daas-2026` | 2026-05-01 |
 
 ## Other
 
