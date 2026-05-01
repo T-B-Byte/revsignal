@@ -30,6 +30,20 @@ const FILES: DownloadFile[] = [
     ],
   },
   {
+    filename: "/global_count_counts_2026-03.xlsx",
+    downloadAs: "PharosIQ_Global_Count_Counts_2026-03.xlsx",
+    fileType: "Microsoft Excel Spreadsheet",
+    title: "2026-03 Global Contact Counts",
+    description:
+      "The primary contact-count source file for the Audience Intelligence Dashboard — 125.3 million verified B2B contacts pre-aggregated across nine dimensions, with a Pivot sheet ready for slice-and-dice analysis.",
+    bullets: [
+      "Raw Data: ~791,000 rows covering every unique combination of seniority (7 levels), job function (9 groups), sub-vertical (162 sub-functions), region, country (219), industry, revenue range, and headcount range",
+      "Pivot sheet: cross-tabs sub-function by seniority globally, with slicers for region, country, industry, revenue, and headcount",
+      "Grand total of 125.3M confirmed via pivot (all slicers set to \"All\")",
+      "Largest verticals by contact count: IT (24.2M), Sales (23.7M), Healthcare (17.1M), Finance (14.1M)",
+    ],
+  },
+  {
     filename: "/intent_topics.csv",
     downloadAs: "PharosIQ_Intent_Topics.csv",
     fileType: "CSV",
