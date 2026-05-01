@@ -30,7 +30,7 @@ const FILES: DownloadFile[] = [
     ],
   },
   {
-    filename: "/global_count_counts_2026-03.xlsx",
+    filename: "/2026-03%20Global%20Count%20Counts.xlsx",
     downloadAs: "PharosIQ_Global_Count_Counts_2026-03.xlsx",
     fileType: "Microsoft Excel Spreadsheet",
     title: "2026-03 Global Contact Counts",
