@@ -49,6 +49,7 @@ supabase/.temp/
 /public/*.xls
 /public/*.docx
 !/public/pharosIQ-DPA.docx
+!/public/PharosIQ_Data_Dictionary_2026-04-20.xlsx
 /public/*.zip
 /public/*.png
 /public/Contracts/
