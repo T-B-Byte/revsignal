@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 
-const PDF_URL = "/2026Q1%20Our%20approach%20(Intent%2C%20Campaign%20Optimization).pdf";
+const PDF_URL = "/pharosiq-approach-2026q1.pdf";
 
 const SLIDES = [
   {

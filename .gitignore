@@ -50,6 +50,7 @@ supabase/.temp/
 /public/*.docx
 !/public/pharosIQ-DPA.docx
 !/public/PharosIQ_Data_Dictionary_2026-04-20.xlsx
+!/public/pharosiq-approach-2026q1.pdf
 !/public/intent_topics_by_period.xlsx
 /public/*.zip
 /public/*.png
