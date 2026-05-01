@@ -87,6 +87,15 @@ const DEFAULT_DOCS: Doc[] = [
     created: "2026-04-15",
   },
   {
+    id: "salesforce-daas-setup",
+    title: "Salesforce DaaS Setup",
+    description: "Meeting prep for the Salesforce admin team. Covers new DaaS License record type, pipeline stages, custom fields, product catalog entries, and billing/contract configuration questions.",
+    url: "https://revsignal.vercel.app/salesforce-daas-setup.html",
+    password: "",
+    category: "Operations",
+    created: "2026-05-01",
+  },
+  {
     id: "integrate-field-analysis",
     title: "DB Field Analysis: New Field Candidates",
     description: "Database analysis and assessment of new fields to add to the pharosIQ data schema. Presented to Ben Luck (Chief Data Scientist).",

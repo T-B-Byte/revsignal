@@ -1,0 +1,831 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Salesforce DaaS Setup — pharosIQ</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --blue: #2a5fa5;
+      --blue-light: #e0edfa;
+      --blue-border: #93b4f4;
+      --green: #2d7a4f;
+      --green-light: #e6f5ee;
+      --purple: #7c3aed;
+      --purple-light: #f3e8ff;
+      --amber: #b45309;
+      --amber-light: #fffbeb;
+      --amber-border: #fcd34d;
+      --red: #dc2626;
+      --red-light: #fef2f2;
+      --gray-900: #111827;
+      --gray-700: #374151;
+      --gray-600: #4b5563;
+      --gray-500: #6b7280;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50: #f9fafb;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-900);
+      line-height: 1.55;
+      background: #fff;
+      font-size: 14px;
+    }
+
+    /* ── HEADER ── */
+    .doc-header {
+      border-bottom: 3px solid var(--gray-900);
+      padding: 40px 60px 28px;
+      background: #fff;
+    }
+    .doc-header .wordmark {
+      font-size: 10px;
+      font-weight: 800;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 16px;
+    }
+    .doc-header h1 {
+      font-size: 28px;
+      font-weight: 800;
+      color: var(--gray-900);
+      line-height: 1.2;
+      margin-bottom: 8px;
+    }
+    .doc-header .subtitle {
+      font-size: 14px;
+      color: var(--gray-600);
+    }
+    .doc-header .meta {
+      display: flex;
+      gap: 24px;
+      margin-top: 16px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-500);
+    }
+
+    /* ── LAYOUT ── */
+    .content {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 48px 60px 80px;
+    }
+
+    /* ── AGENDA BAR ── */
+    .agenda {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+      margin-bottom: 48px;
+    }
+    .agenda-item {
+      border: 1.5px solid var(--gray-300);
+      padding: 16px 18px;
+      background: var(--gray-50);
+    }
+    .agenda-item .num {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+      margin-bottom: 4px;
+    }
+    .agenda-item .label {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+
+    /* ── SECTIONS ── */
+    .section {
+      margin-bottom: 48px;
+    }
+    .section-header {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 20px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid var(--gray-200);
+    }
+    .section-header .section-num {
+      font-size: 11px;
+      font-weight: 800;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--gray-500);
+    }
+    .section-header h2 {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--gray-900);
+    }
+    .section-header .tag {
+      margin-left: auto;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      padding: 3px 10px;
+      border: 1.5px solid;
+    }
+    .tag.action { border-color: var(--blue); color: var(--blue); background: var(--blue-light); }
+    .tag.discuss { border-color: var(--amber); color: var(--amber); background: var(--amber-light); }
+    .tag.confirm { border-color: var(--green); color: var(--green); background: var(--green-light); }
+
+    /* ── CALLOUT ── */
+    .callout {
+      padding: 14px 18px;
+      border-left: 4px solid;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+    .callout.blue { border-color: var(--blue); background: var(--blue-light); color: var(--gray-700); }
+    .callout.amber { border-color: var(--amber-border); background: var(--amber-light); color: var(--amber); }
+    .callout strong { font-weight: 700; }
+
+    /* ── TABLES ── */
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      font-size: 13px;
+    }
+    th {
+      background: var(--gray-900);
+      color: #fff;
+      padding: 9px 14px;
+      font-size: 10.5px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      text-align: left;
+    }
+    td {
+      padding: 9px 14px;
+      border-bottom: 1px solid var(--gray-200);
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: var(--gray-50); }
+    tr:last-child td { border-bottom: none; }
+    td.mono { font-family: 'Courier New', monospace; font-size: 12px; color: var(--purple); }
+    td.em { font-weight: 600; color: var(--gray-900); }
+    td.dim { color: var(--gray-500); font-size: 12px; }
+    .pct { font-weight: 700; color: var(--blue); }
+    .stage-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+    .badge-new { background: var(--blue-light); color: var(--blue); }
+    .badge-keep { background: var(--gray-100); color: var(--gray-600); }
+
+    /* ── FIELD GRID ── */
+    .field-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+    .field-card {
+      border: 1px solid var(--gray-300);
+      padding: 12px 14px;
+    }
+    .field-card .fname {
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-bottom: 2px;
+    }
+    .field-card .ftype {
+      font-size: 10.5px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--gray-500);
+      margin-bottom: 4px;
+    }
+    .field-card .fvalues {
+      font-size: 12px;
+      color: var(--gray-600);
+    }
+
+    /* ── PRODUCT BLOCKS ── */
+    .product-block {
+      border: 1.5px solid var(--gray-300);
+      margin-bottom: 14px;
+      overflow: hidden;
+    }
+    .product-block .pb-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 16px;
+      background: var(--gray-900);
+      color: #fff;
+    }
+    .product-block .pb-name {
+      font-size: 13px;
+      font-weight: 700;
+    }
+    .product-block .pb-code {
+      font-size: 11px;
+      font-family: 'Courier New', monospace;
+      color: #d1d5db;
+    }
+    .product-block table { margin-bottom: 0; }
+    .product-block th { background: var(--gray-100); color: var(--gray-700); }
+
+    /* ── BILLING NOTES ── */
+    .billing-row {
+      display: flex;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    .billing-icon {
+      flex-shrink: 0;
+      width: 24px;
+      height: 24px;
+      background: var(--gray-900);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+      margin-top: 1px;
+    }
+    .billing-text .bt-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--gray-900);
+    }
+    .billing-text .bt-detail {
+      font-size: 12.5px;
+      color: var(--gray-600);
+    }
+
+    /* ── DECISIONS BOX ── */
+    .decisions {
+      border: 2px solid var(--gray-900);
+      padding: 24px 28px;
+      margin-bottom: 48px;
+    }
+    .decisions h3 {
+      font-size: 13px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: var(--gray-900);
+      margin-bottom: 16px;
+    }
+    .decision-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: var(--gray-700);
+    }
+    .decision-item:last-child { margin-bottom: 0; }
+    .checkbox {
+      width: 16px;
+      height: 16px;
+      border: 2px solid var(--gray-400, #9ca3af);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* ── FOOTER ── */
+    .doc-footer {
+      border-top: 2px solid var(--gray-200);
+      padding: 20px 60px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: var(--gray-500);
+      font-weight: 500;
+    }
+
+    @media print {
+      body { font-size: 11px; }
+      .content { padding: 32px 40px 60px; }
+      .doc-header { padding: 28px 40px 20px; }
+      .section { page-break-inside: avoid; }
+      .product-block { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="doc-header">
+  <div class="wordmark">pharosIQ — Internal</div>
+  <h1>Salesforce DaaS Configuration</h1>
+  <div class="subtitle">Setup requirements for DaaS pipeline tracking, product catalog, and billing</div>
+  <div class="meta">
+    <span>Meeting Prep — May 1, 2026</span>
+    <span>Owner: Tina Bean, SVP Data Products</span>
+    <span>Audience: Salesforce Admin Team</span>
+  </div>
+</div>
+
+<div class="content">
+
+  <!-- AGENDA -->
+  <div class="agenda">
+    <div class="agenda-item">
+      <div class="num">Topic 1</div>
+      <div class="label">Opportunity Record Type</div>
+    </div>
+    <div class="agenda-item">
+      <div class="num">Topic 2</div>
+      <div class="label">Pipeline Stages</div>
+    </div>
+    <div class="agenda-item">
+      <div class="num">Topic 3</div>
+      <div class="label">Product Catalog &amp; Billing</div>
+    </div>
+  </div>
+
+  <div class="callout blue">
+    <strong>Context:</strong> pharosIQ is standing up a net-new DaaS (Data-as-a-Service) revenue line. This is a distinct sales motion from demand gen — longer cycles, data evaluations, legal review, annual contracts. It needs its own record type, stages, fields, and products in SFDC so it doesn't get mixed into existing pipeline reporting.
+  </div>
+
+
+  <!-- ── SECTION 1: RECORD TYPE ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">01</span>
+      <h2>Opportunity Record Type</h2>
+      <span class="tag action">Action Required</span>
+    </div>
+
+    <p style="margin-bottom:16px; color:var(--gray-700);">Create a new Opportunity record type called <strong>"DaaS License"</strong> (or "Data License" — confirm naming convention with the team). This keeps DaaS deals out of demand gen and managed services reporting from day one.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Field</th>
+          <th>Value</th>
+          <th>Notes</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="em">Record Type Name</td>
+          <td class="mono">DaaS_License</td>
+          <td>API name suggestion — confirm with admin</td>
+        </tr>
+        <tr>
+          <td class="em">Display Label</td>
+          <td>DaaS License</td>
+          <td>Shown in record type selector</td>
+        </tr>
+        <tr>
+          <td class="em">Profiles with Access</td>
+          <td>Sales, Sales Leadership, Admin</td>
+          <td>Add Tina Bean specifically</td>
+        </tr>
+        <tr>
+          <td class="em">Page Layout</td>
+          <td>DaaS License Layout (new)</td>
+          <td>Should show DaaS-specific fields; hide demand gen fields</td>
+        </tr>
+        <tr>
+          <td class="em">Default Record Type</td>
+          <td>No</td>
+          <td>Existing default stays as-is</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+
+  <!-- ── SECTION 2: STAGES ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">02</span>
+      <h2>Opportunity Stages</h2>
+      <span class="tag action">Action Required</span>
+    </div>
+
+    <p style="margin-bottom:16px; color:var(--gray-700);">DaaS deals move differently than demand gen campaigns. Key milestones: data sample evaluation, multi-stakeholder procurement, and legal review before close. The stages below should be scoped to the DaaS License record type only.</p>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Stage Name</th>
+          <th>Prob %</th>
+          <th>Stage Type</th>
+          <th>Entry Criteria</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="em">Prospecting</td>
+          <td class="pct">10%</td>
+          <td><span class="stage-badge badge-new">New</span></td>
+          <td>ICP-qualified account, initial outreach initiated</td>
+        </tr>
+        <tr>
+          <td class="em">Discovery</td>
+          <td class="pct">20%</td>
+          <td><span class="stage-badge badge-new">New</span></td>
+          <td>Discovery call complete, use case and data appetite confirmed</td>
+        </tr>
+        <tr>
+          <td class="em">Technical Validation</td>
+          <td class="pct">40%</td>
+          <td><span class="stage-badge badge-new">New</span></td>
+          <td>Sample data delivered, technical team evaluating</td>
+        </tr>
+        <tr>
+          <td class="em">Proposal</td>
+          <td class="pct">60%</td>
+          <td><span class="stage-badge badge-new">New</span></td>
+          <td>Pricing proposal sent, champion engaged</td>
+        </tr>
+        <tr>
+          <td class="em">Legal / Procurement</td>
+          <td class="pct">75%</td>
+          <td><span class="stage-badge badge-new">New</span></td>
+          <td>Contract in legal review or procurement process</td>
+        </tr>
+        <tr>
+          <td class="em">Verbal Commit</td>
+          <td class="pct">90%</td>
+          <td><span class="stage-badge badge-new">New</span></td>
+          <td>Verbal yes received, contract pending signature</td>
+        </tr>
+        <tr>
+          <td class="em">Closed Won</td>
+          <td class="pct">100%</td>
+          <td><span class="stage-badge badge-keep">Closed Won</span></td>
+          <td>Signed contract, PO or invoice issued</td>
+        </tr>
+        <tr>
+          <td class="em">Closed Lost</td>
+          <td class="pct">0%</td>
+          <td><span class="stage-badge badge-keep">Closed Lost</span></td>
+          <td>No decision, competitor win, or budget loss</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="callout amber">
+      <strong>Confirm:</strong> Are these stages added to the existing Stage picklist (scoped by record type) or a separate field? Prefer record-type-scoped picklist values if SFDC version supports it.
+    </div>
+  </div>
+
+
+  <!-- ── SECTION 3: CUSTOM FIELDS ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">03</span>
+      <h2>Custom Fields — DaaS License Layout</h2>
+      <span class="tag action">Action Required</span>
+    </div>
+
+    <p style="margin-bottom:16px; color:var(--gray-700);">These fields should appear on the DaaS License page layout. Add to the Opportunity object; not all need to be visible on other record types.</p>
+
+    <div class="field-grid">
+      <div class="field-card">
+        <div class="fname">License Tier</div>
+        <div class="ftype">Picklist</div>
+        <div class="fvalues">T1, T2, T3, T4</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">Data Product</div>
+        <div class="ftype">Picklist (multi-select)</div>
+        <div class="fvalues">Full Database, AtlasIQ Suite, Jobson, TAL Signal Delivery, Reseller Program</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">Delivery Method</div>
+        <div class="ftype">Picklist</div>
+        <div class="fvalues">S3 Bucket, SFTP, API, MCP</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">Contract Term</div>
+        <div class="ftype">Picklist</div>
+        <div class="fvalues">3 Month POC, 1 Year, 2 Year, 3 Year</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">Contract Start Date</div>
+        <div class="ftype">Date</div>
+        <div class="fvalues">Effective date of data access</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">Contract End Date</div>
+        <div class="ftype">Date</div>
+        <div class="fvalues">Auto-calc preferred: Start + Term</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">ACV</div>
+        <div class="ftype">Currency</div>
+        <div class="fvalues">Annual contract value (maps to Amount)</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">TCV</div>
+        <div class="ftype">Currency</div>
+        <div class="fvalues">Total contract value (ACV × Term)</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">Sample Delivered</div>
+        <div class="ftype">Checkbox + Date</div>
+        <div class="fvalues">Tracks technical validation milestone</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">Use Case</div>
+        <div class="ftype">Text Area</div>
+        <div class="fvalues">Buyer's stated use case for the data</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">Renewal Alert</div>
+        <div class="ftype">Formula / Checkbox</div>
+        <div class="fvalues">Flag when Contract End Date is within 90 days</div>
+      </div>
+      <div class="field-card">
+        <div class="fname">OEM / Reseller Parent</div>
+        <div class="ftype">Lookup (Account)</div>
+        <div class="fvalues">For sub-licensing deals; links to parent reseller account</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── SECTION 4: PRODUCTS ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">04</span>
+      <h2>Product Catalog</h2>
+      <span class="tag action">Action Required</span>
+    </div>
+
+    <p style="margin-bottom:16px; color:var(--gray-700);">Add these to the SFDC Product Catalog (Products &amp; Price Books) so Opportunities can have line items. All prices are annual unless noted. Internal: AtlasIQ packs and Jobson bill through pharosIQ invoicing.</p>
+
+    <div class="product-block">
+      <div class="pb-header">
+        <div class="pb-name">Full Database Access — 4 Tiers</div>
+        <div class="pb-code">Annual License</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Product Code</th>
+            <th>Description</th>
+            <th>List Price (ACV)</th>
+            <th>Billing</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">DAAS-T1</td>
+            <td>Full DB T1: Company + Intent Signals</td>
+            <td>$60,000 – $96,000</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+          <tr>
+            <td class="mono">DAAS-T2</td>
+            <td>Full DB T2: Persona + Intent</td>
+            <td>$144,000 – $300,000</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+          <tr>
+            <td class="mono">DAAS-T3</td>
+            <td>Full DB T3: Contacts + Intent</td>
+            <td>$300,000 – $504,000</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+          <tr>
+            <td class="mono">DAAS-T4</td>
+            <td>Full DB T4: Enterprise (Contacts + Content)</td>
+            <td>$1,200,000+</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="product-block">
+      <div class="pb-header">
+        <div class="pb-name">AtlasIQ Intelligence Suite</div>
+        <div class="pb-code">One-Time / Per Report</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Product Code</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Billing</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">AIQ-AA-1</td>
+            <td>Account Architect — Single Report</td>
+            <td>$250</td>
+            <td class="dim">Stripe / pharosIQ</td>
+          </tr>
+          <tr>
+            <td class="mono">AIQ-AA-5</td>
+            <td>Account Architect — 5-Pack</td>
+            <td>$1,000</td>
+            <td class="dim">Stripe / pharosIQ</td>
+          </tr>
+          <tr>
+            <td class="mono">AIQ-AA-20</td>
+            <td>Account Architect — 20-Pack</td>
+            <td>$2,500</td>
+            <td class="dim">Stripe / pharosIQ</td>
+          </tr>
+          <tr>
+            <td class="mono">AIQ-AA-50</td>
+            <td>Account Architect — 50-Pack</td>
+            <td>$5,000</td>
+            <td class="dim">Stripe / pharosIQ</td>
+          </tr>
+          <tr>
+            <td class="mono">AIQ-ABM</td>
+            <td>ABM Strategist Report</td>
+            <td>$1,000</td>
+            <td class="dim">Stripe / pharosIQ</td>
+          </tr>
+          <tr>
+            <td class="mono">AIQ-DD</td>
+            <td>Deal DNA Report</td>
+            <td>$3,500</td>
+            <td class="dim">Stripe / pharosIQ</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="product-block">
+      <div class="pb-header">
+        <div class="pb-name">Additional Products</div>
+        <div class="pb-code">Annual / Custom</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Product Code</th>
+            <th>Description</th>
+            <th>Price</th>
+            <th>Billing</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="mono">JOB-FREE</td>
+            <td>Jobson Title Expansion — Free (first 50 English variations)</td>
+            <td>$0</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+          <tr>
+            <td class="mono">JOB-1T1L</td>
+            <td>Jobson Title Expansion — Single Title, One Language (all variations)</td>
+            <td>$500 one-time</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+          <tr>
+            <td class="mono">JOB-LANG</td>
+            <td>Jobson Title Expansion — Additional Language (stack onto any owned title)</td>
+            <td>$100 one-time per language</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+          <tr>
+            <td class="mono">JOB-ENT</td>
+            <td>Jobson Title Expansion — All Titles, All Languages (15+ languages, lifetime access)</td>
+            <td>Contact Sales</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+          <tr>
+            <td class="mono">TAL-SIG</td>
+            <td>TAL-Matched Signal Delivery</td>
+            <td>Custom</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+          <tr>
+            <td class="mono">RESELL</td>
+            <td>Reseller / OEM Program</td>
+            <td>Custom</td>
+            <td class="dim">pharosIQ invoice</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- ── SECTION 5: BILLING ── -->
+  <div class="section">
+    <div class="section-header">
+      <span class="section-num">05</span>
+      <h2>Billing &amp; Contract Notes</h2>
+      <span class="tag discuss">Discuss</span>
+    </div>
+
+    <div class="billing-row">
+      <div class="billing-icon">1</div>
+      <div class="billing-text">
+        <div class="bt-label">Payment Terms</div>
+        <div class="bt-detail">Annual contracts, invoiced upfront (preferred) or quarterly. Net 30 standard. Multi-year discounts: 10% for 2-year, 15% for 3-year.</div>
+      </div>
+    </div>
+    <div class="billing-row">
+      <div class="billing-icon">2</div>
+      <div class="billing-text">
+        <div class="bt-label">Revenue Recognition</div>
+        <div class="bt-detail">Track both ACV (annual contract value) and TCV (total contract value) on the Opportunity. Finance will need ACV for quota credit and TCV for revenue rec on multi-year deals.</div>
+      </div>
+    </div>
+    <div class="billing-row">
+      <div class="billing-icon">3</div>
+      <div class="billing-text">
+        <div class="bt-label">Renewal Tracking</div>
+        <div class="bt-detail">90-day flag on Contract End Date. Confirm whether this should live on the Opportunity or on a linked Contract object. Ask if there is a renewal workflow already in use.</div>
+      </div>
+    </div>
+    <div class="billing-row">
+      <div class="billing-icon">4</div>
+      <div class="billing-text">
+        <div class="bt-label">Billing Channel Split</div>
+        <div class="bt-detail">Most DaaS products bill via pharosIQ invoicing (AR). AtlasIQ packs may route through Stripe. SFDC should track the billing channel so finance can reconcile — add a "Billing Channel" field (Picklist: pharosIQ Invoice, Stripe) if not already present.</div>
+      </div>
+    </div>
+    <div class="billing-row">
+      <div class="billing-icon">5</div>
+      <div class="billing-text">
+        <div class="bt-label">OEM / Reseller Sub-Accounts</div>
+        <div class="bt-detail">Some deals will have a reseller billing one entity while end-customers consume data through sub-accounts. Confirm the best way to model this: Account Hierarchy, or a custom lookup from the Opportunity to the end-customer account.</div>
+      </div>
+    </div>
+    <div class="billing-row">
+      <div class="billing-icon">6</div>
+      <div class="billing-text">
+        <div class="bt-label">Quota &amp; Reporting</div>
+        <div class="bt-detail">DaaS pipeline should appear as a distinct line in pipeline reports and forecasts. Confirm the Opportunity Record Type filter will work for the CRO / CFO dashboard — or flag if a custom report type is needed.</div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ── DECISIONS ── -->
+  <div class="decisions">
+    <h3>Decisions Needed in This Meeting</h3>
+    <div class="decision-item">
+      <div class="checkbox"></div>
+      <span>Record type name confirmed: "DaaS License" vs. "Data License" vs. other</span>
+    </div>
+    <div class="decision-item">
+      <div class="checkbox"></div>
+      <span>Stage picklist approach: record-type-scoped values vs. a separate field</span>
+    </div>
+    <div class="decision-item">
+      <div class="checkbox"></div>
+      <span>Custom fields approved — any conflicts with existing Opportunity fields?</span>
+    </div>
+    <div class="decision-item">
+      <div class="checkbox"></div>
+      <span>Products added to Standard Price Book or a new "DaaS" price book?</span>
+    </div>
+    <div class="decision-item">
+      <div class="checkbox"></div>
+      <span>Renewal tracking: Opportunity-level or Contract object?</span>
+    </div>
+    <div class="decision-item">
+      <div class="checkbox"></div>
+      <span>OEM / sub-account modeling: Account Hierarchy or custom lookup?</span>
+    </div>
+    <div class="decision-item">
+      <div class="checkbox"></div>
+      <span>Timeline: when can this configuration be live in production?</span>
+    </div>
+  </div>
+
+</div><!-- /content -->
+
+<div class="doc-footer">
+  <span>pharosIQ — Internal Use Only</span>
+  <span>Tina Bean, SVP Data Products &amp; Partnerships — May 2026</span>
+</div>
+
+</body>
+</html>
