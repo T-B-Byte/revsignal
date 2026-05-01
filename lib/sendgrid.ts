@@ -286,6 +286,67 @@ export async function sendQuoteConfirmation(
 }
 
 /**
+ * Send a deal room access notification when someone successfully unlocks a room.
+ */
+export async function sendDealRoomAccessNotification(
+  to: string,
+  companyName: string,
+  roomSlug: string,
+  viewCount: number,
+  ip: string | null,
+  userAgent: string | null
+): Promise<SendResult> {
+  const now = new Date().toLocaleString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    timeZoneName: "short",
+  });
+
+  const html = `
+    <div style="font-family:sans-serif;max-width:520px;margin:0 auto;color:#1a1a1a">
+      <p style="font-size:13px;color:#6b7280;margin:0 0 16px">${now}</p>
+      <h2 style="margin:0 0 8px;font-size:20px">
+        ${companyName} just accessed their deal room
+      </h2>
+      <p style="margin:0 0 24px;color:#4b5563;font-size:15px">
+        Someone entered the correct password for the
+        <strong>${companyName}</strong> deal room.
+        This is visit <strong>#${viewCount}</strong>.
+      </p>
+      <table style="width:100%;border-collapse:collapse;font-size:14px">
+        <tr style="border-top:1px solid #e5e7eb">
+          <td style="padding:10px 0;color:#6b7280;width:120px">Room</td>
+          <td style="padding:10px 0;font-weight:500">${roomSlug}</td>
+        </tr>
+        <tr style="border-top:1px solid #e5e7eb">
+          <td style="padding:10px 0;color:#6b7280">Visit #</td>
+          <td style="padding:10px 0;font-weight:500">${viewCount}</td>
+        </tr>
+        ${ip ? `<tr style="border-top:1px solid #e5e7eb">
+          <td style="padding:10px 0;color:#6b7280">IP</td>
+          <td style="padding:10px 0;font-family:monospace">${ip}</td>
+        </tr>` : ""}
+        ${userAgent ? `<tr style="border-top:1px solid #e5e7eb">
+          <td style="padding:10px 0;color:#6b7280">Browser</td>
+          <td style="padding:10px 0;color:#374151;font-size:12px">${userAgent.slice(0, 120)}</td>
+        </tr>` : ""}
+      </table>
+    </div>
+  `;
+
+  return sendEmail({
+    to,
+    subject: `${companyName} opened their deal room (visit #${viewCount})`,
+    html,
+    text: `${companyName} just accessed their deal room (visit #${viewCount}). IP: ${ip ?? "unknown"}. Time: ${now}.`,
+    categories: ["deal-room", "access", "notification"],
+  });
+}
+
+/**
  * Send an integration status alert (degraded/disconnected).
  */
 export async function sendIntegrationAlert(

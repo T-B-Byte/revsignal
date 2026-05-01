@@ -3,6 +3,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import bcrypt from "bcryptjs";
 import { z } from "zod";
 import { rateLimit } from "@/lib/rate-limit";
+import { sendDealRoomAccessNotification } from "@/lib/sendgrid";
 
 const limiter = rateLimit({ interval: 60_000 });
 
@@ -74,12 +75,40 @@ export async function POST(
       .eq("room_id", room.room_id)
       .eq("view_count", room.view_count);
 
+    const accessIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
+    const accessUserAgent = request.headers.get("user-agent")?.slice(0, 500) || null;
+
     // Log access
     await supabase.from("deal_room_access_log").insert({
       room_id: room.room_id,
-      ip_address: request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null,
-      user_agent: request.headers.get("user-agent")?.slice(0, 500) || null,
+      ip_address: accessIp,
+      user_agent: accessUserAgent,
     });
+
+    // Fire access notification — non-blocking, never delays the unlock response
+    const newViewCount = (room.view_count || 0) + 1;
+    const companyName = (room.gtm_company_profiles as { name?: string } | null)?.name ?? slug;
+    void (async () => {
+      try {
+        const { data } = await supabase
+          .from("user_profiles")
+          .select("email")
+          .eq("user_id", room.user_id)
+          .maybeSingle();
+        if (data?.email) {
+          await sendDealRoomAccessNotification(
+            data.email,
+            companyName,
+            slug,
+            newViewCount,
+            accessIp,
+            accessUserAgent
+          );
+        }
+      } catch {
+        // Non-critical — never block the unlock response
+      }
+    })();
 
     // Fetch selected products (guard against unexpected types)
     const rawProducts = room.selected_products;
