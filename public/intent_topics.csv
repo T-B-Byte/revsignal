@@ -1,4 +1,4 @@
-# NOTE: companies_this_topic = unique companies for THIS topic only. DO NOT SUM — double-counts companies across topics. Global unique total: 373352 companies (all regions 90-day).
+# NOTE: companies_this_topic = unique companies for THIS topic only. DO NOT SUM - double-counts companies across topics. Global unique total: 373352 companies (all regions 90-day).
 topic,companies_this_topic,total_signals,acc_NAMER,acc_EMEA,acc_APAC,acc_LATAM,acc_ANZ,acc_Global,sig_NAMER,sig_EMEA,sig_APAC,sig_LATAM,sig_ANZ,sig_Global
 artificial intelligence (ai),188732,3731481,16906,59864,6297,74566,5162,25937,454320,1076985,125834,1476019,70768,527555
 cybersecurity,105669,2614717,9364,31427,3590,43387,2568,15333,392666,843241,71270,908677,53410,345453
