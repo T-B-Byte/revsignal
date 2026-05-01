@@ -11,6 +11,12 @@ import type {
 } from "@/types/database";
 import { ACTIVE_STAGES } from "@/types/database";
 
+export interface ThreadDealRoom {
+  slug: string;
+  password_plain: string | null;
+  status: string;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -73,7 +79,7 @@ export default async function ThreadPage({
         .from("coaching_threads")
         .select(`
           *,
-          deals:deal_id (deal_id, company, stage),
+          deals:deal_id (deal_id, company, stage, acv),
           ma_entities:ma_entity_id (entity_id, company, entity_type, stage),
           projects:project_id (project_id, name, status, category),
           contacts:contact_id (contact_id, name, company, role)
@@ -85,7 +91,7 @@ export default async function ThreadPage({
         .from("coaching_threads")
         .select(`
           *,
-          deals:deal_id (deal_id, company, stage),
+          deals:deal_id (deal_id, company, stage, acv),
           ma_entities:ma_entity_id (entity_id, company, entity_type, stage),
           projects:project_id (project_id, name, status, category),
           contacts:contact_id (contact_id, name, company, role)
@@ -94,7 +100,7 @@ export default async function ThreadPage({
         .order("last_message_at", { ascending: false }),
       supabase
         .from("deals")
-        .select("deal_id, company, stage")
+        .select("deal_id, company, stage, acv")
         .eq("user_id", user.id)
         .in("stage", ACTIVE_STAGES)
         .order("last_activity_date", { ascending: false }),
@@ -116,10 +122,12 @@ export default async function ThreadPage({
   const currentThread = threadResult.data as CoachingThreadWithDeal;
   const threads = (threadsResult.data ?? []) as CoachingThreadWithDeal[];
   const activeDeals =
-    (dealsResult.data as Pick<Deal, "deal_id" | "company" | "stage">[]) || [];
+    (dealsResult.data as Pick<Deal, "deal_id" | "company" | "stage" | "acv">[]) || [];
   const messages = ((messagesResult.data as CoachingMessage[]) || [])
     .slice()
     .reverse();
+
+  const totalPipeline = activeDeals.reduce((sum, d) => sum + (d.acv ?? 0), 0);
 
   // Enrich threads with follow-up counts and task counts
   const threadIds = threads.map((t) => t.thread_id);
@@ -182,12 +190,47 @@ export default async function ThreadPage({
       ? (currentThread.deals as { company: string }).company
       : null;
 
+  const dealAcv =
+    currentThread.deals &&
+    typeof currentThread.deals === "object" &&
+    "acv" in currentThread.deals
+      ? (currentThread.deals as { acv: number | null }).acv
+      : null;
+
+  // Look up deal room for this thread's company (via GtmCompanyProfile name match)
+  const companyName = dealCompany ?? currentThread.company;
+  let dealRoom: ThreadDealRoom | null = null;
+  if (companyName) {
+    const { data: companyProfile } = await supabase
+      .from("gtm_company_profiles")
+      .select("company_id")
+      .eq("user_id", user.id)
+      .ilike("name", companyName)
+      .maybeSingle();
+
+    if (companyProfile) {
+      const { data: room } = await supabase
+        .from("deal_rooms")
+        .select("slug, password_plain, status")
+        .eq("user_id", user.id)
+        .eq("company_id", companyProfile.company_id)
+        .eq("status", "active")
+        .maybeSingle();
+
+      if (room) {
+        dealRoom = room as ThreadDealRoom;
+      }
+    }
+  }
+
   return (
-    <CoachShell threads={threads} activeDeals={activeDeals}>
+    <CoachShell threads={threads} activeDeals={activeDeals} totalPipeline={totalPipeline}>
       <ThreadChat
         thread={currentThread}
         initialMessages={messages}
         dealCompany={dealCompany}
+        dealAcv={dealAcv}
+        dealRoom={dealRoom}
         activeDeals={activeDeals}
       />
     </CoachShell>

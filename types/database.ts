@@ -480,6 +480,7 @@ export interface CoachingThread {
   brief_updated_at: string | null;
   catchup_text: string | null;
   catchup_generated_at: string | null;
+  prospect_use_case: string | null;
   last_message_at: string;
   message_count: number;
   is_archived: boolean;
@@ -528,7 +529,7 @@ export interface UserTaskWithDeal extends UserTask {
 
 /** Thread with joined deal/M&A/contact info for sidebar display */
 export interface CoachingThreadWithDeal extends CoachingThread {
-  deals?: Pick<Deal, "deal_id" | "company" | "stage"> | null;
+  deals?: (Pick<Deal, "deal_id" | "company" | "stage"> & { acv?: number | null }) | null;
   ma_entities?: Pick<MaEntity, "entity_id" | "company" | "entity_type" | "stage"> | null;
   projects?: Pick<Project, "project_id" | "name" | "status" | "category"> | null;
   contacts?: Pick<Contact, "contact_id" | "name" | "company" | "role"> | null;

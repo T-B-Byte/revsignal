@@ -9,14 +9,15 @@ import type { CoachingThreadWithDeal, Deal, Project, Contact, ThreadParticipant 
 
 interface CoachShellProps {
   threads: CoachingThreadWithDeal[];
-  activeDeals: Pick<Deal, "deal_id" | "company" | "stage">[];
+  activeDeals: (Pick<Deal, "deal_id" | "company" | "stage"> & { acv?: number | null })[];
   projects?: Pick<Project, "project_id" | "name" | "status" | "category">[];
   contacts?: Pick<Contact, "contact_id" | "name" | "company" | "role">[];
   children?: React.ReactNode;
   isLanding?: boolean;
+  totalPipeline?: number;
 }
 
-export function CoachShell({ threads: initialThreads, activeDeals: initialDeals, projects: initialProjects = [], contacts: initialContacts = [], children, isLanding }: CoachShellProps) {
+export function CoachShell({ threads: initialThreads, activeDeals: initialDeals, projects: initialProjects = [], contacts: initialContacts = [], children, isLanding, totalPipeline = 0 }: CoachShellProps) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -75,6 +76,7 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
       brief_updated_at: null,
       catchup_text: null,
       catchup_generated_at: null,
+      prospect_use_case: null,
       last_message_at: new Date().toISOString(),
       message_count: 0,
       is_archived: false,
@@ -153,6 +155,7 @@ export function CoachShell({ threads: initialThreads, activeDeals: initialDeals,
           onNewThread={() => setDialogOpen(true)}
           onArchive={handleArchive}
           onDelete={handleDelete}
+          totalPipeline={totalPipeline}
         />
       </div>
 

@@ -10,12 +10,15 @@ import { ThreadBreadcrumb } from "./thread-breadcrumb";
 import type { MessageChannel } from "@/lib/agents/email-composer";
 import { MESSAGE_REACTIONS } from "@/types/database";
 import { DatePicker } from "@/components/ui/date-picker";
+import type { ThreadDealRoom } from "@/app/(dashboard)/coach/[threadId]/page";
 
 interface ThreadChatProps {
   thread: CoachingThreadWithDeal;
   initialMessages: CoachingMessage[];
   dealCompany?: string | null;
-  activeDeals?: Pick<Deal, "deal_id" | "company" | "stage">[];
+  dealAcv?: number | null;
+  dealRoom?: ThreadDealRoom | null;
+  activeDeals?: (Pick<Deal, "deal_id" | "company" | "stage"> & { acv?: number | null })[];
   /** Pre-fills the input on first load (e.g. studio project kickoff message) */
   primeMessage?: string;
 }
@@ -43,6 +46,8 @@ export function ThreadChat({
   thread,
   initialMessages,
   dealCompany,
+  dealAcv,
+  dealRoom,
   activeDeals = [],
   primeMessage,
 }: ThreadChatProps) {
@@ -122,6 +127,14 @@ export function ThreadChat({
     suggested_agenda?: string[];
   } | null>(null);
   const [creatingMeeting, setCreatingMeeting] = useState(false);
+  // Use case panel
+  const [useCaseText, setUseCaseText] = useState<string>(thread.prospect_use_case ?? "");
+  const [showUseCase, setShowUseCase] = useState(false);
+  const [editingUseCase, setEditingUseCase] = useState(false);
+  const [useCaseDraft, setUseCaseDraft] = useState("");
+  const [savingUseCase, setSavingUseCase] = useState(false);
+  // Data room copy
+  const [copiedDataRoom, setCopiedDataRoom] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const sendingRef = useRef(false);
@@ -155,6 +168,9 @@ export function ThreadChat({
     setShowEntityPicker(false);
     setEntitySearch("");
     setEntityResults([]);
+    setUseCaseText(thread.prospect_use_case ?? "");
+    setShowUseCase(false);
+    setEditingUseCase(false);
 
     const controller = new AbortController();
     const messageIds = initialMessages.map((m) => m.conversation_id);
@@ -986,6 +1002,40 @@ export function ThreadChat({
     setTaskError(null);
   }
 
+  async function saveUseCase() {
+    if (savingUseCase) return;
+    setSavingUseCase(true);
+    try {
+      const res = await fetch(`/api/coaching/threads/${thread.thread_id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prospect_use_case: useCaseDraft.trim() || null }),
+      });
+      if (res.ok) {
+        setUseCaseText(useCaseDraft.trim());
+        setEditingUseCase(false);
+      }
+    } catch {
+      // silent fail
+    } finally {
+      setSavingUseCase(false);
+    }
+  }
+
+  async function handleCopyDataRoom() {
+    if (!dealRoom) return;
+    const url = `${window.location.origin}/room/${dealRoom.slug}`;
+    const pw = dealRoom.password_plain ? `\nPassword: ${dealRoom.password_plain}` : "";
+    const text = `Your pharosIQ Data Room is ready.\n\nURL: ${url}${pw}\n\nWhat's in the Schema & Downloads tab: Your Data Room includes a complete Data Dictionary, Global Contact Counts (by title and seniority, with a pivot table for region, industry, revenue, and employee range), Total Intent Topics and Topics by Period (with 1-day, 1-week, 1-month, and 3-month tabs), and a pharosIQ-to-Bombora topic mapping.`;
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedDataRoom(true);
+      setTimeout(() => setCopiedDataRoom(false), 2500);
+    } catch {
+      // clipboard unavailable
+    }
+  }
+
   async function handleCreateMeeting() {
     if (!meetingPrompt || creatingMeeting) return;
     setCreatingMeeting(true);
@@ -1295,25 +1345,140 @@ export function ThreadChat({
     <div className="flex h-full flex-col">
       {/* Thread header */}
       <div className="shrink-0 border-b border-border-primary px-6 py-3">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-base font-semibold text-text-primary">
-            {thread.title}
-          </h2>
-          <button
-            onClick={() => setShowCompose(!showCompose)}
-            className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
-              showCompose
-                ? "bg-accent-primary text-white"
-                : "bg-surface-tertiary text-text-secondary hover:text-text-primary hover:bg-surface-tertiary/80"
-            }`}
-          >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 20h9" />
-              <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
-            </svg>
-            Draft Message
-          </button>
+        <div className="flex items-center justify-between mb-2 gap-3">
+          {/* Title + deal ACV */}
+          <div className="flex items-center gap-2 min-w-0">
+            <h2 className="text-base font-semibold text-text-primary truncate">
+              {thread.title}
+            </h2>
+            {dealAcv != null && dealAcv > 0 && (
+              <span className="shrink-0 rounded-full bg-status-green/15 px-2 py-0.5 text-[10px] font-semibold text-status-green">
+                ${dealAcv.toLocaleString()}
+              </span>
+            )}
+          </div>
+
+          {/* Action buttons */}
+          <div className="flex items-center gap-1.5 shrink-0">
+            {/* Use Case button */}
+            <button
+              onClick={() => {
+                const next = !showUseCase;
+                setShowUseCase(next);
+                if (next && !useCaseText) {
+                  setEditingUseCase(true);
+                  setUseCaseDraft("");
+                } else if (!next) {
+                  setEditingUseCase(false);
+                }
+              }}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                showUseCase
+                  ? "bg-blue-500/20 text-blue-300"
+                  : useCaseText
+                    ? "bg-blue-500/10 text-blue-400 hover:bg-blue-500/20"
+                    : "bg-surface-tertiary text-text-muted hover:text-text-secondary hover:bg-surface-tertiary/80"
+              }`}
+              title={useCaseText ? "View prospect use case" : "Add prospect use case"}
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2" />
+                <rect x="9" y="3" width="6" height="4" rx="1" />
+                <path d="M9 12h6M9 16h4" />
+              </svg>
+              Use Case
+              {useCaseText && <span className="h-1.5 w-1.5 rounded-full bg-blue-400 shrink-0" />}
+            </button>
+
+            {/* Data Room Access button */}
+            {dealRoom && (
+              <button
+                onClick={handleCopyDataRoom}
+                className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                  copiedDataRoom
+                    ? "bg-status-green/15 text-status-green"
+                    : "bg-surface-tertiary text-text-secondary hover:text-text-primary hover:bg-surface-tertiary/80"
+                }`}
+                title="Copy Data Room credentials to clipboard"
+              >
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="9" y="9" width="13" height="13" rx="2" />
+                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" />
+                </svg>
+                {copiedDataRoom ? "Copied!" : "Data Room Access"}
+              </button>
+            )}
+
+            {/* Draft Message button */}
+            <button
+              onClick={() => setShowCompose(!showCompose)}
+              className={`flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium transition-colors ${
+                showCompose
+                  ? "bg-accent-primary text-white"
+                  : "bg-surface-tertiary text-text-secondary hover:text-text-primary hover:bg-surface-tertiary/80"
+              }`}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 20h9" />
+                <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4Z" />
+              </svg>
+              Draft Message
+            </button>
+          </div>
         </div>
+
+        {/* Use Case panel */}
+        {showUseCase && (
+          <div className="mb-2 rounded-lg border border-blue-500/20 bg-blue-500/5 px-3 py-2.5">
+            {editingUseCase ? (
+              <div className="space-y-2">
+                <p className="text-[10px] font-medium uppercase tracking-wider text-blue-400">Prospect Use Case</p>
+                <textarea
+                  value={useCaseDraft}
+                  onChange={(e) => setUseCaseDraft(e.target.value)}
+                  placeholder="Describe the prospect's intended use case — what they want to do with the data, key workflows, primary buyer, target personas..."
+                  rows={3}
+                  className="w-full rounded border border-blue-500/20 bg-surface-secondary px-2.5 py-1.5 text-xs text-text-primary placeholder:text-text-muted focus:border-blue-400 focus:outline-none resize-none"
+                  autoFocus
+                />
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={saveUseCase}
+                    disabled={savingUseCase || !useCaseDraft.trim()}
+                    className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-blue-500 disabled:opacity-50"
+                  >
+                    {savingUseCase ? "Saving..." : "Save"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setEditingUseCase(false);
+                      if (!useCaseText) setShowUseCase(false);
+                    }}
+                    className="text-xs text-text-muted hover:text-text-secondary transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <p className="text-[10px] font-medium uppercase tracking-wider text-blue-400">Prospect Use Case</p>
+                  <button
+                    onClick={() => {
+                      setEditingUseCase(true);
+                      setUseCaseDraft(useCaseText);
+                    }}
+                    className="text-[10px] text-text-muted hover:text-blue-400 transition-colors"
+                  >
+                    Edit
+                  </button>
+                </div>
+                <p className="text-xs text-text-secondary leading-relaxed">{useCaseText}</p>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Breadcrumb: linked entities + participants */}
         <ThreadBreadcrumb

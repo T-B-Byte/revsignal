@@ -12,9 +12,10 @@ interface ThreadSidebarProps {
   onNewThread: () => void;
   onArchive?: (threadId: string, archive: boolean) => void;
   onDelete?: (threadId: string) => void;
+  totalPipeline?: number;
 }
 
-export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: ThreadSidebarProps) {
+export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete, totalPipeline = 0 }: ThreadSidebarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const [viewMode, setViewMode] = useState<ViewMode>("deals");
@@ -182,14 +183,24 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete }: Thr
   return (
     <div className="flex h-full flex-col border-r border-border-primary bg-surface-primary">
       {/* Header */}
-      <div className="flex items-center justify-between border-b border-border-primary px-4 py-3">
-        <h2 className="text-sm font-semibold text-text-primary">StrategyGPT</h2>
-        <button
-          onClick={onNewThread}
-          className="rounded-md bg-accent-primary px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-accent-primary/90"
-        >
-          + New
-        </button>
+      <div className="border-b border-border-primary px-4 py-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-semibold text-text-primary">StrategyGPT</h2>
+          <button
+            onClick={onNewThread}
+            className="rounded-md bg-accent-primary px-2.5 py-1 text-xs font-medium text-white transition-colors hover:bg-accent-primary/90"
+          >
+            + New
+          </button>
+        </div>
+        {totalPipeline > 0 && (
+          <div className="mt-1.5 flex items-center gap-1">
+            <span className="text-[10px] text-text-muted uppercase tracking-wider">Pipeline</span>
+            <span className="text-[11px] font-semibold text-status-green">
+              ${totalPipeline.toLocaleString()}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Search */}

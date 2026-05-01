@@ -23,6 +23,7 @@ const updateThreadSchema = z.object({
   contact_id: z.string().uuid().nullable().optional(),
   is_archived: z.boolean().optional(),
   participants: z.array(participantSchema).max(20).optional(),
+  prospect_use_case: z.string().max(2000).nullable().optional(),
 });
 
 type RouteContext = { params: Promise<{ threadId: string }> };
