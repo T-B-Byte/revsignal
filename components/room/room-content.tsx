@@ -7,6 +7,7 @@ import { DataTestForm } from "./data-test-form";
 import { DataCoverage } from "./data-coverage";
 import { DpaDownload } from "./dpa-download";
 import { Downloads } from "./downloads";
+import { PharosiqDifference } from "./pharosiq-difference";
 import { TINA_CALENDAR_URL } from "@/types/database";
 
 import type { DealRoomDemoSelection } from "@/types/database";
@@ -70,6 +71,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
 
   const tabs: { key: Tab; label: string; show: boolean }[] = [
     { key: "products", label: "Solutions", show: true },
+    { key: "difference", label: "The pharosIQ Difference", show: true },
     ...activeDemos.map((d) => ({ key: d.key, label: d.label, show: true })),
     { key: "quote", label: "Build a Quote", show: showQuoteBuilder },
     { key: "data-test", label: "Data Test Request", show: true },
@@ -164,6 +166,10 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
 
           <DataCoverage theme={theme} />
         </div>
+      )}
+
+      {activeTab === "difference" && (
+        <PharosiqDifference theme={theme} />
       )}
 
       {activeTab === "quote" && showQuoteBuilder && (
