@@ -6,12 +6,12 @@ import { QuoteBuilder } from "./quote-builder";
 import { DataTestForm } from "./data-test-form";
 import { DataCoverage } from "./data-coverage";
 import { DpaDownload } from "./dpa-download";
-import { DataDictionaryDownload } from "./data-dictionary-download";
+import { Downloads } from "./downloads";
 import { TINA_CALENDAR_URL } from "@/types/database";
 
 import type { DealRoomDemoSelection } from "@/types/database";
 
-type Tab = "products" | "quote" | "data-test" | "dpa" | "data-dictionary" | string;
+type Tab = "products" | "quote" | "data-test" | "dpa" | "downloads" | string;
 
 const ALL_DEMOS: Record<string, { label: string; url: string }> = {
   daas_framework: { label: "Entire File", url: "https://revsignal.vercel.app/frameworks/daas-framework" },
@@ -74,7 +74,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
     { key: "quote", label: "Build a Quote", show: showQuoteBuilder },
     { key: "data-test", label: "Data Test Request", show: true },
     { key: "dpa", label: "DPA", show: true },
-    { key: "data-dictionary", label: "Data Dictionary", show: true },
+    { key: "downloads", label: "Downloads", show: true },
   ];
 
   return (
@@ -214,8 +214,8 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
         <DpaDownload theme={theme} accentColor={accentColor} companyName={companyName} />
       )}
 
-      {activeTab === "data-dictionary" && (
-        <DataDictionaryDownload theme={theme} accentColor={accentColor} companyName={companyName} />
+      {activeTab === "downloads" && (
+        <Downloads theme={theme} accentColor={accentColor} />
       )}
 
       {/* Footer */}

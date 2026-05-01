@@ -1,0 +1,206 @@
+"use client";
+
+interface DownloadsProps {
+  theme: "dark" | "light";
+  accentColor: string;
+}
+
+interface DownloadFile {
+  filename: string;
+  downloadAs: string;
+  fileType: string;
+  title: string;
+  description: string;
+  bullets: string[];
+}
+
+const FILES: DownloadFile[] = [
+  {
+    filename: "/PharosIQ_Data_Dictionary_2026-04-20.xlsx",
+    downloadAs: "PharosIQ_Data_Dictionary.xlsx",
+    fileType: "Microsoft Excel Spreadsheet",
+    title: "PharosIQ Data Dictionary",
+    description:
+      "A comprehensive reference guide to the PharosIQ signal data schema, covering all 57 fields across the full contact × signal event grain.",
+    bullets: [
+      "Field Reference: every field name, data type, description, and example value",
+      "Field Index: schema column order for easy alignment with data deliveries",
+      "Using the Data: practical Q&A for sales, campaign, and segmentation use cases",
+      "Lookups: controlled vocabulary for seniority, industry, and persona mappings",
+    ],
+  },
+  {
+    filename: "/intent_topics.csv",
+    downloadAs: "PharosIQ_Intent_Topics.csv",
+    fileType: "CSV",
+    title: "Intent Topics",
+    description:
+      "A complete reference export of all 8,756 intent topics tracked in the PharosIQ audience over the most recent 90-day period.",
+    bullets: [
+      "8,756 topics with unique company counts and total signal volumes",
+      "Regional breakdown across NAMER, EMEA, APAC, LATAM, ANZ, and Global",
+      "373,352 verified unique companies across all topics (do not sum per-topic counts)",
+      "Ready to filter and map against your ICP or TAL",
+    ],
+  },
+  {
+    filename: "/intent_topics_by_period.xlsx",
+    downloadAs: "PharosIQ_Intent_Topics_By_Period.xlsx",
+    fileType: "Microsoft Excel Spreadsheet",
+    title: "Intent Topics by Period",
+    description:
+      "The same 90-day intent topic data sliced into estimated time windows — monthly, weekly, and daily — alongside the verified 90-day baseline.",
+    bullets: [
+      "90-Day tab: verified actuals",
+      "Monthly, Weekly, and Daily tabs: proportional estimates derived from 90-day totals",
+      "Designed for prospects modeling signal velocity and cadence",
+      "Useful for projecting intent activity within shorter time horizons",
+    ],
+  },
+];
+
+export function Downloads({ theme, accentColor }: DownloadsProps) {
+  const t = (dark: string, light: string) => (theme === "dark" ? dark : light);
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <p
+          className="text-xs font-semibold uppercase tracking-[0.18em]"
+          style={{ color: accentColor }}
+        >
+          Data Downloads
+        </p>
+        <h2
+          className={`mt-2 text-2xl font-bold ${t("text-zinc-100", "text-zinc-900")}`}
+        >
+          Reference files for your technical and analytics teams.
+        </h2>
+      </div>
+
+      <div className="space-y-4">
+        {FILES.map((file) => (
+          <div
+            key={file.filename}
+            className={`overflow-hidden rounded-2xl border ${t(
+              "border-zinc-800 bg-slate-800/40",
+              "border-zinc-200 bg-white",
+            )}`}
+          >
+            <div
+              className="h-1 w-full"
+              style={{ backgroundColor: accentColor }}
+              aria-hidden
+            />
+
+            <div className="grid gap-8 p-7 sm:p-8 lg:grid-cols-[1fr_280px] lg:gap-10">
+              <div>
+                <h3
+                  className={`text-lg font-bold ${t("text-zinc-100", "text-zinc-900")}`}
+                >
+                  {file.title}
+                </h3>
+                <p
+                  className={`mt-2 text-sm leading-relaxed ${t("text-zinc-300", "text-zinc-600")}`}
+                >
+                  {file.description}
+                </p>
+                <ul
+                  className={`mt-5 space-y-2 text-sm ${t("text-zinc-300", "text-zinc-700")}`}
+                >
+                  {file.bullets.map((bullet) => (
+                    <li key={bullet} className="flex items-start gap-3">
+                      <span
+                        className="mt-0.5 inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full"
+                        style={{ backgroundColor: `${accentColor}22` }}
+                      >
+                        <svg
+                          className="h-3 w-3"
+                          viewBox="0 0 20 20"
+                          fill="none"
+                          stroke={accentColor}
+                          strokeWidth={3}
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            d="M5 10.5l3 3 7-7"
+                          />
+                        </svg>
+                      </span>
+                      <span>{bullet}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="flex flex-col justify-center">
+                <div
+                  className={`rounded-xl border p-5 ${t(
+                    "border-zinc-700 bg-slate-900/60",
+                    "border-zinc-200 bg-zinc-50",
+                  )}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg"
+                      style={{ backgroundColor: `${accentColor}1a` }}
+                    >
+                      <svg
+                        className="h-6 w-6"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke={accentColor}
+                        strokeWidth={1.8}
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h7l5 5v12a2 2 0 01-2 2z"
+                        />
+                      </svg>
+                    </div>
+                    <div className="min-w-0">
+                      <p
+                        className={`truncate text-sm font-semibold ${t("text-zinc-100", "text-zinc-900")}`}
+                      >
+                        {file.downloadAs}
+                      </p>
+                      <p
+                        className={`mt-0.5 text-xs ${t("text-zinc-400", "text-zinc-500")}`}
+                      >
+                        {file.fileType}
+                      </p>
+                    </div>
+                  </div>
+
+                  <a
+                    href={file.filename}
+                    download={file.downloadAs}
+                    className="mt-5 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold text-white transition hover:opacity-90"
+                    style={{ backgroundColor: accentColor }}
+                  >
+                    <svg
+                      className="h-4 w-4"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth={2}
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5 5-5M12 15V3"
+                      />
+                    </svg>
+                    Download
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
