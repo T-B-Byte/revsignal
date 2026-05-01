@@ -27,10 +27,25 @@ interface RoomContentProps {
   products: Record<string, unknown>[];
   slug: string;
   password: string;
+  logId: string | null;
 }
 
-export function RoomContent({ room, products, slug, password }: RoomContentProps) {
+export function RoomContent({ room, products, slug, password, logId }: RoomContentProps) {
   const [activeTab, setActiveTab] = useState<Tab>("products");
+
+  function trackTab(tab: string) {
+    if (!logId) return;
+    fetch(`/api/room/${encodeURIComponent(slug)}/track`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ log_id: logId, tab }),
+    }).catch(() => {});
+  }
+
+  function handleTabClick(tabKey: Tab) {
+    setActiveTab(tabKey);
+    trackTab(tabKey);
+  }
   const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   const t = (dark: string, light: string) => theme === "dark" ? dark : light;
@@ -129,7 +144,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
           .map((tab) => (
             <button
               key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => handleTabClick(tab.key)}
               className={`shrink-0 rounded-md px-4 py-2 text-sm font-medium transition whitespace-nowrap ${
                 activeTab === tab.key
                   ? t("bg-zinc-800 text-zinc-100", "bg-white text-zinc-900 shadow-sm")

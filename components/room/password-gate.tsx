@@ -2,9 +2,15 @@
 
 import { useState, FormEvent } from "react";
 
+interface UnlockData {
+  log_id: string | null;
+  room: Record<string, unknown>;
+  products: Record<string, unknown>[];
+}
+
 interface PasswordGateProps {
   slug: string;
-  onUnlock: (data: { room: Record<string, unknown>; products: Record<string, unknown>[] }, password: string) => void;
+  onUnlock: (data: UnlockData, password: string) => void;
 }
 
 export function PasswordGate({ slug, onUnlock }: PasswordGateProps) {

@@ -78,12 +78,13 @@ export async function POST(
     const accessIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || null;
     const accessUserAgent = request.headers.get("user-agent")?.slice(0, 500) || null;
 
-    // Log access
-    await supabase.from("deal_room_access_log").insert({
+    // Log access — capture log_id so the client can tie tab clicks to this session
+    const { data: logEntry } = await supabase.from("deal_room_access_log").insert({
       room_id: room.room_id,
       ip_address: accessIp,
       user_agent: accessUserAgent,
-    });
+    }).select("log_id").single();
+    const logId = logEntry?.log_id ?? null;
 
     // Fire access notification — non-blocking, never delays the unlock response
     const newViewCount = (room.view_count || 0) + 1;
@@ -147,6 +148,7 @@ export async function POST(
     const { password_hash: _, user_id: __, password_plain: ___, ...safeRoom } = room;
 
     return NextResponse.json({
+      log_id: logId,
       room: safeRoom,
       products,
     });

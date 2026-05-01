@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { CreateDealRoomDialog } from "@/components/deal-rooms/create-deal-room-dialog";
@@ -8,6 +8,7 @@ import { EditDealRoomDialog } from "@/components/deal-rooms/edit-deal-room-dialo
 import type {
   DealRoomWithCompany,
   DealRoomStatus,
+  DealRoomAccessLog,
   GtmCompanyProfile,
   GtmProduct,
   DealRoomQuote,
@@ -27,6 +28,22 @@ const STATUS_STYLES: Record<DealRoomStatus, { bg: string; text: string }> = {
   archived: { bg: "bg-white/10", text: "text-text-muted" },
 };
 
+// Human-readable labels for tracked tab keys
+const TAB_LABELS: Record<string, string> = {
+  products: "Solutions",
+  difference: "pharosIQ Difference",
+  quote: "Build a Quote",
+  "data-test": "Data Test",
+  dpa: "DPA",
+  downloads: "Downloads",
+  daas_framework: "Entire File",
+  tal_matching: "TAL Matching",
+};
+
+function tabLabel(key: string): string {
+  return TAB_LABELS[key] ?? key;
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Never";
   const d = new Date(dateStr);
@@ -34,6 +51,18 @@ function formatDate(dateStr: string | null): string {
     month: "short",
     day: "numeric",
     year: "numeric",
+  });
+}
+
+function formatDateTime(dateStr: string | null): string {
+  if (!dateStr) return "—";
+  return new Date(dateStr).toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
   });
 }
 
@@ -62,13 +91,71 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
   const [expandedQuotes, setExpandedQuotes] = useState<string | null>(null);
   const [quotes, setQuotes] = useState<DealRoomQuote[]>([]);
   const [quotesLoading, setQuotesLoading] = useState(false);
+  const [sortBy, setSortBy] = useState<"recent" | "alpha">("recent");
+  const [openMenu, setOpenMenu] = useState<string | null>(null);
 
-  // Stats
+  // "Sent" state — persisted in localStorage, no DB needed
+  const [sentRooms, setSentRooms] = useState<Set<string>>(() => {
+    if (typeof window === "undefined") return new Set();
+    try {
+      return new Set(JSON.parse(localStorage.getItem("deal_room_sent") ?? "[]") as string[]);
+    } catch {
+      return new Set();
+    }
+  });
+
+  // Access log popover state
+  const [logPopoverRoomId, setLogPopoverRoomId] = useState<string | null>(null);
+  const [logPopoverData, setLogPopoverData] = useState<DealRoomAccessLog[]>([]);
+  const [logPopoverLoading, setLogPopoverLoading] = useState(false);
+
+  function toggleSent(roomId: string) {
+    setSentRooms((prev) => {
+      const next = new Set(prev);
+      if (next.has(roomId)) {
+        next.delete(roomId);
+      } else {
+        next.add(roomId);
+      }
+      localStorage.setItem("deal_room_sent", JSON.stringify([...next]));
+      return next;
+    });
+  }
+
+  async function handleOpenLogPopover(roomId: string) {
+    if (logPopoverRoomId === roomId) {
+      setLogPopoverRoomId(null);
+      return;
+    }
+    setLogPopoverRoomId(roomId);
+    setLogPopoverData([]);
+    setLogPopoverLoading(true);
+    try {
+      const res = await fetch(`/api/deal-rooms/${roomId}/access-log`);
+      if (res.ok) {
+        const data = await res.json();
+        setLogPopoverData(data.access_logs ?? []);
+      }
+    } finally {
+      setLogPopoverLoading(false);
+    }
+  }
+
+  const sortedRooms = useMemo(() => {
+    return [...rooms].sort((a, b) => {
+      if (sortBy === "alpha") {
+        const nameA = a.gtm_company_profiles?.name ?? "";
+        const nameB = b.gtm_company_profiles?.name ?? "";
+        return nameA.localeCompare(nameB);
+      }
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
+  }, [rooms, sortBy]);
+
   const stats = useMemo(() => {
     const total = rooms.length;
     const active = rooms.filter((r) => r.status === "active").length;
     const totalViews = rooms.reduce((sum, r) => sum + (r.view_count ?? 0), 0);
-    // Pending quotes would come from a join; for now count rooms with quote builder enabled
     const quoteEnabled = rooms.filter((r) => r.show_quote_builder).length;
     return { total, active, totalViews, quoteEnabled };
   }, [rooms]);
@@ -80,8 +167,15 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
       setCopiedSlug(slug);
       setTimeout(() => setCopiedSlug(null), 2000);
     } catch {
-      // Fallback: select-and-copy not needed in this context
+      // clipboard not available
     }
+  }
+
+  function handleOpenRoom(slug: string, password: string | null) {
+    const url = password
+      ? `/room/${slug}?pw=${encodeURIComponent(password)}`
+      : `/room/${slug}`;
+    window.open(url, "_blank", "noopener,noreferrer");
   }
 
   async function handleToggleQuotes(roomId: string) {
@@ -130,9 +224,7 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
-      if (res.ok) {
-        router.refresh();
-      }
+      if (res.ok) router.refresh();
     } finally {
       setActionLoading(null);
     }
@@ -141,29 +233,19 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
   async function handleClone(roomId: string) {
     setActionLoading(roomId);
     try {
-      const res = await fetch(`/api/deal-rooms/${roomId}/clone`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        router.refresh();
-      }
+      const res = await fetch(`/api/deal-rooms/${roomId}/clone`, { method: "POST" });
+      if (res.ok) router.refresh();
     } finally {
       setActionLoading(null);
     }
   }
 
   async function handleDelete(roomId: string, companyName: string) {
-    if (!confirm(`Delete the deal room for ${companyName}? This cannot be undone.`)) {
-      return;
-    }
+    if (!confirm(`Delete the deal room for ${companyName}? This cannot be undone.`)) return;
     setActionLoading(roomId);
     try {
-      const res = await fetch(`/api/deal-rooms/${roomId}`, {
-        method: "DELETE",
-      });
-      if (res.ok) {
-        router.refresh();
-      }
+      const res = await fetch(`/api/deal-rooms/${roomId}`, { method: "DELETE" });
+      if (res.ok) router.refresh();
     } finally {
       setActionLoading(null);
     }
@@ -180,13 +262,7 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
           </p>
         </div>
         <Button onClick={() => setShowCreate(true)}>
-          <svg
-            className="w-4 h-4"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
+          <svg className="w-4 h-4" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
             <path d="M8 3v10M3 8h10" />
           </svg>
           Create Deal Room
@@ -201,17 +277,11 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         <StatCard label="Quote Builder Enabled" value={stats.quoteEnabled} />
       </div>
 
-      {/* Room cards */}
+      {/* Room list */}
       {rooms.length === 0 ? (
         <div className="rounded-xl border border-border-primary bg-surface-tertiary p-12 text-center">
           <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-white/5">
-            <svg
-              className="h-6 w-6 text-text-muted"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-            >
+            <svg className="h-6 w-6 text-text-muted" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
               <path d="M3 7a2 2 0 012-2h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V7z" />
               <path d="M8 5v2M16 5v2M3 10h18" />
             </svg>
@@ -228,22 +298,48 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
           </button>
         </div>
       ) : (
-        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-          {rooms.map((room) => {
+        <div className="space-y-2">
+          {/* Sort controls */}
+          <div className="flex items-center gap-2 pb-1">
+            <span className="text-xs text-text-muted">Sort:</span>
+            <button
+              onClick={() => setSortBy("recent")}
+              className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                sortBy === "recent"
+                  ? "bg-white/10 text-text-primary font-medium"
+                  : "text-text-muted hover:text-text-secondary"
+              }`}
+            >
+              Most Recent
+            </button>
+            <button
+              onClick={() => setSortBy("alpha")}
+              className={`text-xs px-2.5 py-1 rounded-md transition-colors cursor-pointer ${
+                sortBy === "alpha"
+                  ? "bg-white/10 text-text-primary font-medium"
+                  : "text-text-muted hover:text-text-secondary"
+              }`}
+            >
+              Alphabetical
+            </button>
+          </div>
+
+          {sortedRooms.map((room) => {
             const company = room.gtm_company_profiles;
             const companyName = company?.name ?? "Unknown Company";
             const logoUrl = room.company_logo_url ?? company?.logo_url;
             const statusStyle = STATUS_STYLES[room.status];
             const isLoading = actionLoading === room.room_id;
+            const isSent = sentRooms.has(room.room_id);
+            const isOpened = (room.view_count ?? 0) > 0;
+            const openCount = room.view_count ?? 0;
+            const isLogOpen = logPopoverRoomId === room.room_id;
 
             return (
-              <div
-                key={room.room_id}
-                className="glass rounded-xl p-5 flex flex-col gap-4 transition-colors hover:border-white/20"
-              >
-                {/* Top: company + status */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
+              <div key={room.room_id} className="space-y-0">
+                <div className="glass rounded-xl px-5 py-4 flex items-center gap-4 hover:border-white/20 transition-colors">
+                  {/* Logo + Name */}
+                  <div className="flex items-center gap-3 w-48 shrink-0 min-w-0">
                     {logoUrl ? (
                       <img
                         src={logoUrl}
@@ -256,15 +352,13 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
                       </div>
                     )}
                     <div className="min-w-0">
-                      <h3 className="text-sm font-semibold text-text-primary truncate">
-                        {companyName}
-                      </h3>
+                      <p className="text-sm font-semibold text-text-primary truncate">{companyName}</p>
                       <button
                         onClick={() => handleCopyLink(room.slug)}
                         className="flex items-center gap-1 text-xs text-text-muted hover:text-brand-500 transition-colors cursor-pointer group"
                         title="Copy link"
                       >
-                        <span className="truncate max-w-[160px]">/room/{room.slug}</span>
+                        <span className="truncate">/room/{room.slug}</span>
                         {copiedSlug === room.slug ? (
                           <svg className="h-3 w-3 text-status-green shrink-0" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
                             <path d="M3 8.5l3 3 7-7" />
@@ -278,148 +372,195 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
                       </button>
                     </div>
                   </div>
-                  <span
-                    className={`shrink-0 px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${statusStyle.bg} ${statusStyle.text}`}
-                  >
-                    {room.status}
-                  </span>
-                </div>
 
-                {/* Password */}
-                {room.password_plain && (
-                  <div className="flex items-center gap-2 rounded-lg bg-white/[0.03] border border-white/[0.06] px-3 py-2">
-                    <span className="text-[10px] uppercase text-text-muted font-medium tracking-wider">Password</span>
-                    <code className="flex-1 text-xs font-mono text-text-primary">{room.password_plain}</code>
-                    <button
-                      onClick={async () => {
-                        await navigator.clipboard.writeText(room.password_plain!);
-                        setCopiedPassword(room.room_id);
-                        setTimeout(() => setCopiedPassword(null), 2000);
-                      }}
-                      className="text-text-muted hover:text-brand-500 transition-colors cursor-pointer"
-                      title="Copy password"
+                  {/* Status */}
+                  <div className="shrink-0">
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase ${statusStyle.bg} ${statusStyle.text}`}>
+                      {room.status}
+                    </span>
+                  </div>
+
+                  {/* Password */}
+                  {room.password_plain ? (
+                    <div className="flex items-center gap-1.5 rounded-lg bg-white/[0.03] border border-white/[0.06] px-2.5 py-1.5 shrink-0">
+                      <span className="text-[10px] uppercase text-text-muted font-medium tracking-wider">pw</span>
+                      <code className="text-xs font-mono text-text-primary">{room.password_plain}</code>
+                      <button
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(room.password_plain!);
+                          setCopiedPassword(room.room_id);
+                          setTimeout(() => setCopiedPassword(null), 2000);
+                        }}
+                        className="text-text-muted hover:text-brand-500 transition-colors cursor-pointer ml-0.5"
+                        title="Copy password"
+                      >
+                        {copiedPassword === room.room_id ? (
+                          <svg className="h-3 w-3 text-status-green" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M3 8.5l3 3 7-7" />
+                          </svg>
+                        ) : (
+                          <svg className="h-3 w-3" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                            <rect x="5" y="5" width="8" height="8" rx="1.5" />
+                            <path d="M3 11V4a1.5 1.5 0 011.5-1.5H11" />
+                          </svg>
+                        )}
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="shrink-0 w-28" />
+                  )}
+
+                  {/* Stats */}
+                  <div className="flex items-center gap-4 text-xs text-text-muted flex-1 min-w-0">
+                    <span className="shrink-0">{formatRelative(room.last_viewed_at)}</span>
+                    <span className="shrink-0">{room.selected_products?.length ?? 0} products</span>
+                    {room.expires_at && (
+                      <span className="shrink-0">exp {formatDate(room.expires_at)}</span>
+                    )}
+                    <div className="flex items-center gap-1.5 min-w-0 overflow-hidden">
+                      {room.show_audience_dashboard && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-brand-500/15 text-brand-500 font-medium whitespace-nowrap">
+                          Audience
+                        </span>
+                      )}
+                      {room.show_quote_builder && (
+                        <span className="px-1.5 py-0.5 rounded-full text-[10px] bg-brand-500/15 text-brand-500 font-medium whitespace-nowrap">
+                          Quotes
+                        </span>
+                      )}
+                      {room.accent_color && (
+                        <span
+                          className="inline-block h-3 w-3 rounded-full shrink-0"
+                          style={{ backgroundColor: room.accent_color }}
+                          title="Custom color"
+                        />
+                      )}
+                    </div>
+                  </div>
+
+                  {/* ── Sent column ── */}
+                  <label className="flex flex-col items-center gap-1 shrink-0 cursor-pointer group">
+                    <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium group-hover:text-text-secondary transition-colors">
+                      Sent
+                    </span>
+                    <div
+                      onClick={() => toggleSent(room.room_id)}
+                      className={`h-4 w-4 rounded border flex items-center justify-center transition-colors cursor-pointer ${
+                        isSent
+                          ? "bg-brand-500 border-brand-500"
+                          : "border-white/20 hover:border-white/40"
+                      }`}
                     >
-                      {copiedPassword === room.room_id ? (
-                        <svg className="h-3.5 w-3.5 text-status-green" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M3 8.5l3 3 7-7" />
-                        </svg>
-                      ) : (
-                        <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
-                          <rect x="5" y="5" width="8" height="8" rx="1.5" />
-                          <path d="M3 11V4a1.5 1.5 0 011.5-1.5H11" />
+                      {isSent && (
+                        <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2">
+                          <path d="M1.5 5l2.5 2.5 4.5-4.5" />
                         </svg>
                       )}
-                    </button>
-                  </div>
-                )}
+                    </div>
+                  </label>
 
-                {/* Details */}
-                <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-xs">
-                  <div>
-                    <span className="text-text-muted">Views</span>
-                    <p className="text-text-primary font-medium">{room.view_count ?? 0}</p>
-                  </div>
-                  <div>
-                    <span className="text-text-muted">Last viewed</span>
-                    <p className="text-text-primary font-medium">
-                      {formatRelative(room.last_viewed_at)}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-text-muted">Products</span>
-                    <p className="text-text-primary font-medium">
-                      {room.selected_products?.length ?? 0}
-                    </p>
-                  </div>
-                  <div>
-                    <span className="text-text-muted">Expires</span>
-                    <p className="text-text-primary font-medium">
-                      {room.expires_at ? formatDate(room.expires_at) : "Never"}
-                    </p>
-                  </div>
-                </div>
+                  {/* ── Customer Opened column ── */}
+                  <div className="flex flex-col items-center gap-1 shrink-0 relative">
+                    <span className="text-[10px] uppercase tracking-wider text-text-muted font-medium">
+                      Opened
+                    </span>
+                    <div className="flex items-center gap-1.5">
+                      <div
+                        className={`h-4 w-4 rounded border flex items-center justify-center ${
+                          isOpened
+                            ? "bg-status-green border-status-green"
+                            : "border-white/20"
+                        }`}
+                      >
+                        {isOpened && (
+                          <svg className="h-2.5 w-2.5 text-white" viewBox="0 0 10 10" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M1.5 5l2.5 2.5 4.5-4.5" />
+                          </svg>
+                        )}
+                      </div>
+                      <button
+                        onDoubleClick={() => handleOpenLogPopover(room.room_id)}
+                        title="Double-click to see open history"
+                        className={`text-xs font-medium tabular-nums px-1.5 py-0.5 rounded transition-colors cursor-pointer select-none ${
+                          openCount > 0
+                            ? "text-status-green bg-status-green/10 hover:bg-status-green/20"
+                            : "text-text-muted"
+                        }`}
+                      >
+                        {openCount}
+                      </button>
+                    </div>
 
-                {/* Feature pills */}
-                <div className="flex flex-wrap gap-1.5">
-                  {room.show_audience_dashboard && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-brand-500/15 text-brand-500 font-medium">
-                      Audience Dashboard
-                    </span>
-                  )}
-                  {room.show_quote_builder && (
-                    <span className="px-2 py-0.5 rounded-full text-[10px] bg-brand-500/15 text-brand-500 font-medium">
-                      Quote Builder
-                    </span>
-                  )}
-                  {room.accent_color && (
-                    <span className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] bg-white/5 text-text-muted font-medium">
-                      <span
-                        className="inline-block h-2 w-2 rounded-full"
-                        style={{ backgroundColor: room.accent_color }}
+                    {/* Access log popover */}
+                    {isLogOpen && (
+                      <AccessLogPopover
+                        logs={logPopoverData}
+                        loading={logPopoverLoading}
+                        onClose={() => setLogPopoverRoomId(null)}
                       />
-                      Custom Color
-                    </span>
-                  )}
-                </div>
+                    )}
+                  </div>
 
-                {/* Actions */}
-                <div className="flex items-center gap-2 pt-1 border-t border-white/5">
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => setEditRoom(room)}
-                    disabled={isLoading}
-                  >
-                    Edit
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleCopyLink(room.slug)}
-                    disabled={isLoading}
-                  >
-                    {copiedSlug === room.slug ? "Copied" : "Copy Link"}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleToggleQuotes(room.room_id)}
-                    disabled={isLoading}
-                  >
-                    Quotes
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() => handleClone(room.room_id)}
-                    disabled={isLoading}
-                  >
-                    Duplicate
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    onClick={() =>
-                      handleToggleStatus(room.room_id, room.status)
-                    }
-                    disabled={isLoading}
-                  >
-                    {room.status === "active" ? "Deactivate" : "Activate"}
-                  </Button>
-                  <div className="flex-1" />
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => handleDelete(room.room_id, companyName)}
-                    disabled={isLoading}
-                  >
-                    Delete
-                  </Button>
+                  {/* Primary actions */}
+                  <div className="flex items-center gap-1.5 shrink-0">
+                    <Button
+                      size="sm"
+                      onClick={() => handleOpenRoom(room.slug, room.password_plain)}
+                      disabled={isLoading}
+                      title="Open deal room (auto-authenticated)"
+                    >
+                      <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+                        <path d="M7 3H3a1 1 0 00-1 1v9a1 1 0 001 1h9a1 1 0 001-1V9" />
+                        <path d="M10 2h4v4M14 2L7.5 8.5" />
+                      </svg>
+                      Open Room
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => setEditRoom(room)}
+                      disabled={isLoading}
+                    >
+                      Edit
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => handleCopyLink(room.slug)}
+                      disabled={isLoading}
+                    >
+                      {copiedSlug === room.slug ? "Copied" : "Copy Link"}
+                    </Button>
+
+                    {/* More actions dropdown */}
+                    <MoreMenu
+                      open={openMenu === room.room_id}
+                      onToggle={() => setOpenMenu(openMenu === room.room_id ? null : room.room_id)}
+                      onClose={() => setOpenMenu(null)}
+                    >
+                      <MoreMenuItem onClick={() => { handleToggleQuotes(room.room_id); setOpenMenu(null); }}>
+                        View Quotes
+                      </MoreMenuItem>
+                      <MoreMenuItem onClick={() => { handleClone(room.room_id); setOpenMenu(null); }} disabled={isLoading}>
+                        Duplicate
+                      </MoreMenuItem>
+                      <MoreMenuItem onClick={() => { handleToggleStatus(room.room_id, room.status); setOpenMenu(null); }} disabled={isLoading}>
+                        {room.status === "active" ? "Deactivate" : "Activate"}
+                      </MoreMenuItem>
+                      <MoreMenuItem
+                        onClick={() => { handleDelete(room.room_id, companyName); setOpenMenu(null); }}
+                        disabled={isLoading}
+                        danger
+                      >
+                        Delete
+                      </MoreMenuItem>
+                    </MoreMenu>
+                  </div>
                 </div>
 
                 {/* Quotes panel */}
                 {expandedQuotes === room.room_id && (
-                  <div className="border-t border-white/5 pt-3 space-y-3">
+                  <div className="mx-1 rounded-b-xl border border-t-0 border-white/[0.08] bg-white/[0.02] px-5 pt-4 pb-4 space-y-3">
                     <h4 className="text-xs font-semibold text-text-secondary uppercase tracking-wider">
                       Submitted Quotes
                     </h4>
@@ -446,7 +587,6 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         </div>
       )}
 
-      {/* Create dialog */}
       <CreateDealRoomDialog
         open={showCreate}
         onClose={() => setShowCreate(false)}
@@ -455,7 +595,6 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         existingRoomCompanyIds={rooms.map((r) => r.company_id)}
       />
 
-      {/* Edit dialog */}
       {editRoom && (
         <EditDealRoomDialog
           open={!!editRoom}
@@ -465,6 +604,180 @@ export function DealRoomsView({ rooms, companies, products }: DealRoomsViewProps
         />
       )}
     </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Access log popover                                                  */
+/* ------------------------------------------------------------------ */
+
+function AccessLogPopover({
+  logs,
+  loading,
+  onClose,
+}: {
+  logs: DealRoomAccessLog[];
+  loading: boolean;
+  onClose: () => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [onClose]);
+
+  const totalTabClicks = logs.reduce((sum, l) => sum + (l.pages_viewed?.length ?? 0), 0);
+
+  return (
+    <div
+      ref={ref}
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-80 rounded-xl border border-white/[0.1] bg-surface-secondary shadow-2xl overflow-hidden"
+    >
+      <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
+        <div>
+          <p className="text-xs font-semibold text-text-primary">Open History</p>
+          {!loading && (
+            <p className="text-[10px] text-text-muted mt-0.5">
+              {logs.length} {logs.length === 1 ? "open" : "opens"}
+              {totalTabClicks > 0 && ` · ${totalTabClicks} tab clicks`}
+            </p>
+          )}
+        </div>
+        <button
+          onClick={onClose}
+          className="text-text-muted hover:text-text-primary transition-colors cursor-pointer"
+        >
+          <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 4l8 8M12 4l-8 8" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="max-h-72 overflow-y-auto">
+        {loading ? (
+          <p className="px-4 py-6 text-xs text-text-muted text-center">Loading...</p>
+        ) : logs.length === 0 ? (
+          <p className="px-4 py-6 text-xs text-text-muted text-center">No opens yet.</p>
+        ) : (
+          logs.map((log, i) => {
+            const uniqueTabs = [...new Set(log.pages_viewed ?? [])];
+            return (
+              <div
+                key={log.log_id}
+                className={`px-4 py-3 ${i < logs.length - 1 ? "border-b border-white/[0.04]" : ""}`}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-text-primary font-medium">
+                    {formatDateTime(log.accessed_at)}
+                  </p>
+                  {(log.pages_viewed?.length ?? 0) > 0 && (
+                    <span className="text-[10px] text-text-muted shrink-0">
+                      {log.pages_viewed!.length} click{log.pages_viewed!.length !== 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+                {uniqueTabs.length > 0 ? (
+                  <div className="mt-1.5 flex flex-wrap gap-1">
+                    {uniqueTabs.map((tab) => (
+                      <span
+                        key={tab}
+                        className="px-1.5 py-0.5 rounded text-[10px] bg-white/[0.06] text-text-muted"
+                      >
+                        {tabLabel(tab)}
+                      </span>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="mt-1 text-[10px] text-text-muted italic">No tabs tracked yet</p>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* More menu                                                           */
+/* ------------------------------------------------------------------ */
+
+function MoreMenu({
+  open,
+  onToggle,
+  onClose,
+  children,
+}: {
+  open: boolean;
+  onToggle: () => void;
+  onClose: () => void;
+  children: React.ReactNode;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleClick(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) {
+        onClose();
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    return () => document.removeEventListener("mousedown", handleClick);
+  }, [open, onClose]);
+
+  return (
+    <div ref={ref} className="relative">
+      <button
+        onClick={onToggle}
+        className="flex h-7 w-7 items-center justify-center rounded-md text-text-muted hover:text-text-primary hover:bg-white/[0.06] transition-colors cursor-pointer"
+        title="More actions"
+      >
+        <svg className="h-4 w-4" viewBox="0 0 16 16" fill="currentColor">
+          <circle cx="8" cy="3" r="1.25" />
+          <circle cx="8" cy="8" r="1.25" />
+          <circle cx="8" cy="13" r="1.25" />
+        </svg>
+      </button>
+      {open && (
+        <div className="absolute right-0 top-full mt-1 z-50 min-w-[140px] rounded-lg border border-white/[0.1] bg-surface-secondary shadow-xl py-1">
+          {children}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function MoreMenuItem({
+  onClick,
+  disabled,
+  danger,
+  children,
+}: {
+  onClick: () => void;
+  disabled?: boolean;
+  danger?: boolean;
+  children: React.ReactNode;
+}) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={disabled}
+      className={`w-full text-left px-3 py-2 text-xs transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${
+        danger
+          ? "text-status-red hover:bg-status-red/10"
+          : "text-text-secondary hover:bg-white/[0.06] hover:text-text-primary"
+      }`}
+    >
+      {children}
+    </button>
   );
 }
 
@@ -533,19 +846,10 @@ function QuoteCard({
       </div>
       {canAct && (
         <div className="flex gap-2 pt-1">
-          <Button
-            size="sm"
-            onClick={() => onAction(roomId, quote.quote_id, "accepted")}
-            disabled={isLoading}
-          >
+          <Button size="sm" onClick={() => onAction(roomId, quote.quote_id, "accepted")} disabled={isLoading}>
             Accept
           </Button>
-          <Button
-            size="sm"
-            variant="danger"
-            onClick={() => onAction(roomId, quote.quote_id, "declined")}
-            disabled={isLoading}
-          >
+          <Button size="sm" variant="danger" onClick={() => onAction(roomId, quote.quote_id, "declined")} disabled={isLoading}>
             Decline
           </Button>
         </div>
@@ -558,23 +862,11 @@ function QuoteCard({
 /* Stat card                                                           */
 /* ------------------------------------------------------------------ */
 
-function StatCard({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: number;
-  accent?: boolean;
-}) {
+function StatCard({ label, value, accent }: { label: string; value: number; accent?: boolean }) {
   return (
     <div className="rounded-xl p-4 bg-white/[0.03] border border-white/[0.06]">
       <div className="text-xs text-text-muted mb-1">{label}</div>
-      <div
-        className={`text-2xl font-bold ${
-          accent ? "text-status-green" : "text-text-primary"
-        }`}
-      >
+      <div className={`text-2xl font-bold ${accent ? "text-status-green" : "text-text-primary"}`}>
         {value}
       </div>
     </div>

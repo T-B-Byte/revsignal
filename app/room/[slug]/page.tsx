@@ -8,9 +8,12 @@ export const metadata: Metadata = {
 
 export default async function DealRoomPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ slug: string }>;
+  searchParams: Promise<{ pw?: string }>;
 }) {
   const { slug } = await params;
-  return <RoomShell slug={slug} />;
+  const { pw } = await searchParams;
+  return <RoomShell slug={slug} autoPassword={pw} />;
 }
