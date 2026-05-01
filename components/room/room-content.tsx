@@ -74,7 +74,7 @@ export function RoomContent({ room, products, slug, password }: RoomContentProps
     { key: "quote", label: "Build a Quote", show: showQuoteBuilder },
     { key: "data-test", label: "Data Test Request", show: true },
     { key: "dpa", label: "DPA", show: true },
-    { key: "downloads", label: "Downloads", show: true },
+    { key: "downloads", label: "Schema & Downloads", show: true },
   ];
 
   return (
