@@ -38,10 +38,10 @@ const SENIORITY_DISTRIBUTION: BarData[] = [
 ];
 
 const HERO_STATS = [
-  { label: "Contacts", value: "360M+", color: "#4f6ef7" },
-  { label: "Intent Signals", value: "348.9M", color: "#7c3aed" },
-  { label: "Intent Topics", value: "7,879", color: "#f59e0b" },
-  { label: "Companies", value: "25M+", color: "#10b981" },
+  { label: "Contacts", value: "360M+", color: "#4f6ef7", period: "total database" },
+  { label: "Intent Signals", value: "348.9M", color: "#7c3aed", period: "last 90 days" },
+  { label: "Intent Topics", value: "8,756", color: "#f59e0b", period: "last 90 days" },
+  { label: "Companies", value: "25M+", color: "#10b981", period: "total database" },
 ];
 
 // Each section gets its own solid color, like the audience dashboard
@@ -217,6 +217,9 @@ export function DataCoverage({ theme = "dark" }: DataCoverageProps) {
             </span>
             <span className={t("mt-1 text-xs text-zinc-400", "mt-1 text-xs text-zinc-500")}>
               {stat.label}
+            </span>
+            <span className={t("text-[10px] text-zinc-600", "text-[10px] text-zinc-400")}>
+              {stat.period}
             </span>
           </div>
         ))}
