@@ -39,7 +39,7 @@ export default async function DealRoomsPage() {
       .order("name"),
     supabase
       .from("gtm_products")
-      .select("product_id, name, slug, category, tagline, demo_type")
+      .select("product_id, name, slug, category, tagline, demo_type, use_cases")
       .eq("user_id", user.id)
       .eq("is_active", true)
       .not("slug", "in", "(surgeengine-platform,audience-dashboard)")
@@ -68,7 +68,7 @@ export default async function DealRoomsPage() {
   const products =
     (productsResult.data as Pick<
       GtmProduct,
-      "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type"
+      "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type" | "use_cases"
     >[]) ?? [];
 
   return (

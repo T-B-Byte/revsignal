@@ -19,7 +19,7 @@ interface CreateDealRoomDialogProps {
   open: boolean;
   onClose: () => void;
   companies: Pick<GtmCompanyProfile, "company_id" | "name" | "slug" | "logo_url">[];
-  products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type">[];
+  products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type" | "use_cases">[];
   existingRoomCompanyIds?: string[];
 }
 
@@ -666,6 +666,60 @@ export function CreateDealRoomDialog({
               placeholder="Optional lead-in above the use cases (e.g. 'Suggested based on the prospect's current product direction.')"
               rows={2}
             />
+
+            {/* Library: pre-built use cases from selected products */}
+            {(() => {
+              const libraryUseCases = products
+                .filter((p) => selectedProducts.includes(p.product_id))
+                .flatMap((p) =>
+                  (p.use_cases ?? []).map((uc) => ({
+                    productName: p.name,
+                    title: uc.title,
+                    description: uc.description,
+                    persona: uc.persona,
+                  }))
+                );
+              const usedTitles = new Set(
+                customUseCases.map((uc) => uc.title.trim().toLowerCase()).filter(Boolean)
+              );
+              const available = libraryUseCases.filter(
+                (uc) => uc.title && !usedTitles.has(uc.title.trim().toLowerCase())
+              );
+              if (available.length === 0) return null;
+              return (
+                <div className="rounded-lg border border-brand-500/20 bg-brand-500/5 p-3 space-y-2">
+                  <p className="text-xs font-medium text-brand-300">
+                    Library ({available.length}): click to add from selected products
+                  </p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {available.map((uc, i) => (
+                      <button
+                        key={`${uc.productName}-${uc.title}-${i}`}
+                        type="button"
+                        onClick={() =>
+                          setCustomUseCases((prev) => [
+                            ...prev,
+                            {
+                              title: uc.title,
+                              description: uc.description,
+                              persona: uc.persona ?? "",
+                            },
+                          ])
+                        }
+                        title={`${uc.description}${uc.persona ? ` (${uc.persona})` : ""}\n\nFrom: ${uc.productName}`}
+                        className="flex items-center gap-1 rounded-full border border-brand-500/30 bg-brand-500/10 px-2.5 py-1 text-xs text-brand-200 hover:bg-brand-500/20 transition-colors cursor-pointer"
+                      >
+                        <span>+ {uc.title}</span>
+                        <span className="text-[10px] text-brand-400/70">
+                          {uc.productName}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              );
+            })()}
+
             {customUseCases.length === 0 && (
               <p className="text-xs text-text-muted">No custom use cases. You can add them later to display in the prospect&apos;s deal room.</p>
             )}

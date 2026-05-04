@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
+import { format, isToday, isYesterday, isThisYear } from "date-fns";
 import { formatAgentHtml, stripFollowUps, extractMeetingDetected } from "@/lib/format-agent-html";
 import { ThreadCatchup } from "./thread-catchup";
 import { ThreadFollowUps } from "./thread-follow-ups";
@@ -133,6 +134,8 @@ export function ThreadChat({
   const [editingUseCase, setEditingUseCase] = useState(false);
   const [useCaseDraft, setUseCaseDraft] = useState("");
   const [savingUseCase, setSavingUseCase] = useState(false);
+  const [recommendingUseCase, setRecommendingUseCase] = useState(false);
+  const [useCaseRecommendError, setUseCaseRecommendError] = useState<string | null>(null);
   // Data room copy
   const [copiedDataRoom, setCopiedDataRoom] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -1002,6 +1005,35 @@ export function ThreadChat({
     setTaskError(null);
   }
 
+  async function recommendUseCase() {
+    if (recommendingUseCase) return;
+    setUseCaseRecommendError(null);
+    setRecommendingUseCase(true);
+    try {
+      const res = await fetch(
+        `/api/coaching/threads/${thread.thread_id}/recommend-use-case`,
+        { method: "POST" }
+      );
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        setUseCaseRecommendError(data?.error ?? "Failed to generate recommendation");
+        return;
+      }
+      const suggestion = (data?.use_case ?? "").trim();
+      if (!suggestion) {
+        setUseCaseRecommendError("No recommendation returned");
+        return;
+      }
+      setUseCaseDraft(suggestion);
+      setShowUseCase(true);
+      setEditingUseCase(true);
+    } catch {
+      setUseCaseRecommendError("Network error. Please try again.");
+    } finally {
+      setRecommendingUseCase(false);
+    }
+  }
+
   async function saveUseCase() {
     if (savingUseCase) return;
     setSavingUseCase(true);
@@ -1390,6 +1422,19 @@ export function ThreadChat({
               {useCaseText && <span className="h-1.5 w-1.5 rounded-full bg-blue-400 shrink-0" />}
             </button>
 
+            {/* Recommend Use Case button */}
+            <button
+              onClick={recommendUseCase}
+              disabled={recommendingUseCase}
+              className="flex items-center gap-1.5 rounded-md bg-violet-500/10 px-2.5 py-1 text-xs font-medium text-violet-300 transition-colors hover:bg-violet-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
+              title="Use the Strategist to recommend a use case for this company based on patterns from your other prospects"
+            >
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M12 2l2.5 6.5L21 11l-6.5 2.5L12 20l-2.5-6.5L3 11l6.5-2.5L12 2z" />
+              </svg>
+              {recommendingUseCase ? "Thinking..." : "Recommend"}
+            </button>
+
             {/* Data Room Access button */}
             {dealRoom && (
               <button
@@ -1426,6 +1471,20 @@ export function ThreadChat({
             </button>
           </div>
         </div>
+
+        {/* Use case recommendation error (shown even when panel closed) */}
+        {useCaseRecommendError && (
+          <div className="mb-2 rounded-md border border-status-red/30 bg-status-red/10 px-3 py-1.5 text-xs text-status-red flex items-center justify-between">
+            <span>{useCaseRecommendError}</span>
+            <button
+              onClick={() => setUseCaseRecommendError(null)}
+              className="text-status-red/70 hover:text-status-red"
+              aria-label="Dismiss"
+            >
+              ×
+            </button>
+          </div>
+        )}
 
         {/* Use Case panel */}
         {showUseCase && (
@@ -1934,10 +1993,7 @@ export function ThreadChat({
 
                 <div className="mt-1 flex items-center justify-between gap-2">
                   <p className="text-[10px] text-text-muted">
-                    {new Date(msg.created_at).toLocaleTimeString("en-US", {
-                      hour: "numeric",
-                      minute: "2-digit",
-                    })}
+                    {formatMsgDate(msg.created_at)}
                   </p>
                   <div className="flex items-center gap-1.5">
                     {/* Create task from message */}
@@ -2331,4 +2387,13 @@ export function ThreadChat({
       </div>
     </div>
   );
+}
+
+function formatMsgDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const time = format(date, "h:mm a");
+  if (isToday(date)) return time;
+  if (isYesterday(date)) return `Yesterday, ${time}`;
+  if (isThisYear(date)) return format(date, "MMM d, ") + time;
+  return format(date, "MMM d, yyyy, ") + time;
 }

@@ -18,7 +18,7 @@ import type {
 interface DealRoomsViewProps {
   rooms: DealRoomWithCompany[];
   companies: Pick<GtmCompanyProfile, "company_id" | "name" | "slug" | "logo_url">[];
-  products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type">[];
+  products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type" | "use_cases">[];
 }
 
 const STATUS_STYLES: Record<DealRoomStatus, { bg: string; text: string }> = {

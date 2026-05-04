@@ -19,7 +19,7 @@ interface EditDealRoomDialogProps {
   open: boolean;
   onClose: () => void;
   room: DealRoomWithCompany;
-  products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type">[];
+  products: Pick<GtmProduct, "product_id" | "name" | "slug" | "category" | "tagline" | "demo_type" | "use_cases">[];
 }
 
 function formatIssues(
