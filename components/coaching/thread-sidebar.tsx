@@ -87,6 +87,7 @@ export function ThreadSidebar({ threads, onNewThread, onArchive, onDelete, total
     const q = settledQuery.toLowerCase();
     const metadataMatch =
       t.title?.toLowerCase().includes(q) ||
+      t.thread_brief?.toLowerCase().includes(q) ||
       t.contact_name?.toLowerCase().includes(q) ||
       t.contact_role?.toLowerCase().includes(q) ||
       t.company?.toLowerCase().includes(q) ||
