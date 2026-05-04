@@ -347,6 +347,133 @@
       line-height: 1.5;
     }
 
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) {
+      .product-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .product-card {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      padding: 18px 16px;
+      display: flex;
+      flex-direction: column;
+      text-decoration: none;
+      transition: all 0.15s;
+      position: relative;
+      overflow: hidden;
+    }
+    .product-card:hover { background: #fff; border-color: var(--blue); box-shadow: 0 2px 8px rgba(42, 95, 165, 0.1); text-decoration: none; }
+    .product-card-accent {
+      position: absolute; top: 0; left: 0; right: 0; height: 3px;
+      background: var(--blue);
+    }
+    .product-card.p1 .product-card-accent { background: #2a5fa5; }
+    .product-card.p2 .product-card-accent { background: #2d7a4f; }
+    .product-card.p3 .product-card-accent { background: #9333ea; }
+    .product-card.p4 .product-card-accent { background: #d97706; }
+    .product-card.p5 .product-card-accent { background: var(--navy); }
+    .product-card-num {
+      font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: 1px;
+      color: var(--gray-500); margin-bottom: 8px; margin-top: 2px;
+    }
+    .product-card-title {
+      font-size: 14px; font-weight: 800; color: var(--gray-900);
+      letter-spacing: -0.2px; margin-bottom: 8px; line-height: 1.25;
+    }
+    .product-card-desc {
+      font-size: 11.5px; color: var(--gray-700); line-height: 1.5;
+      flex: 1;
+    }
+    .product-card-link {
+      font-size: 11px; font-weight: 700; color: var(--blue);
+      text-transform: uppercase; letter-spacing: 0.5px;
+      margin-top: 12px;
+    }
+
+    .insight-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 900px) {
+      .insight-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    .insight-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      padding: 18px 20px;
+      position: relative;
+    }
+    .insight-card-num {
+      position: absolute;
+      top: 16px; right: 18px;
+      font-size: 28px; font-weight: 800;
+      color: var(--gray-200);
+      letter-spacing: -1px;
+    }
+    .insight-card-title {
+      font-size: 13.5px; font-weight: 800; color: var(--blue);
+      margin-bottom: 8px; letter-spacing: -0.2px;
+      padding-right: 28px;
+    }
+    .insight-card-body {
+      font-size: 12.5px; color: var(--gray-700); line-height: 1.55;
+    }
+
+    .step-flow {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      margin: 16px 0 8px;
+      position: relative;
+    }
+    @media (max-width: 900px) {
+      .step-flow { grid-template-columns: 1fr; }
+      .step-flow .step:not(:last-child)::after { display: none; }
+    }
+    .step {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      padding: 16px 18px 18px;
+      position: relative;
+    }
+    .step:not(:last-child) { border-right: none; }
+    .step:not(:last-child)::after {
+      content: "›";
+      position: absolute;
+      right: -10px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px; height: 20px;
+      background: #fff;
+      color: var(--blue);
+      font-size: 18px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      border: 1px solid var(--gray-200);
+      border-radius: 50%;
+      z-index: 2;
+    }
+    .step-num {
+      display: inline-block;
+      font-size: 10px; font-weight: 800;
+      color: #fff; background: var(--blue);
+      padding: 3px 8px; border-radius: 3px;
+      letter-spacing: 0.5px; margin-bottom: 10px;
+    }
+    .step-title {
+      font-size: 13px; font-weight: 800; color: var(--gray-900);
+      margin-bottom: 6px; letter-spacing: -0.2px;
+    }
+    .step-body {
+      font-size: 11.5px; color: var(--gray-700); line-height: 1.5;
+    }
+
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
@@ -440,13 +567,43 @@
     <div class="h3">The DaaS Product Lane</div>
     <p>DaaS is data licensing. Clients pay to access pharosIQ's first-party intent data and contact universe directly, on their terms, in their systems. Five products:</p>
 
-    <ul class="clean">
-      <li><strong><a href="https://pharosiq.com/solutions/intelligence-assets/" target="_blank">AtlasIQ Intelligence Suite</a></strong>. Self-service account intelligence reports (Account Architect, ABM Strategist, Deal DNA) plus platform tools. Buy by the report or in volume packs.</li>
-      <li><strong><a href="https://pharosiq.com/solutions/data-as-a-service/" target="_blank">TAL-Matched Signal Delivery</a></strong>. Client gives us a target account list. We deliver matched intent signals against it on a recurring basis.</li>
-      <li><strong><a href="https://pharosiq.com/solutions/data-as-a-service/" target="_blank">Full Database Access</a></strong>. Tiered licensing of the pharosIQ data universe. Tier 1 (accounts + intent) up through Tier 4 (contacts + content, enterprise).</li>
-      <li><strong><a href="https://pharosiq.com/solutions/titles-expansion/" target="_blank">Jobson</a></strong>. Title taxonomy and title expansion product. Identify the right titles, find more like them.</li>
-      <li><strong><a href="https://pharosiq.com/solutions/intelligence-assets/" target="_blank">Reseller Program</a></strong>. For partners who want to package and resell pharosIQ data downstream.</li>
-    </ul>
+    <div class="product-grid">
+      <a class="product-card p1" href="https://pharosiq.com/solutions/intelligence-assets/" target="_blank">
+        <div class="product-card-accent"></div>
+        <div class="product-card-num">Product 01</div>
+        <div class="product-card-title">AtlasIQ Intelligence Suite</div>
+        <div class="product-card-desc">Self-service account intelligence reports (Account Architect, ABM Strategist, Deal DNA) plus platform tools. Buy by the report or in volume packs.</div>
+        <div class="product-card-link">Learn more →</div>
+      </a>
+      <a class="product-card p2" href="https://pharosiq.com/solutions/data-as-a-service/" target="_blank">
+        <div class="product-card-accent"></div>
+        <div class="product-card-num">Product 02</div>
+        <div class="product-card-title">TAL-Matched Signal Delivery</div>
+        <div class="product-card-desc">Client gives us a target account list. We deliver matched intent signals against it on a recurring basis.</div>
+        <div class="product-card-link">Learn more →</div>
+      </a>
+      <a class="product-card p3" href="https://pharosiq.com/solutions/data-as-a-service/" target="_blank">
+        <div class="product-card-accent"></div>
+        <div class="product-card-num">Product 03</div>
+        <div class="product-card-title">Full Database Access</div>
+        <div class="product-card-desc">Tiered licensing of the pharosIQ data universe. Tier 1 (accounts + intent) up through Tier 4 (contacts + content, enterprise).</div>
+        <div class="product-card-link">Learn more →</div>
+      </a>
+      <a class="product-card p4" href="https://pharosiq.com/solutions/titles-expansion/" target="_blank">
+        <div class="product-card-accent"></div>
+        <div class="product-card-num">Product 04</div>
+        <div class="product-card-title">Jobson</div>
+        <div class="product-card-desc">Title taxonomy and title expansion product. Identify the right titles, find more like them.</div>
+        <div class="product-card-link">Learn more →</div>
+      </a>
+      <a class="product-card p5" href="https://pharosiq.com/solutions/intelligence-assets/" target="_blank">
+        <div class="product-card-accent"></div>
+        <div class="product-card-num">Product 05</div>
+        <div class="product-card-title">Reseller Program</div>
+        <div class="product-card-desc">For partners who want to package and resell pharosIQ data downstream.</div>
+        <div class="product-card-link">Learn more →</div>
+      </a>
+    </div>
 
     <div class="h3">Delivery Models</div>
     <div class="delivery-grid">
@@ -672,14 +829,38 @@
     </div>
 
     <div class="h3">What Makes the Data Different (in plain language)</div>
-    <ul class="clean">
-      <li><strong>First-party means we own the source.</strong> Our intent signals come from real engagement on content we publish, not from aggregating cookies or modeling third-party data. That's why the signals hold up.</li>
-      <li><strong>Topic depth is wider than the market.</strong> 8,756 topics covers categories most platforms collapse into broad buckets. Useful when a client sells into a niche.</li>
-      <li><strong>Contact-level signals, not just account-level.</strong> Most intent platforms tell you the company is interested. We can tell you which people are showing interest, by topic.</li>
-      <li><strong>Combinable with the client's TAL.</strong> Bring us your target account list. We match signals and contacts against it. Their list, our data layer.</li>
-      <li><strong>Title taxonomy is a real product.</strong> Jobson lets us expand a list of "the right titles" into a fuller persona universe instead of guessing job title strings.</li>
-      <li><strong>Compliance.</strong> Opt-in sourced, GDPR and CCPA compliant. Ready answers for security review.</li>
-    </ul>
+    <div class="insight-grid">
+      <div class="insight-card">
+        <div class="insight-card-num">01</div>
+        <div class="insight-card-title">First-Party Source</div>
+        <div class="insight-card-body">Our intent signals come from real engagement on content we publish, not from aggregating cookies or modeling third-party data. That's why the signals hold up.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-num">02</div>
+        <div class="insight-card-title">Topic Depth</div>
+        <div class="insight-card-body">8,756 topics covers categories most platforms collapse into broad buckets. Useful when a client sells into a niche.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-num">03</div>
+        <div class="insight-card-title">Contact-Level Signals</div>
+        <div class="insight-card-body">Most intent platforms tell you the company is interested. We can tell you which people are showing interest, by topic.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-num">04</div>
+        <div class="insight-card-title">Combinable with TAL</div>
+        <div class="insight-card-body">Bring us your target account list. We match signals and contacts against it. Their list, our data layer.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-num">05</div>
+        <div class="insight-card-title">Title Taxonomy</div>
+        <div class="insight-card-body">Jobson expands "the right titles" into a fuller persona universe instead of guessing job title strings.</div>
+      </div>
+      <div class="insight-card">
+        <div class="insight-card-num">06</div>
+        <div class="insight-card-title">Compliance Ready</div>
+        <div class="insight-card-body">Opt-in sourced, GDPR and CCPA compliant. Ready answers for security review.</div>
+      </div>
+    </div>
 
     <div class="h3">When to Stop and Hand Off</div>
     <p>You don't need to defend pricing, technical architecture, schema details, refresh cadence, or contract structure. Those are Tina conversations. Your job is to spot the opportunity, hold a credible 5-minute conversation, and bring her in.</p>
@@ -741,12 +922,28 @@ Thanks,
     </ul>
 
     <div class="h3">What Happens Next</div>
-    <ul class="clean">
-      <li>Tina replies within 24 business hours.</li>
-      <li>She'll either ask for more, propose a fit, or recommend declining.</li>
-      <li>If it's a fit, she joins the next call or takes the lead, depending on the deal.</li>
-      <li>You stay on the account. DaaS is additive to the relationship, not a takeover.</li>
-    </ul>
+    <div class="step-flow">
+      <div class="step">
+        <span class="step-num">Step 01</span>
+        <div class="step-title">Tina Replies</div>
+        <div class="step-body">Within 24 business hours of a clean handoff email.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">Step 02</span>
+        <div class="step-title">Fit Assessment</div>
+        <div class="step-body">She'll ask for more info, propose a fit, or recommend declining.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">Step 03</span>
+        <div class="step-title">Tina Joins</div>
+        <div class="step-body">If it's a fit, she joins the next call or takes the lead, depending on the deal.</div>
+      </div>
+      <div class="step">
+        <span class="step-num">Step 04</span>
+        <div class="step-title">You Stay On</div>
+        <div class="step-body">You stay on the account. DaaS is additive to the relationship, not a takeover.</div>
+      </div>
+    </div>
   </div>
 
   <!-- SECTION 6 -->
