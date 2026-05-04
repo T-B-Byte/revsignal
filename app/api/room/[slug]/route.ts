@@ -66,11 +66,19 @@ export async function POST(
       return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
     }
 
-    // Check if the request comes from the authenticated room owner (dashboard preview).
-    // Owner previews don't count as prospect opens and generate no logs or notifications.
+    // Check if the request comes from the room owner — either by session cookie (dashboard
+    // preview) or by IP exclusion list (direct opens from owner's machine).
+    // Owner visits don't count as prospect opens and generate no logs or notifications.
+    const ownerIps = (process.env.OWNER_IPS ?? "")
+      .split(",")
+      .map((ip) => ip.trim())
+      .filter(Boolean);
+    const requestIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "";
+    const isOwnerIp = ownerIps.length > 0 && ownerIps.includes(requestIp);
+
     const serverClient = await createClient();
     const { data: { user: sessionUser } } = await serverClient.auth.getUser();
-    const isOwnerPreview = sessionUser?.id === room.user_id;
+    const isOwnerPreview = isOwnerIp || sessionUser?.id === room.user_id;
 
     let logId: string | null = null;
 

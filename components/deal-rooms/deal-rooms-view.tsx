@@ -44,6 +44,24 @@ function tabLabel(key: string): string {
   return TAB_LABELS[key] ?? key;
 }
 
+function parseUserAgent(ua: string | null): string {
+  if (!ua) return "Unknown device";
+  let platform = "Unknown";
+  if (/iPhone|iPad/.test(ua)) platform = /iPad/.test(ua) ? "iPad" : "iPhone";
+  else if (/Android/.test(ua)) platform = "Android";
+  else if (/Macintosh|Mac OS X/.test(ua)) platform = "Mac";
+  else if (/Windows/.test(ua)) platform = "Windows";
+  else if (/Linux/.test(ua)) platform = "Linux";
+
+  let browser = "Browser";
+  if (/Edg\//.test(ua)) browser = "Edge";
+  else if (/Chrome\//.test(ua) && !/Edg\//.test(ua)) browser = "Chrome";
+  else if (/Firefox\//.test(ua)) browser = "Firefox";
+  else if (/Safari\//.test(ua) && !/Chrome\//.test(ua)) browser = "Safari";
+
+  return `${platform} · ${browser}`;
+}
+
 function formatDate(dateStr: string | null): string {
   if (!dateStr) return "Never";
   const d = new Date(dateStr);
@@ -639,14 +657,14 @@ function AccessLogPopover({
   return (
     <div
       ref={ref}
-      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-80 rounded-xl border border-white/[0.1] bg-surface-secondary shadow-2xl overflow-hidden"
+      className="absolute top-full left-1/2 -translate-x-1/2 mt-2 z-50 w-[28rem] rounded-xl border border-white/[0.1] bg-surface-secondary shadow-2xl overflow-hidden"
     >
       <div className="px-4 py-3 border-b border-white/[0.06] flex items-center justify-between">
         <div>
           <p className="text-xs font-semibold text-text-primary">Open History</p>
           {!loading && (
             <p className="text-[10px] text-text-muted mt-0.5">
-              {logs.length} {logs.length === 1 ? "open" : "opens"}
+              {logs.length} {logs.length === 1 ? "session" : "sessions"}
               {totalTabClicks > 0 && ` · ${totalTabClicks} tab clicks`}
             </p>
           )}
@@ -661,14 +679,16 @@ function AccessLogPopover({
         </button>
       </div>
 
-      <div className="max-h-72 overflow-y-auto">
+      <div className="max-h-96 overflow-y-auto">
         {loading ? (
           <p className="px-4 py-6 text-xs text-text-muted text-center">Loading...</p>
         ) : logs.length === 0 ? (
           <p className="px-4 py-6 text-xs text-text-muted text-center">No opens yet.</p>
         ) : (
           logs.map((log, i) => {
-            const uniqueTabs = [...new Set(log.pages_viewed ?? [])];
+            const sequence = log.pages_viewed ?? [];
+            const clickCount = sequence.length;
+            const device = parseUserAgent(log.user_agent);
             return (
               <div
                 key={log.log_id}
@@ -678,25 +698,36 @@ function AccessLogPopover({
                   <p className="text-xs text-text-primary font-medium">
                     {formatDateTime(log.accessed_at)}
                   </p>
-                  {(log.pages_viewed?.length ?? 0) > 0 && (
+                  {clickCount > 0 && (
                     <span className="text-[10px] text-text-muted shrink-0">
-                      {log.pages_viewed!.length} click{log.pages_viewed!.length !== 1 ? "s" : ""}
+                      {clickCount} click{clickCount !== 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
-                {uniqueTabs.length > 0 ? (
-                  <div className="mt-1.5 flex flex-wrap gap-1">
-                    {uniqueTabs.map((tab) => (
-                      <span
-                        key={tab}
-                        className="px-1.5 py-0.5 rounded text-[10px] bg-white/[0.06] text-text-muted"
-                      >
-                        {tabLabel(tab)}
+                <p className="mt-1 text-[10px] text-text-muted">
+                  {device}
+                  {log.ip_address && (
+                    <>
+                      {" · "}
+                      <span className="font-mono">{log.ip_address}</span>
+                    </>
+                  )}
+                </p>
+                {clickCount > 0 ? (
+                  <div className="mt-2 flex flex-wrap items-center gap-x-1 gap-y-1">
+                    {sequence.map((tab, idx) => (
+                      <span key={idx} className="inline-flex items-center gap-1">
+                        <span className="px-1.5 py-0.5 rounded text-[10px] bg-white/[0.06] text-text-secondary">
+                          {tabLabel(tab)}
+                        </span>
+                        {idx < sequence.length - 1 && (
+                          <span className="text-[10px] text-text-muted">→</span>
+                        )}
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <p className="mt-1 text-[10px] text-text-muted italic">No tabs tracked yet</p>
+                  <p className="mt-1.5 text-[10px] text-text-muted italic">No tabs tracked yet</p>
                 )}
               </div>
             );
