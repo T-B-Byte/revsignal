@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>pharosIQ DaaS Sales Playbook</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      --navy: #0f2a4a;
+      --navy-light: #e0edfa;
+      --blue: #2a5fa5;
+      --blue-light: #e8f0fb;
+      --green: #2d7a4f;
+      --green-light: #e6f5ee;
+      --amber: #d97706;
+      --amber-light: #fffbeb;
+      --amber-border: #fcd34d;
+      --gray-900: #111827;
+      --gray-800: #1f2937;
+      --gray-700: #374151;
+      --gray-500: #6b7280;
+      --gray-400: #9ca3af;
+      --gray-300: #d1d5db;
+      --gray-200: #e5e7eb;
+      --gray-100: #f3f4f6;
+      --gray-50: #f9fafb;
+      --red: #dc2626;
+      --red-light: #fef2f2;
+      --red-border: #fca5a5;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      color: var(--gray-900); line-height: 1.55; background: var(--gray-100);
+    }
+
+    /* PASSWORD GATE */
+    #pw-gate {
+      position: fixed; inset: 0; z-index: 9999;
+      background: var(--gray-100);
+      display: flex; align-items: center; justify-content: center;
+    }
+    #pw-gate.hidden { display: none; }
+    #pw-box {
+      background: #fff; border: 1px solid var(--gray-300);
+      padding: 40px 44px; width: 380px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.08);
+    }
+    #pw-wordmark { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; color: var(--gray-500); margin-bottom: 20px; }
+    #pw-box h2 { font-size: 16px; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; }
+    #pw-box p { font-size: 12.5px; color: var(--gray-500); margin-bottom: 24px; }
+    #pw-box label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; color: var(--gray-700); display: block; margin-bottom: 6px; }
+    #pw-input {
+      width: 100%; padding: 9px 12px; border: 1.5px solid var(--gray-300);
+      font-family: inherit; font-size: 14px; color: var(--gray-900);
+      margin-bottom: 12px; outline: none;
+    }
+    #pw-input:focus { border-color: var(--blue); }
+    #pw-input.error { border-color: var(--red); }
+    #pw-error { font-size: 12px; color: var(--red); margin-bottom: 12px; display: none; }
+    #pw-submit {
+      width: 100%; padding: 10px; background: var(--gray-900); color: #fff;
+      border: none; font-family: inherit; font-size: 13px; font-weight: 700;
+      cursor: pointer; letter-spacing: 0.3px;
+    }
+    #pw-submit:hover { background: var(--gray-700); }
+    #doc-content { display: none; }
+
+    @media print {
+      body { background: #fff; font-size: 10.5px; }
+      .page { box-shadow: none; padding: 32px; max-width: 100%; }
+      .page-break { page-break-before: always; }
+      a { color: var(--gray-900); text-decoration: none; }
+    }
+
+    .page { max-width: 1080px; margin: 0 auto 40px; padding: 56px 64px; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.06); }
+
+    .header { border-bottom: 3px solid var(--gray-900); padding-bottom: 18px; margin-bottom: 36px; }
+    .header-eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--blue); margin-bottom: 8px; }
+    .header h1 { font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: var(--gray-900); margin-bottom: 6px; }
+    .header-sub { font-size: 14px; color: var(--gray-500); font-weight: 500; }
+    .header-meta { display: flex; justify-content: space-between; margin-top: 12px; font-size: 11.5px; color: var(--gray-500); font-weight: 500; text-transform: uppercase; letter-spacing: 0.5px; }
+
+    .tldr {
+      background: var(--blue-light);
+      border-left: 4px solid var(--blue);
+      padding: 18px 22px; margin-bottom: 36px;
+      font-size: 13.5px; color: var(--gray-800);
+    }
+    .tldr strong { color: var(--gray-900); }
+
+    .section { margin-bottom: 44px; }
+    .section-num {
+      display: inline-block; font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; color: var(--blue);
+      margin-bottom: 6px;
+    }
+    .section h2 { font-size: 20px; font-weight: 800; color: var(--gray-900); letter-spacing: -0.4px; margin-bottom: 4px; }
+    .section-lede { font-size: 13.5px; color: var(--gray-500); margin-bottom: 22px; }
+
+    .h3 { font-size: 14px; font-weight: 800; color: var(--gray-900); margin: 20px 0 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+    .h3:first-child { margin-top: 0; }
+
+    p { font-size: 13.5px; color: var(--gray-800); margin-bottom: 12px; }
+
+    ul.clean { list-style: none; padding: 0; margin: 0 0 16px; }
+    ul.clean li { font-size: 13.5px; color: var(--gray-800); padding: 5px 0 5px 18px; position: relative; }
+    ul.clean li:before { content: "›"; position: absolute; left: 0; color: var(--blue); font-weight: 800; }
+
+    ul.bullets { padding-left: 20px; margin-bottom: 16px; }
+    ul.bullets li { font-size: 13.5px; color: var(--gray-800); padding: 4px 0; }
+
+    .twocol { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-bottom: 12px; }
+    .threecol { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 18px; margin-bottom: 12px; }
+
+    .card {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      padding: 18px 20px;
+    }
+    .card.green { background: var(--green-light); border-color: #b6dec5; }
+    .card.red { background: var(--red-light); border-color: var(--red-border); }
+    .card.navy { background: var(--navy); color: #fff; border-color: var(--navy); }
+    .card.navy h4, .card.navy p, .card.navy li { color: #fff; }
+    .card h4 {
+      font-size: 11.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.5px;
+      color: var(--gray-900); margin-bottom: 10px;
+    }
+    .card.green h4 { color: var(--green); }
+    .card.red h4 { color: var(--red); }
+    .card p { font-size: 13px; margin-bottom: 0; }
+    .card ul.clean li { font-size: 12.5px; padding: 3px 0 3px 16px; }
+
+    .quote-block {
+      background: var(--gray-50);
+      border-left: 3px solid var(--gray-400);
+      padding: 12px 18px;
+      margin: 8px 0;
+      font-size: 13.5px;
+      color: var(--gray-800);
+      font-style: italic;
+    }
+    .quote-block strong { color: var(--gray-900); font-style: normal; }
+
+    .trigger-row {
+      display: flex; align-items: flex-start; gap: 14px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .trigger-row:last-child { border-bottom: none; }
+    .trigger-num {
+      flex-shrink: 0;
+      width: 28px; height: 28px;
+      background: var(--blue); color: #fff;
+      font-size: 12px; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 4px;
+    }
+    .trigger-content { flex: 1; }
+    .trigger-quote { font-size: 13.5px; color: var(--gray-900); font-weight: 600; margin-bottom: 4px; }
+    .trigger-meaning { font-size: 12.5px; color: var(--gray-500); }
+
+    .data-stat {
+      display: flex; align-items: baseline; gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--gray-200);
+    }
+    .data-stat:last-child { border-bottom: none; }
+    .data-stat-num {
+      font-size: 22px; font-weight: 800; color: var(--blue);
+      min-width: 110px; letter-spacing: -0.5px;
+    }
+    .data-stat-label { font-size: 13px; color: var(--gray-700); }
+
+    .email-template {
+      background: var(--gray-900); color: #e5e7eb;
+      padding: 24px 28px;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 12.5px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+    }
+    .email-template .field { color: #93c5fd; font-weight: 700; }
+    .email-template .placeholder { color: #fbbf24; }
+
+    .example-email {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      padding: 20px 24px;
+      margin-bottom: 16px;
+      font-size: 13px;
+      color: var(--gray-800);
+      line-height: 1.65;
+    }
+    .example-email .meta { font-size: 12px; color: var(--gray-500); margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--gray-200); }
+    .example-email .meta strong { color: var(--gray-900); }
+    .example-email .body { white-space: pre-wrap; }
+    .example-tag {
+      display: inline-block; font-size: 10.5px; font-weight: 700;
+      text-transform: uppercase; letter-spacing: 0.5px;
+      padding: 3px 8px; border-radius: 3px;
+      background: var(--green-light); color: var(--green);
+      margin-left: 8px;
+    }
+    .example-tag.trigger { background: var(--amber-light); color: var(--amber); border: 1px solid var(--amber-border); }
+
+    .resource-link {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 20px;
+      background: var(--navy);
+      color: #fff;
+      text-decoration: none;
+      margin-bottom: 10px;
+    }
+    .resource-link:hover { background: #163a63; }
+    .resource-link-title { font-size: 14px; font-weight: 700; }
+    .resource-link-sub { font-size: 12px; color: #cbd5e1; margin-top: 2px; }
+    .resource-link-arrow { font-size: 18px; }
+
+    .footer {
+      margin-top: 40px; padding-top: 20px; border-top: 1px solid var(--gray-200);
+      font-size: 11.5px; color: var(--gray-500); text-align: center;
+    }
+
+    a { color: var(--blue); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    code {
+      background: var(--gray-100);
+      padding: 1px 6px;
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 12px;
+      border-radius: 3px;
+      color: var(--gray-800);
+    }
+  </style>
+</head>
+<body>
+
+<div id="pw-gate">
+  <div id="pw-box">
+    <div id="pw-wordmark">pharosIQ</div>
+    <h2>Internal Document</h2>
+    <p>This playbook is for the pharosIQ sales team. Enter the password to continue.</p>
+    <label for="pw-input">Password</label>
+    <input id="pw-input" type="password" autocomplete="off" placeholder="Enter password">
+    <p id="pw-error">Incorrect password. Try again.</p>
+    <button id="pw-submit">Access Document</button>
+  </div>
+</div>
+
+<div id="doc-content">
+
+<div class="page">
+
+  <div class="header">
+    <div class="header-eyebrow">Internal · Sales Enablement</div>
+    <h1>pharosIQ DaaS Sales Playbook</h1>
+    <div class="header-sub">When and how to bring data licensing opportunities to Tina Bean</div>
+    <div class="header-meta">
+      <span>For LATAM · APAC · EMEA · North America</span>
+      <span>Last updated: May 2026</span>
+    </div>
+  </div>
+
+  <div class="tldr">
+    <strong>The 30-second version.</strong> pharosIQ has a data product line (DaaS) that runs alongside demand gen. When a client asks for contacts, intent signals, enrichment, an API feed, or a data partnership, that is a Tina conversation. Listen for the trigger phrases in Section 3. Use the email template in Section 5 to hand off cleanly. Tina handles assessment, pricing, and the client conversation from there.
+  </div>
+
+  <!-- SECTION 1 -->
+  <div class="section">
+    <div class="section-num">Section 1</div>
+    <h2>What Tina Sells, and How It Fits Alongside Demand Gen</h2>
+    <p class="section-lede">Reps should be able to explain this in two sentences without confusing it with our demand gen business.</p>
+
+    <div class="h3">The DaaS Product Lane</div>
+    <p>DaaS is data licensing. Clients pay to access pharosIQ's first-party intent data and contact universe directly, on their terms, in their systems. Five products:</p>
+
+    <ul class="clean">
+      <li><strong>AtlasIQ Intelligence Suite</strong>. Self-service account intelligence reports (Account Architect, ABM Strategist, Deal DNA) plus platform tools. Buy by the report or in volume packs.</li>
+      <li><strong>TAL-Matched Signal Delivery</strong>. Client gives us a target account list. We deliver matched intent signals against it on a recurring basis.</li>
+      <li><strong>Full Database Access</strong>. Tiered licensing of the pharosIQ data universe. Tier 1 (accounts + intent) up through Tier 4 (contacts + content, enterprise).</li>
+      <li><strong>Jobson</strong>. Title taxonomy and title expansion product. Identify the right titles, find more like them.</li>
+      <li><strong>Reseller Program</strong>. For partners who want to package and resell pharosIQ data downstream.</li>
+    </ul>
+
+    <div class="h3">Delivery Models</div>
+    <ul class="clean">
+      <li>API feeds for direct system integration</li>
+      <li>File delivery (parquet, CSV) for data warehouses and analytics teams</li>
+      <li>Self-service web platform (AtlasIQ) for one-off reports</li>
+      <li>Recurring signal delivery against a client-provided account list</li>
+    </ul>
+
+    <div class="h3">Buyer Types</div>
+    <ul class="clean">
+      <li>RevOps and Marketing Ops leaders enriching CRM and routing leads</li>
+      <li>Data and Analytics teams plugging signals into a data layer or warehouse</li>
+      <li>ABM teams working a defined account list who need depth, not breadth</li>
+      <li>Sales leadership tired of stale contact data and wrong personas</li>
+      <li>Companies building a data partnership or evaluating data vendors</li>
+    </ul>
+
+    <div class="twocol" style="margin-top: 24px;">
+      <div class="card green">
+        <h4>What DaaS IS</h4>
+        <ul class="clean">
+          <li>Licensed data the client owns and uses inside their systems</li>
+          <li>Recurring signals, contacts, and intent against accounts they care about</li>
+          <li>Custom delivery: API, file, platform, or report</li>
+          <li>A separate budget line from demand gen</li>
+        </ul>
+      </div>
+      <div class="card red">
+        <h4>What DaaS IS NOT</h4>
+        <ul class="clean">
+          <li>Demand gen, MQLs, or content syndication leads</li>
+          <li>BANT-qualified leads delivered to inboxes</li>
+          <li>A campaign with a CPL</li>
+          <li>A swap-in for a ZoomInfo seat</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION 2 -->
+  <div class="section page-break">
+    <div class="section-num">Section 2</div>
+    <h2>Who Tina Is Selling To, and the Use Cases They Buy For</h2>
+    <p class="section-lede">Two views: the companies Tina is actively going after, and the use cases your existing demand gen customers (AWS, Cisco, IBM, and similar) typically have when there's a DaaS opportunity hiding inside the account.</p>
+
+    <div class="h3">Tina's Target Buyers (Three Buckets)</div>
+
+    <div class="threecol">
+      <div class="card">
+        <h4>1. Data + Intent Platforms</h4>
+        <p style="font-size: 12.5px;">Companies whose product is data. They license pharosIQ to enrich their own offering, fill coverage gaps, or layer signals on top.</p>
+        <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">Examples: Bombora, 6sense, ZoomInfo, Demandbase, TechTarget, Madison Logic. Often OEM or reseller structures.</p>
+      </div>
+      <div class="card">
+        <h4>2. Enterprise Tech + Brands</h4>
+        <p style="font-size: 12.5px;">Large companies licensing data to power internal ABM, enrich CRM, or build a contact and intent layer their teams operate against directly.</p>
+        <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">Examples: AWS, Cisco, IBM, SAP, Lenovo, DocuSign. Same logos your demand gen team already sells into, often a different team and budget.</p>
+      </div>
+      <div class="card">
+        <h4>3. Agencies + Resellers</h4>
+        <p style="font-size: 12.5px;">Demand gen, ABM, and data agencies that need a data layer to deliver services to their own clients. Reseller program territory.</p>
+        <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">Examples: white-label data feeds, embedded intent for agency tooling, packaged dossiers.</p>
+      </div>
+    </div>
+
+    <div class="h3" style="margin-top: 24px;">The Use Cases They Buy For</div>
+    <ul class="clean">
+      <li><strong>TAL-matched intent feeds.</strong> "Here's our target account list. Send us signals against it on a recurring cadence."</li>
+      <li><strong>Contact enrichment and append.</strong> "Fill in the missing fields and personas on these accounts."</li>
+      <li><strong>Persona expansion.</strong> Widen the outbound persona universe with Jobson title taxonomy.</li>
+      <li><strong>Account discovery.</strong> "Who is surging on this topic right now, even if they're not in our list yet?"</li>
+      <li><strong>Internal data layer.</strong> RevOps and Marketing Ops want pharosIQ data flowing into their warehouse, CDP, or SFDC.</li>
+      <li><strong>White-label or OEM.</strong> Partner embeds pharosIQ data into their own product or service.</li>
+      <li><strong>One-off intelligence.</strong> Account Architect, ABM Strategist, Deal DNA reports for a specific deal or initiative.</li>
+    </ul>
+
+    <div class="h3" style="margin-top: 24px;">What Your Existing Customers (AWS, Cisco, IBM type) Typically Need</div>
+    <p>The same companies your demand gen team already sells leads to almost always have a separate team with a separate budget that buys data, not leads. Different buyer, different fiscal cycle. Don't assume "we already sell into them" means there's no DaaS opportunity. It usually means the opposite.</p>
+    <p>Listen for these patterns inside enterprise tech accounts:</p>
+    <ul class="clean">
+      <li><strong>ABM teams</strong> already buying account-level coverage from 6sense or Bombora and asking for contact-level depth and reasons to call.</li>
+      <li><strong>RevOps</strong> running a Salesforce or HubSpot refresh before a major campaign, region launch, or fiscal year kickoff.</li>
+      <li><strong>Regional field marketing</strong> in LATAM, APAC, or EMEA needing local contact coverage and persona depth their global data vendor doesn't deliver well.</li>
+      <li><strong>Partner / channel teams</strong> wanting to score and prioritize the partner ecosystem, or surface co-sell triggers.</li>
+      <li><strong>Product marketing</strong> launching a new SKU and building a fresh TAL who's in market for it.</li>
+      <li><strong>Competitive intel teams</strong> tracking refresh cycles, stack migrations, and category shifts.</li>
+      <li><strong>Data science / AI teams</strong> wanting raw data feeds for internal models, scoring, or AI products.</li>
+    </ul>
+
+    <div class="card navy" style="margin-top: 22px;">
+      <h4 style="color: #fff;">The lateral move</h4>
+      <p>If you sell demand gen into a name like AWS, Cisco, or IBM, ask your contact: "Is there an ABM, RevOps, or data team here who licenses data directly?" Then ask for the intro. That's the lateral move that opens DaaS inside an existing logo.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3 -->
+  <div class="section page-break">
+    <div class="section-num">Section 3</div>
+    <h2>Keyword Triggers: When to Send the Conversation to Tina</h2>
+    <p class="section-lede">Real phrases from active pipeline. If a client says something close to any of these, it's a DaaS conversation. Loop in Tina.</p>
+
+    <div class="trigger-row">
+      <div class="trigger-num">1</div>
+      <div class="trigger-content">
+        <div class="trigger-quote">"We get account lists from 6sense / Bombora / Demandbase / Intentsify but we need contacts and business need signals before they reach our commercial team."</div>
+        <div class="trigger-meaning">They have account-level coverage. They want contact-level depth and reasons to call. That's TAL-Matched Signal Delivery or Tier 2/3 Full Database Access.</div>
+      </div>
+    </div>
+
+    <div class="trigger-row">
+      <div class="trigger-num">2</div>
+      <div class="trigger-content">
+        <div class="trigger-quote">"We need to enrich or append information to raw accounts."</div>
+        <div class="trigger-meaning">Classic enrichment use case. They have a list, it's incomplete or thin, they want fields filled in. DaaS via API or file delivery.</div>
+      </div>
+    </div>
+
+    <div class="trigger-row">
+      <div class="trigger-num">3</div>
+      <div class="trigger-content">
+        <div class="trigger-quote">"Our contact lists are stale or we keep hitting the wrong people."</div>
+        <div class="trigger-meaning">Contact decay or persona mismatch. Jobson title expansion plus contact refresh against the pharosIQ universe.</div>
+      </div>
+    </div>
+
+    <div class="trigger-row">
+      <div class="trigger-num">4</div>
+      <div class="trigger-content">
+        <div class="trigger-quote">"We need intent data on this account or this list."</div>
+        <div class="trigger-meaning">Direct ask for intent signals. Could be a one-time match or a recurring feed.</div>
+      </div>
+    </div>
+
+    <div class="trigger-row">
+      <div class="trigger-num">5</div>
+      <div class="trigger-content">
+        <div class="trigger-quote">"Can we get signals on who is in market for this category?"</div>
+        <div class="trigger-meaning">Topic-driven discovery. They want surge data against a specific topic or category. AtlasIQ Surge Trending or Surge Radar territory.</div>
+      </div>
+    </div>
+
+    <div class="trigger-row">
+      <div class="trigger-num">6</div>
+      <div class="trigger-content">
+        <div class="trigger-quote">"We're evaluating data vendors or building a data partnership."</div>
+        <div class="trigger-meaning">Strategic. They are looking at vendor consolidation, OEM, or reseller relationships. Always loop Tina in early.</div>
+      </div>
+    </div>
+
+    <div class="trigger-row">
+      <div class="trigger-num">7</div>
+      <div class="trigger-content">
+        <div class="trigger-quote">"We need something that plugs into our tech stack or data layer."</div>
+        <div class="trigger-meaning">Integration ask. CRM, CDP, data warehouse, marketing automation. API or file delivery DaaS.</div>
+      </div>
+    </div>
+
+    <div class="trigger-row">
+      <div class="trigger-num">8</div>
+      <div class="trigger-content">
+        <div class="trigger-quote">"We're looking at enrichment or an API data feed."</div>
+        <div class="trigger-meaning">Specific delivery ask. They've already decided what they want, they're shopping for the source.</div>
+      </div>
+    </div>
+
+    <div class="card navy" style="margin-top: 24px;">
+      <h4 style="color: #fff;">When in doubt, ask one question</h4>
+      <p>"Are you looking for a campaign that delivers leads, or are you looking to license data your team uses inside your own systems?" If the answer is anything but "campaign with leads," it's a Tina conversation.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 4 -->
+  <div class="section page-break">
+    <div class="section-num">Section 4</div>
+    <h2>Talking Points on pharosIQ Data</h2>
+    <p class="section-lede">Enough to hold a credible data conversation. Use these directly. When the questions go deeper, that's the cue to bring Tina in.</p>
+
+    <div class="h3">The Universe (memorize these numbers)</div>
+    <div style="background: var(--gray-50); padding: 18px 24px; border: 1px solid var(--gray-200); margin-bottom: 24px;">
+      <div class="data-stat">
+        <div class="data-stat-num">360M+</div>
+        <div class="data-stat-label">B2B contacts in the pharosIQ universe</div>
+      </div>
+      <div class="data-stat">
+        <div class="data-stat-num">8,756</div>
+        <div class="data-stat-label">intent topics tracked across the network</div>
+      </div>
+      <div class="data-stat">
+        <div class="data-stat-num">First-party</div>
+        <div class="data-stat-label">intent signals from our own content engagement, not aggregated or modeled</div>
+      </div>
+      <div class="data-stat">
+        <div class="data-stat-num">Global</div>
+        <div class="data-stat-label">coverage across NA, EMEA, APAC, LATAM</div>
+      </div>
+    </div>
+
+    <div class="h3">What Makes the Data Different (in plain language)</div>
+    <ul class="clean">
+      <li><strong>First-party means we own the source.</strong> Our intent signals come from real engagement on content we publish, not from aggregating cookies or modeling third-party data. That's why the signals hold up.</li>
+      <li><strong>Topic depth is wider than the market.</strong> 8,756 topics covers categories most platforms collapse into broad buckets. Useful when a client sells into a niche.</li>
+      <li><strong>Contact-level signals, not just account-level.</strong> Most intent platforms tell you the company is interested. We can tell you which people are showing interest, by topic.</li>
+      <li><strong>Combinable with the client's TAL.</strong> Bring us your target account list. We match signals and contacts against it. Their list, our data layer.</li>
+      <li><strong>Title taxonomy is a real product.</strong> Jobson lets us expand a list of "the right titles" into a fuller persona universe instead of guessing job title strings.</li>
+      <li><strong>Compliance.</strong> Opt-in sourced, GDPR and CCPA compliant. Ready answers for security review.</li>
+    </ul>
+
+    <div class="h3">When to Stop and Hand Off</div>
+    <p>You don't need to defend pricing, technical architecture, schema details, refresh cadence, or contract structure. Those are Tina conversations. Your job is to spot the opportunity, hold a credible 5-minute conversation, and bring her in.</p>
+  </div>
+
+  <!-- SECTION 5 -->
+  <div class="section page-break">
+    <div class="section-num">Section 5</div>
+    <h2>How to Hand Off: The Email Framework</h2>
+    <p class="section-lede">When you flag a conversation, send Tina an email with these fields. The more complete the email, the faster she can move.</p>
+
+    <div class="h3">Email Template</div>
+
+<div class="email-template"><span class="field">To:</span> tbean@pharosiq.com
+<span class="field">Cc:</span> [your manager, plus anyone else on the account]
+<span class="field">Subject:</span> DaaS Opportunity: <span class="placeholder">[Client Name]</span> · <span class="placeholder">[Region]</span>
+
+Hi Tina,
+
+Flagging a potential DaaS opportunity from a conversation with <span class="placeholder">[client / contact name]</span>.
+
+<span class="field">Client</span>
+- Company: <span class="placeholder">[name]</span>
+- URL: <span class="placeholder">[website]</span>
+- Contact + title: <span class="placeholder">[name, title, email]</span>
+- What they sell / message of focus: <span class="placeholder">[one line]</span>
+
+<span class="field">What triggered this</span>
+- Which keyword or phrase you heard, or the specific need they described
+- Source of the conversation (call, email, event, intro)
+
+<span class="field">Their target market</span>
+- Geo: <span class="placeholder">[regions]</span>
+- Company size: <span class="placeholder">[SMB / MM / Enterprise]</span>
+- Industries: <span class="placeholder">[list, or "all"]</span>
+- Personas they sell to: <span class="placeholder">[titles, departments]</span>
+
+<span class="field">Their stack and current state</span>
+- CRM: <span class="placeholder">[Salesforce / HubSpot / Odoo / etc.]</span>
+- Existing data vendors mentioned: <span class="placeholder">[6sense, ZoomInfo, etc.]</span>
+- Format they want: <span class="placeholder">[API feed / file / platform / one-off report]</span>
+
+<span class="field">Anything else relevant</span>
+- Budget signals, timeline, decision maker, prior data partnerships, urgency
+
+<span class="field">What I'm asking for</span>
+- <span class="placeholder">[Intro to client / 30-min call with you / proposal / pricing]</span>
+
+Thanks,
+<span class="placeholder">[your name]</span></div>
+
+    <div class="h3" style="margin-top: 28px;">The Required Minimum</div>
+    <p>If you only have time to send four lines, send these four:</p>
+    <ul class="clean">
+      <li>Client name and URL</li>
+      <li>What triggered the conversation (the phrase or the ask)</li>
+      <li>Geo, company size, industries, personas</li>
+      <li>What you want from Tina (intro, call, proposal)</li>
+    </ul>
+
+    <div class="h3">What Happens Next</div>
+    <ul class="clean">
+      <li>Tina replies within 24 business hours.</li>
+      <li>She'll either ask for more, propose a fit, or recommend declining.</li>
+      <li>If it's a fit, she joins the next call or takes the lead, depending on the deal.</li>
+      <li>You stay on the account. DaaS is additive to the relationship, not a takeover.</li>
+    </ul>
+  </div>
+
+  <!-- SECTION 6 -->
+  <div class="section page-break">
+    <div class="section-num">Section 6</div>
+    <h2>Real Examples</h2>
+    <p class="section-lede">Two emails from active pipeline that show what good looks like.</p>
+
+    <div class="h3">Example 1: Spotting the trigger in the wild <span class="example-tag trigger">Trigger Spot</span></div>
+    <p>Carolina was on the ground in Brazil, heard a Cohesity stakeholder describe an account-list-plus-enrichment need, and flagged it the same day. Short email, but it nailed the trigger phrase verbatim.</p>
+
+    <div class="example-email">
+      <div class="meta"><strong>From:</strong> Carolina Williams &lt;cwilliams@pharosiq.com&gt;<br><strong>To:</strong> Tina Bean &lt;tbean@pharosiq.com&gt;<br><strong>Cc:</strong> Gustavo Nunez<br><strong>Subject:</strong> Data Enrichment Opportunity: Cohesity LATAM<br><strong>Date:</strong> Monday, April 20, 2026</div>
+      <div class="body">Hi there Tina!! How are you?
+
+I was in Brazil last week and came across an opportunity we believe you may be able to support. Our Cohesity stakeholder for LATAM expressed a need to "enhance/enrich" their Accounts List they receive from 6sense with contacts/intel/business needs "feeds" to enrich their CRM before reaching their commercial team, or append information to these "raw" accounts.
+
+Will you be available this week so that we can discuss this further? We could also introduce you to the client as well to see if there is anything we can offer them?
+
+Thank you,
+Carolina</div>
+    </div>
+
+    <p style="font-size: 12.5px; color: var(--gray-500); margin-top: -4px;"><strong style="color: var(--gray-900);">Why this worked:</strong> Carolina captured the client's exact language ("enhance/enrich," "before reaching their commercial team," "raw accounts"). Tina knew within 30 seconds this was Trigger 1 and Trigger 2 combined. Even with no other context, the trigger phrasing was enough to act on.</p>
+
+    <div class="h3" style="margin-top: 28px;">Example 2: A clean handoff with everything in one email <span class="example-tag">Gold Standard</span></div>
+    <p>Valentina took it one step further. After Carolina flagged the trigger, Valentina sent a structured handoff with every field Tina needs to assess fit. This is the format to copy.</p>
+
+    <div class="example-email">
+      <div class="meta"><strong>From:</strong> Valentina, LATAM Sales<br><strong>To:</strong> Tina Bean<br><strong>Subject:</strong> Congero Technology · DaaS handoff</div>
+      <div class="body">Hi Tina!
+
+Nice to meet you through here. I am Valentina from the LATAM sales team.
+
+I am reaching out because I have a client potentially interested in acquiring signals (and maybe CS). Since they're a candidate for the new product, Caro advised to discuss next steps with you.
+
+Here's some info:
+
+- URL: https://congerotechnology.com/
+  - Message of focus: ERP, CRM, Billing, RPA, Staff Augmentation
+  - Attaching additional docs they provided.
+- Target Market:
+  - Geo of focus: Canada, US, Mexico and Brazil. Europe to potentially be added in the future.
+  - Company Size: Small and Medium
+  - All industries
+  - Personas: IT, Digital Transformation, CIOs, CTOs, Infrastructure, CFO, Business DMs for CRM.
+- CRM that they use: Odoo
+
+What would you recommend as next steps for a client like this?
+
+Thanks,
+Valentina</div>
+    </div>
+
+    <p style="font-size: 12.5px; color: var(--gray-500); margin-top: -4px;"><strong style="color: var(--gray-900);">Why this is the gold standard:</strong> URL, message of focus, target geo, company size, industries, personas, and current CRM, all in one email. Tina can assess fit, shape pricing, and decide whether to join the next call without a single follow-up question. Match this format and Tina can move within hours instead of days.</p>
+  </div>
+
+  <!-- RESOURCES -->
+  <div class="section page-break">
+    <div class="section-num">Resources</div>
+    <h2>What to Use Day-to-Day</h2>
+    <p class="section-lede">Bookmark these. Use the audience dashboard before any call where data scope might come up.</p>
+
+    <a class="resource-link" href="https://atlasiq.pharosiq.com/audience-dashboard.html" target="_blank">
+      <div>
+        <div class="resource-link-title">Audience Intelligence Dashboard</div>
+        <div class="resource-link-sub">Live coverage view: contacts, topics, geo, industries. Pull this up on calls when a client asks "do you have data on…"</div>
+      </div>
+      <div class="resource-link-arrow">→</div>
+    </a>
+
+    <a class="resource-link" href="mailto:tbean@pharosiq.com" style="background: var(--blue);">
+      <div>
+        <div class="resource-link-title">Email Tina</div>
+        <div class="resource-link-sub">tbean@pharosiq.com · Use the email framework in Section 5. Cc your manager.</div>
+      </div>
+      <div class="resource-link-arrow">→</div>
+    </a>
+
+    <div class="card" style="margin-top: 28px;">
+      <h4>The bottom line</h4>
+      <p>You are the eyes and ears. You're not expected to close DaaS deals on a discovery call. Your job is to spot the trigger, ask one or two qualifying questions, and bring Tina in with a clean handoff. The cleaner the handoff, the faster she can monetize the opportunity. Revenue here is shared upside for the company, including your region.</p>
+    </div>
+  </div>
+
+  <div class="footer">
+    pharosIQ · Internal Sales Enablement · For LATAM, APAC, EMEA, and North America sales teams · May 2026
+  </div>
+
+</div><!-- /page -->
+
+</div><!-- /doc-content -->
+
+<script>
+  (function() {
+    var CORRECT = 'pharosiq-sales-2026';
+    var stored = sessionStorage.getItem('daas-sales-playbook-unlocked');
+
+    function unlock() {
+      document.getElementById('pw-gate').classList.add('hidden');
+      document.getElementById('doc-content').style.display = 'block';
+      sessionStorage.setItem('daas-sales-playbook-unlocked', '1');
+    }
+
+    if (stored === '1') {
+      unlock();
+      return;
+    }
+
+    document.getElementById('pw-submit').addEventListener('click', function() {
+      var val = document.getElementById('pw-input').value;
+      if (val === CORRECT) {
+        unlock();
+      } else {
+        document.getElementById('pw-input').classList.add('error');
+        document.getElementById('pw-error').style.display = 'block';
+        document.getElementById('pw-input').value = '';
+        document.getElementById('pw-input').focus();
+      }
+    });
+
+    document.getElementById('pw-input').addEventListener('keydown', function(e) {
+      if (e.key === 'Enter') document.getElementById('pw-submit').click();
+      if (document.getElementById('pw-input').classList.contains('error')) {
+        document.getElementById('pw-input').classList.remove('error');
+        document.getElementById('pw-error').style.display = 'none';
+      }
+    });
+
+    document.getElementById('pw-input').focus();
+  })();
+</script>
+
+</body>
+</html>

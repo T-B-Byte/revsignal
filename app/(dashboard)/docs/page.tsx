@@ -87,6 +87,15 @@ const DEFAULT_DOCS: Doc[] = [
     created: "2026-04-15",
   },
   {
+    id: "daas-sales-playbook",
+    title: "DaaS Sales Playbook (LATAM/APAC/EMEA/NA)",
+    description: "Internal sales enablement doc for the global sales teams. Covers what Tina sells, who she targets, the 8 trigger phrases that signal a DaaS opportunity, talking points on pharosIQ data, the email handoff framework, and real examples from active pipeline. Use in the team training meetings.",
+    url: "https://revsignal.vercel.app/daas-sales-playbook.html",
+    password: "pharosiq-sales-2026",
+    category: "Sales Enablement",
+    created: "2026-05-04",
+  },
+  {
     id: "salesforce-daas-setup",
     title: "Salesforce DaaS Setup",
     description: "Meeting prep for the Salesforce admin team. Covers new DaaS License record type, pipeline stages, custom fields, product catalog entries, and billing/contract configuration questions.",
