@@ -224,6 +224,53 @@
       font-size: 11.5px; color: var(--gray-500); text-align: center;
     }
 
+    .hero-dashboard {
+      background: linear-gradient(135deg, var(--navy) 0%, #1a3d6b 100%);
+      color: #fff;
+      padding: 32px 36px;
+      margin-bottom: 36px;
+      position: relative;
+      overflow: hidden;
+      text-decoration: none;
+      display: block;
+    }
+    .hero-dashboard:hover { background: linear-gradient(135deg, #163a63 0%, #224a7d 100%); text-decoration: none; }
+    .hero-dashboard:hover .hero-dashboard-cta { background: #fff; color: var(--navy); }
+    .hero-dashboard-eyebrow {
+      font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px;
+      color: #93c5fd; margin-bottom: 10px;
+    }
+    .hero-dashboard-title {
+      font-size: 26px; font-weight: 800; letter-spacing: -0.5px; color: #fff; margin-bottom: 8px;
+    }
+    .hero-dashboard-sub {
+      font-size: 14px; color: #cbd5e1; margin-bottom: 20px; max-width: 720px; line-height: 1.55;
+    }
+    .hero-dashboard-stats {
+      display: flex; gap: 36px; margin-bottom: 22px; flex-wrap: wrap;
+    }
+    .hero-dashboard-stat-num {
+      font-size: 22px; font-weight: 800; color: #fff; letter-spacing: -0.3px;
+    }
+    .hero-dashboard-stat-label {
+      font-size: 11px; color: #93c5fd; text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+    }
+    .hero-dashboard-cta {
+      display: inline-flex; align-items: center; gap: 10px;
+      background: #fff; color: var(--navy);
+      font-size: 13px; font-weight: 700;
+      padding: 11px 20px;
+      letter-spacing: 0.3px;
+      transition: all 0.2s;
+    }
+    .hero-dashboard-cta-arrow { font-size: 16px; }
+    .hero-dashboard-url {
+      font-family: 'SF Mono', Menlo, monospace;
+      font-size: 12px;
+      color: #93c5fd;
+      margin-top: 14px;
+    }
+
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
@@ -268,6 +315,32 @@
   <div class="tldr">
     <strong>The 30-second version.</strong> pharosIQ has a data product line (DaaS) that runs alongside demand gen. When a client asks for contacts, intent signals, enrichment, an API feed, or a data partnership, that is a Tina conversation. Listen for the trigger phrases in Section 3. Use the email template in Section 5 to hand off cleanly. Tina handles assessment, pricing, and the client conversation from there.
   </div>
+
+  <a class="hero-dashboard" href="https://atlasiq.pharosiq.com/audience-dashboard.html" target="_blank">
+    <div class="hero-dashboard-eyebrow">★ The one tool to bookmark</div>
+    <div class="hero-dashboard-title">Audience Intelligence Dashboard</div>
+    <div class="hero-dashboard-sub">Live, interactive coverage view of the entire pharosIQ universe. Filter by industry, geo, company size, persona, and intent topic. Pull this up on every prospect call. When a client asks "do you have data on…" you have the answer in 5 seconds.</div>
+    <div class="hero-dashboard-stats">
+      <div>
+        <div class="hero-dashboard-stat-num">360M+</div>
+        <div class="hero-dashboard-stat-label">Contacts</div>
+      </div>
+      <div>
+        <div class="hero-dashboard-stat-num">8,756</div>
+        <div class="hero-dashboard-stat-label">Intent Topics</div>
+      </div>
+      <div>
+        <div class="hero-dashboard-stat-num">Global</div>
+        <div class="hero-dashboard-stat-label">NA · EMEA · APAC · LATAM</div>
+      </div>
+      <div>
+        <div class="hero-dashboard-stat-num">Live</div>
+        <div class="hero-dashboard-stat-label">Always Current</div>
+      </div>
+    </div>
+    <span class="hero-dashboard-cta">Open the Dashboard <span class="hero-dashboard-cta-arrow">→</span></span>
+    <div class="hero-dashboard-url">atlasiq.pharosiq.com/audience-dashboard.html</div>
+  </a>
 
   <!-- SECTION 1 -->
   <div class="section">
