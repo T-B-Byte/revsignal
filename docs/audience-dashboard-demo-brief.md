@@ -10,11 +10,11 @@
 B2B intent data company formed from the merger of MRP + CONTENTgine (March 2024). ~$60M revenue, $11M profit, no debt, ~1,373 employees. CEO Jeff Rokuskie wants to sell the company this year, so speed-to-revenue and valuation multiples matter.
 
 **The data asset:**
-- 360M+ verified business contacts (updated March 2026)
+- 125.3M verified business contacts engaged in the last 90 days
 - 50M B2B inboxable contacts
 - 1.6M actively engaged contacts in any 90-day window
 - 25M+ global companies covered
-- 650+ proprietary intent categories
+- 8,756 proprietary intent categories
 - 3-6M new signals generated monthly
 - Intent scoring: 1-99 scale weighted by content type, buyer seniority, recency, momentum
 
@@ -130,15 +130,15 @@ Use these as relatable anecdotes during the demo to make the data feel real.
 
 Use these to convey scale and strategic value.
 
-### Story 1: "360 Million Isn't a Database. It's a Census."
-> There are roughly 800 million professionals on LinkedIn. pharosIQ has verified contact records for 360M+ of them. Not modeled. Not inferred. Records generated from real content engagement across owned properties.
+### Story 1: "125 Million Engaged Contacts Isn't a Database. It's a Census of the People Actually In Market."
+> There are roughly 800 million professionals on LinkedIn. In the last 90 days alone, pharosIQ has verified content engagement records on 125.3M of them. Not modeled. Not inferred. Records generated from real content engagement across owned properties.
 >
-> In any 90-day window, 1.6 million of those contacts are actively engaging with content across 650+ intent categories. That's not a static database you query. It's a living signal layer that refreshes continuously.
+> In any 90-day window, 1.6 million of those contacts are actively researching across 8,756 intent categories. That's not a static database you query. It's a living signal layer that refreshes continuously.
 >
 > When you ask "who at Acme Corp is researching data analytics?", the answer comes from actual content consumption, not from a propensity model that guesses based on firmographics.
 
 ### Story 2: "650 Categories Is Not Granularity for Granularity's Sake"
-> Bombora has ~8,000 topics, but they're built from bid-stream and co-op signals, so the specificity is diluted by noise. pharosIQ's 650+ categories are built from first-party content consumption. Each category maps to real content assets that real people consumed.
+> Bombora has ~8,000 topics, but they're built from bid-stream and co-op signals, so the specificity is diluted by noise. pharosIQ's 8,756 categories are built from first-party content consumption. Each category maps to real content assets that real people consumed.
 >
 > The difference: when pharosIQ says "VP of IT at Acme Corp is surging on Zero Trust Architecture," it means that person downloaded a whitepaper, attended a webinar, or engaged with editorial content specifically about zero trust. Not that someone at Acme Corp's IP address visited a webpage that mentioned security.
 >
@@ -177,13 +177,13 @@ Use these to convey scale and strategic value.
 > Most lead scoring models use firmographic fit + behavioral engagement (website visits, email opens). Add persona-level intent as a third dimension: is this contact at a company that's actively researching your category? Is this specific person the one doing the research? A "Director of IT" who opened your email AND is surging on your intent topic is a fundamentally different lead than one who just opened the email.
 
 ### Use Case 3: Buying Committee Mapping
-> For any target account, pharosIQ can surface every contact who's engaged with content in your category. Not just the one contact in your CRM, but the full buying committee: the economic buyer, the technical evaluator, the champion, the blocker. With 360M+ contacts and persona-level engagement data, you see the committee that account-level data can't reveal.
+> For any target account, pharosIQ can surface every contact who's engaged with content in your category. Not just the one contact in your CRM, but the full buying committee: the economic buyer, the technical evaluator, the champion, the blocker. With 125.3M contacts engaged in the last 90 days and persona-level engagement data, you see the committee that account-level data can't reveal.
 
 ### Use Case 4: Campaign Prioritization
 > Stop spreading ad budget evenly across your target account list. Use intent signals to identify the 15-25% of accounts that are actively in-market right now, then concentrate 60-80% of spend on those accounts. Industry benchmarks show 2-3x conversion rates on intent-qualified accounts vs. cold. The math is simple: same budget, 2-3x more pipeline.
 
 ### Use Case 5: Competitive Displacement Timing
-> pharosIQ tracks 650+ intent categories, including competitor-specific topics. When a target account surges on "Bombora alternatives" or "6sense evaluation," that's a displacement signal. Your SDR doesn't need to cold-call. They reach out when the buyer is already looking to switch.
+> pharosIQ tracks 8,756 intent categories, including competitor-specific topics. When a target account surges on "Bombora alternatives" or "6sense evaluation," that's a displacement signal. Your SDR doesn't need to cold-call. They reach out when the buyer is already looking to switch.
 
 ### Use Case 6: Renewal Risk and Expansion Signals
 > For existing customers, intent signals can flag both risk and opportunity. If a customer starts surging on competitor topics, that's a churn signal. If they start surging on adjacent categories, that's an expansion signal. Both are invisible without persona-level intent data.
@@ -220,9 +220,9 @@ When walking through the Audience Dashboard, anchor on these numbers:
 
 | Metric | Value | Why It Matters |
 |--------|-------|---------------|
-| Total contacts | 360M+ | Census-scale coverage, not a sample |
-| 90-day engaged contacts | 1.6M | Fresh, active signals, not stale records |
-| Intent categories | 650+ | Depth from first-party content, not breadth from noise |
+| Engaged contacts (last 90 days) | 125.3M | Fresh active engagement at the contact level, not a static universe count |
+| Heavily-engaged contacts | 1.6M | Highest-intent subset of the 125.3M, ready for outreach |
+| Intent categories | 8,756 | Depth from first-party content, not breadth from noise |
 | Global companies | 25M+ | Coverage across enterprise and mid-market |
 | Monthly new signals | 3-6M | Continuously refreshing, not quarterly batch |
 | Signal scoring | 1-99 | Weighted by content type, seniority, recency, momentum |

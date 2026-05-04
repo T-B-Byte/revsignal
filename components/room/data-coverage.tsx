@@ -38,7 +38,7 @@ const SENIORITY_DISTRIBUTION: BarData[] = [
 ];
 
 const HERO_STATS = [
-  { label: "Contacts", value: "360M+", color: "#4f6ef7", period: "total database" },
+  { label: "Contacts", value: "125.3M", color: "#4f6ef7", period: "last 90 days" },
   { label: "Intent Signals", value: "348.9M", color: "#7c3aed", period: "last 90 days" },
   { label: "Intent Topics", value: "8,756", color: "#f59e0b", period: "last 90 days" },
   { label: "Companies", value: "25M+", color: "#10b981", period: "total database" },
@@ -228,7 +228,7 @@ export function DataCoverage({ theme = "dark" }: DataCoverageProps) {
       {/* Audience Coverage by Vertical */}
       <BarSection
         title="Audience Coverage by Vertical"
-        subtitle="360M+ first-party business contacts"
+        subtitle="125.3M first-party business contacts engaged in the last 90 days"
         bars={AUDIENCE_BY_VERTICAL}
         color={SECTION_COLORS.vertical}
         theme={theme}
