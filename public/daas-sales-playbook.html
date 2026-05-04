@@ -271,6 +271,45 @@
       margin-top: 14px;
     }
 
+    .secondary-anchor {
+      display: block;
+      background: #fff;
+      border: 1.5px solid var(--gray-300);
+      border-left: 4px solid var(--blue);
+      padding: 22px 28px;
+      margin-bottom: 36px;
+      text-decoration: none;
+      transition: all 0.2s;
+    }
+    .secondary-anchor:hover { border-color: var(--blue); text-decoration: none; box-shadow: 0 2px 8px rgba(42, 95, 165, 0.08); }
+    .secondary-anchor-eyebrow {
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--blue); margin-bottom: 6px;
+    }
+    .secondary-anchor-title {
+      font-size: 18px; font-weight: 800; color: var(--gray-900); margin-bottom: 4px; letter-spacing: -0.3px;
+    }
+    .secondary-anchor-sub {
+      font-size: 13px; color: var(--gray-700); margin-bottom: 14px; line-height: 1.55;
+    }
+    .secondary-anchor-tiers {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+    }
+    .tier-pill {
+      font-size: 10.5px; font-weight: 700;
+      padding: 4px 10px;
+      border-radius: 3px;
+      letter-spacing: 0.3px;
+    }
+    .tier-pill.t1 { background: var(--gray-100); color: var(--gray-700); border: 1px solid var(--gray-300); }
+    .tier-pill.t2 { background: var(--blue-light); color: var(--blue); border: 1px solid #93b4f4; }
+    .tier-pill.t3 { background: #f3e8ff; color: #9333ea; border: 1px solid #c084fc; }
+    .tier-pill.t4 { background: #fef2f2; color: #dc2626; border: 1px solid #fca5a5; }
+    .secondary-anchor-cta {
+      font-size: 12.5px; font-weight: 700; color: var(--blue);
+    }
+    .secondary-anchor-cta-arrow { margin-left: 6px; }
+
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
@@ -340,6 +379,19 @@
     </div>
     <span class="hero-dashboard-cta">Open the Dashboard <span class="hero-dashboard-cta-arrow">→</span></span>
     <div class="hero-dashboard-url">atlasiq.pharosiq.com/audience-dashboard.html</div>
+  </a>
+
+  <a class="secondary-anchor" href="https://revsignal.vercel.app/frameworks/daas-framework" target="_blank">
+    <div class="secondary-anchor-eyebrow">Bookmark this for tier conversations</div>
+    <div class="secondary-anchor-title">DaaS Product Framework: Tiered Licensing Model</div>
+    <div class="secondary-anchor-sub">The four-tier structure for Full Database Access. Use this to explain pricing scope, what each tier delivers, and where a client's ask fits. The doc Tina uses to walk Jeff, Marty, and Chris through DaaS pricing.</div>
+    <div class="secondary-anchor-tiers">
+      <span class="tier-pill t1">Tier 1 · Accounts + Intent</span>
+      <span class="tier-pill t2">Tier 2 · Persona + Intent</span>
+      <span class="tier-pill t3">Tier 3 · Contacts + Intent</span>
+      <span class="tier-pill t4">Tier 4 · Contacts + Content (Enterprise)</span>
+    </div>
+    <span class="secondary-anchor-cta">Open the Framework<span class="secondary-anchor-cta-arrow">→</span></span>
   </a>
 
   <!-- SECTION 1 -->
@@ -705,6 +757,14 @@ Valentina</div>
       <div>
         <div class="resource-link-title">Audience Intelligence Dashboard</div>
         <div class="resource-link-sub">Live coverage view: contacts, topics, geo, industries. Pull this up on calls when a client asks "do you have data on…"</div>
+      </div>
+      <div class="resource-link-arrow">→</div>
+    </a>
+
+    <a class="resource-link" href="https://revsignal.vercel.app/frameworks/daas-framework" target="_blank">
+      <div>
+        <div class="resource-link-title">DaaS Product Framework: Tiered Licensing Model</div>
+        <div class="resource-link-sub">The four-tier structure for Full Database Access. Reference this when a client asks about pricing scope or what each tier delivers.</div>
       </div>
       <div class="resource-link-arrow">→</div>
     </a>
