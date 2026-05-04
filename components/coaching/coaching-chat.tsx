@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
+import { format, isToday, isYesterday, isThisYear } from "date-fns";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { formatAgentHtml } from "@/lib/format-agent-html";
 import type { CoachingMessage, Deal, Stakeholder } from "@/types/database";
@@ -215,10 +216,7 @@ export function CoachingChat({
                   <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
                 )}
                 <p className="mt-1 text-[10px] text-text-muted">
-                  {new Date(msg.created_at).toLocaleTimeString("en-US", {
-                    hour: "numeric",
-                    minute: "2-digit",
-                  })}
+                  {formatMsgDate(msg.created_at)}
                 </p>
               </div>
             </div>
@@ -268,4 +266,13 @@ export function CoachingChat({
       </CardContent>
     </Card>
   );
+}
+
+function formatMsgDate(dateStr: string): string {
+  const date = new Date(dateStr);
+  const time = format(date, "h:mm a");
+  if (isToday(date)) return time;
+  if (isYesterday(date)) return `Yesterday, ${time}`;
+  if (isThisYear(date)) return format(date, "MMM d, ") + time;
+  return format(date, "MMM d, yyyy, ") + time;
 }
