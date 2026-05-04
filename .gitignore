@@ -52,6 +52,7 @@ supabase/.temp/
 !/public/PharosIQ_Data_Dictionary_2026-04-20.xlsx
 !/public/pharosiq-approach-2026q1.pdf
 !/public/intent_topics_by_period.xlsx
+!/public/2026-03 Global Contact Counts.xlsx
 /public/*.zip
 /public/*.png
 /public/Contracts/
