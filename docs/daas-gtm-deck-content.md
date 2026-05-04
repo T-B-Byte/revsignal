@@ -13,7 +13,7 @@ Tina Bean, SVP Data Monetization & Partnerships
 
 ## SLIDE 2: The Opportunity
 
-pharosIQ sits on one of the most valuable first-party intent data assets in B2B. 360M+ contacts, 650+ intent categories, persona-level signal precision that competitors cannot match.
+pharosIQ sits on one of the most valuable first-party intent data assets in B2B. 125.3M contacts (last 90 days), 8,756 intent categories, persona-level signal precision that competitors cannot match.
 
 Today, that data powers one business line: demand generation.
 
@@ -347,7 +347,7 @@ SurgeEngine.ai is broad-market, but priority outreach to:
 ## SLIDE 9: PRONG 4 — Jobson Title Expansion
 
 ### What We Sell
-Access to pharosIQ's title expansion engine. Jobson takes any job title (e.g., "Head of Marketing") and expands it into every permutation of how that title appears across 360M+ professional profiles, including translations to 15+ languages. ABM companies and DSPs buy the complete data brick (flat file) to power their audience targeting.
+Access to pharosIQ's title expansion engine. Jobson takes any job title (e.g., "Head of Marketing") and expands it into every permutation of how that title appears across 125.3M professional profiles (last 90 days), including translations to 15+ languages. ABM companies and DSPs buy the complete data brick (flat file) to power their audience targeting.
 
 ### The Problem It Solves
 Marketers and ABM platforms build audiences by targeting job titles. But "VP of Marketing" is written 200+ ways across LinkedIn: Vice President Marketing, VP Marketing & Communications, SVP Digital Marketing, Vizepräsident Marketing (German), Directeur Marketing (French), and on and on. Miss a variation, miss the prospect. Current solutions require manual guesswork or incomplete synonym lists.
@@ -564,7 +564,7 @@ SurgeEngine.ai is the self-service front door. It captures leads (Prong 3) who b
 ### The Intentsify Warning
 Intentsify, pharosIQ's top competitor in the intent data space, has already partnered with a company that builds this exact type of modular intelligence report. They stopped leading with intent data and started leading with the assembled reports, because it gets them into sales conversations that raw data never could. They are selling dossier-style packages through a channel partner today.
 
-pharosIQ has the same data (better data, arguably: first-party, contact-level, 650+ categories). The difference is: Intentsify is paying a partner to assemble reports from their data. pharosIQ can build its own, keep the margin, control the product, and own the customer relationship.
+pharosIQ has the same data (better data, arguably: first-party, contact-level, 8,756 categories). The difference is: Intentsify is paying a partner to assemble reports from their data. pharosIQ can build its own, keep the margin, control the product, and own the customer relationship.
 
 **The risk of not acting: pharosIQ's biggest competitor is already monetizing this model. Every quarter of delay is a quarter where Intentsify builds market share with a product pharosIQ could own.**
 
@@ -585,7 +585,7 @@ Nobody else is selling AI-assembled, account-specific sales intelligence package
 | **Surge Trending** | Intent topics (10/25/50) | Ranked list of surging companies with scores and signals, updated weekly | $500-2,000/mo |
 | **Surge Radar** | Target account list | What each account is researching, competitive evaluations detected, recommended actions | $500-2,000/mo |
 | **ICP Analyzer** | Closed-won deal list | Common pre-close signals, synthesized ICP profile, lookalike companies currently matching | $500/report |
-| **Title Expansion** | Job title | Every variation across 360M+ profiles in 15+ languages, downloadable as data brick | $50K/yr license |
+| **Title Expansion** | Job title | Every variation across 125.3M profiles (last 90 days) in 15+ languages, downloadable as data brick | $50K/yr license |
 | **Event Prep** | Event name + attendee list | One-page per-person briefings with conversation starters, optimized for mobile | $50-150/briefing |
 
 ### Every Mode Upsells to the Next

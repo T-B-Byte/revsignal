@@ -24,7 +24,7 @@ score: null
 2. "First-party intent signals, not from a co-op"
 3. **"Persona-level intent intelligence for [Platform Name]"**
 4. "The intelligence layer AI can't replicate"
-5. "650 intent categories, persona-level precision, one feed"
+5. "8,756 intent categories, persona-level precision, one feed"
 6. "Different signal source for [Platform Name]"
 
 Recommended: #3 — personalized, specific, clear value. Best open rate for solution-aware recipients who already buy intent data.
@@ -42,9 +42,9 @@ pharosIQ generates 3-6M intent signals per month from our owned content ecosyste
 I'm reaching out because platforms that embed intent intelligence natively are pulling ahead. The difference: your users would see which **buyer personas** at a company are actively researching which topics, not just which company is surging.
 
 Quick snapshot:
-- **650+ intent categories** with scores from 1-99
+- **8,756 intent categories** with scores from 1-99
 - **Persona-level precision** (which roles are in-market, not just which accounts)
-- Built on **360M+ first-party contacts** (the intelligence is derived from this, but what we sell is the persona + topic layer)
+- Built on **125.3M first-party contacts (last 90 days)** (the intelligence is derived from this, but what we sell is the persona + topic layer)
 - Delivery via API, flat file, cloud, or embedded OEM
 
 We're building out our platform partner program. Would it make sense to show you what the intelligence looks like inside a platform like yours?
@@ -63,7 +63,7 @@ Data Infrastructure companies now trade at 24.4x EBITDA, nearly double the media
 
 The reason is straightforward: AI commoditizes software. It cannot commoditize proprietary data.
 
-pharosIQ owns the content ecosystem that generates our intent signals. First-party. Persona-level. Exclusive to each buyer. 650+ intent categories, 3-6M signals per month, resolved to specific buyer personas, not just accounts.
+pharosIQ owns the content ecosystem that generates our intent signals. First-party. Persona-level. Exclusive to each buyer. 8,756 intent categories, 3-6M signals per month, resolved to specific buyer personas, not just accounts.
 
 Platforms embedding this kind of intelligence natively are building moats their competitors can't replicate. I'd like to show you what a pharosIQ persona + intent feed looks like inside [Platform Name].
 
@@ -83,7 +83,7 @@ If your platform uses co-op intent data, every one of your competitors sees the 
 
 pharosIQ is a different signal source. First-party data from our owned content ecosystem. Persona-level: we identify which buyer personas are actively researching which topics, not just which company is surging. And exclusive to each buyer.
 
-650+ intent categories. Persona-level precision. Delivery however you need it.
+8,756 intent categories. Persona-level precision. Delivery however you need it.
 
 Interested in seeing what exclusive, persona-level intent intelligence looks like inside [Platform Name]?
 

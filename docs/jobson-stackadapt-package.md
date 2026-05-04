@@ -14,7 +14,7 @@ StackAdapt's current data partner ecosystem, with pharosIQ's two integration poi
 | Leadspace | Company intelligence | Nov 2025 | Technographic + intent data, ABM segmentation (North America) |
 | Lead Forensics | Visitor identification | Nov 2025 | Website visitor ID, firmographic attributes (global) |
 | **Jobson (pharosIQ)** | **Title expansion** | **Phase 1** | **Expands any job title into 200+ real-world variations for audience building** |
-| **pharosIQ Contacts + Intent** | **Contact records + intent signals** | **Phase 2** | **Verified buyers at surging accounts, persona-level intent on 360M+ contacts** |
+| **pharosIQ Contacts + Intent** | **Contact records + intent signals** | **Phase 2** | **Verified buyers at surging accounts, persona-level intent on 125.3M contacts (last 90 days)** |
 | Experian | Identity resolution | Feb 2026 | First-party data activation, ID resolution, Mosaic segments (UK) |
 | HubSpot | CRM sync | Existing | First-party data from CRM into Data Hub |
 | Salesforce | CRM sync | Existing | First-party data from CRM into Data Hub |
@@ -58,7 +58,7 @@ Here's a complementary angle: Experian solves identity resolution (matching peop
 
 When a StackAdapt customer builds a B2B audience and filters by "VP of Marketing," they miss 200+ real-world variations of that title. Vice President of Growth Marketing. VP Marketing & Demand Gen. Head of Marketing. Vizeprasident Marketing. LinkedIn only recognizes 55% of titles on its own platform, and every DSP that uses title as a targeting parameter inherits the same gap.
 
-We built an API that expands any job title into every real-world variation from 360M+ business contacts. One title in, hundreds of permutations out, including international translations. The data comes from real contact records at real companies, not NLP inference or synonym dictionaries.
+We built an API that expands any job title into every real-world variation from 125.3M business contacts (last 90 days). One title in, hundreds of permutations out, including international translations. The data comes from real contact records at real companies, not NLP inference or synonym dictionaries.
 
 Experian helps your customers match their data to media channels. Jobson helps them build the right audience before they match it.
 
@@ -85,7 +85,7 @@ Here's the full picture of what pharosIQ brings to StackAdapt's data stack:
 
 Right now, StackAdapt's ecosystem tells customers which accounts are in-market and what those companies look like. What's missing is the people: verified contact records at surging accounts, with persona-level intent signals showing what each buyer actually cares about.
 
-pharosIQ has 360M+ business contacts with 650+ intent categories, all from first-party signals (owned content properties, not bid-stream). We resolve intent to the persona level, not just the account level. In any 90-day window, 1.6M contacts are actively engaged across those intent categories.
+pharosIQ has 125.3M business contacts (last 90 days) with 8,756 intent categories, all from first-party signals (owned content properties, not bid-stream). We resolve intent to the persona level, not just the account level. In any 90-day window, 1.6M contacts are actively engaged across those intent categories.
 
 Phase 1 is the Jobson title expansion API inside StackAdapt's audience builder. Phase 2 is the full contacts + intent data feed, giving your customers the actual buyers at the accounts Bombora flags as surging. The titles are already expanded. The intent is already resolved. The contact records are verified.
 
@@ -117,7 +117,7 @@ We've structured this as a two-phase partnership:
 
 **Phase 1 (starts now):** Jobson title expansion API. Per-query pricing, 90-day pilot, no minimum commitment. Proves audience lift and CPL impact.
 
-**Phase 2 (after pilot validation):** Full pharosIQ contacts + intent data feed as an OEM integration. 360M+ contacts, 650+ intent categories, persona-level resolution. Your customers get the actual buyers at surging accounts, natively inside StackAdapt. Annual data license ($300K-$504K/year depending on volume and access tier).
+**Phase 2 (after pilot validation):** Full pharosIQ contacts + intent data feed as an OEM integration. 125.3M contacts (last 90 days), 8,756 intent categories, persona-level resolution. Your customers get the actual buyers at surging accounts, natively inside StackAdapt. Annual data license ($300K-$504K/year depending on volume and access tier).
 
 If the timing works, I'd love to run your top 5 B2B client personas through the expansion engine live. Takes 15 minutes and the output speaks for itself.
 
@@ -138,7 +138,7 @@ Tina
 
 pharosIQ proposes a two-phase data partnership with StackAdapt:
 
-**Phase 1:** Integrate Jobson, our title expansion API, into StackAdapt's B2B audience building workflow. Jobson expands any job title into every real-world variation from 360M+ verified business contacts, increasing audience coverage by approximately 40% without changing the end-user experience.
+**Phase 1:** Integrate Jobson, our title expansion API, into StackAdapt's B2B audience building workflow. Jobson expands any job title into every real-world variation from 125.3M verified business contacts (last 90 days), increasing audience coverage by approximately 40% without changing the end-user experience.
 
 **Phase 2:** Integrate pharosIQ's full contacts + intent data feed as an OEM data source. StackAdapt customers get verified contact records at surging accounts, with persona-level intent signals and expanded titles, delivered natively inside the platform. This transforms StackAdapt's B2B offering from account-level targeting to person-level targeting.
 
@@ -178,7 +178,7 @@ The result: customers know which accounts to target, but they're still guessing 
 - International translations (12+ languages)
 - Industry-specific variations (VP Marketing, Technology vs. VP Marketing, Financial Services)
 
-**Data source:** 360M+ verified business contact records from pharosIQ's proprietary database. Every variation comes from an actual person's actual profile. This is ground truth, not NLP inference or synonym generation.
+**Data source:** 125.3M (last 90 days) verified business contact records from pharosIQ's proprietary database. Every variation comes from an actual person's actual profile. This is ground truth, not NLP inference or synonym generation.
 
 **Integration architecture:**
 
@@ -213,7 +213,7 @@ Optional: surface the expansion to the end user as a "Title Expansion" toggle or
 - Verified contact records (name, title, company, business email) at accounts flagged by Bombora or other intent signals
 - Persona-level intent: which specific buyers are researching which topics, not just which accounts are surging
 - Titles already expanded via Jobson, so audience coverage is maximized from the start
-- 650+ intent categories covering the full B2B buying landscape
+- 8,756 intent categories covering the full B2B buying landscape
 - 90-day rolling window of 1.6M actively engaged contacts
 
 **Why this matters for StackAdapt's competitive position:**
@@ -223,7 +223,7 @@ Every B2B DSP can offer account-level targeting with Bombora. Person-level targe
 **pharosIQ's data advantages:**
 - **First-party signals** from owned content properties (not bid-stream data that every competitor has access to)
 - **Persona-level resolution** (which person, not just which account)
-- **360M+ verified contacts** across 650+ intent categories
+- **125.3M verified contacts (last 90 days)** across 8,756 intent categories
 - **1.6M engaged contacts** in any 90-day rolling window
 - **Ground truth from real behavior** on pharosIQ's owned properties
 
@@ -271,7 +271,7 @@ Phase 2 (pharosIQ Contacts + Intent) fills the entire gap between account-level 
 **Option C: Annual OEM Data License**
 - Full contacts + intent data feed delivered via API or scheduled feed
 - $300K-$504K/year depending on volume, access tier, and exclusivity terms
-- Includes: verified contact records, persona-level intent signals, expanded titles, 650+ intent categories
+- Includes: verified contact records, persona-level intent signals, expanded titles, 8,756 intent categories
 - Quarterly data refreshes, new category coverage, dedicated support
 - 12-month term with auto-renewal
 
@@ -318,26 +318,26 @@ Start with Phase 1, Option A (per-query pricing) for a 90-day pilot. This proves
 
 ### About pharosIQ
 
-pharosIQ is a B2B intent data company with 360M+ verified business contacts and 650+ intent signal categories. The company was formed from the merger of MRP and CONTENTgine (March 2024), combining first-party content engagement data with predictive analytics.
+pharosIQ is a B2B intent data company with 125.3M verified business contacts (last 90 days) and 8,756 intent signal categories. The company was formed from the merger of MRP and CONTENTgine (March 2024), combining first-party content engagement data with predictive analytics.
 
 **Key differentiators:**
 
 - **First-party intent signals** from owned content properties (not bid-stream data resold by dozens of vendors)
 - **Persona-level resolution:** intent resolved to the individual buyer, not just the account
-- **360M+ verified contacts** across 650+ intent categories
+- **125.3M verified contacts (last 90 days)** across 8,756 intent categories
 - **1.6M engaged contacts** in any 90-day rolling window
 - **Jobson title expansion** powered by real contact data, not NLP models or synonym dictionaries
 
 **Competitive comparison (title expansion):**
 - People Data Labs: returns only 5 matching titles per query (Jobson returns 200+)
-- Textkernel: HR/recruiting-focused, 4,500 professions (Jobson: B2B marketing-focused, 360M+ contacts)
+- Textkernel: HR/recruiting-focused, 4,500 professions (Jobson: B2B marketing-focused, 125.3M contacts (last 90 days))
 - Cleanlist: normalizes titles (collapses variations). Jobson expands titles (finds all variations). Opposite direction.
 
 **Competitive comparison (contacts + intent):**
 - Bombora: account-level only, no contact records, bid-stream signals
 - Leadspace: firmographic enrichment, no intent signal generation
 - Lead Forensics: website visitors only, no proactive intent discovery
-- pharosIQ: persona-level intent on 360M+ contacts from first-party signals, with verified contact records included
+- pharosIQ: persona-level intent on 125.3M contacts (last 90 days) from first-party signals, with verified contact records included
 
 ---
 

@@ -56,7 +56,7 @@ You serve a solo sales leader building a B2B data licensing business from scratc
 Revenue math:
 - Target: $1,000,000 in year-one DaaS revenue
 - Model: ~10 customers at ~$100K ACV average
-- Product: pharosIQ's proprietary first-party intent data (360M+ contacts, 650+ intent categories)
+- Product: pharosIQ's proprietary first-party intent data (125.3M contacts (last 90 days), 8,756 intent categories)
 - Delivery: API, flat file, cloud delivery, platform integration, or embedded/OEM
 
 Product portfolio:

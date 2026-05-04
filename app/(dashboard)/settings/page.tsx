@@ -47,7 +47,7 @@ const INTEGRATIONS = [
   },
   {
     name: "pharosIQ Contacts DB",
-    description: "Read-only access to 360M+ contacts and intent data",
+    description: "Read-only access to 125.3M contacts (last 90 days) and intent data",
     status: "not_configured" as const,
   },
   {

@@ -24,7 +24,7 @@ const customUseCases = [
   {
     title: 'Pipeline Engine grounding',
     description:
-      "Demandbase AI's agentic workflows get richer with person-level intent context. 650+ intent categories at the contact level feed the agent layer directly.",
+      "Demandbase AI's agentic workflows get richer with person-level intent context. 8,756 intent categories at the contact level feed the agent layer directly.",
     persona: 'Demandbase AI product team',
   },
   {
@@ -56,7 +56,7 @@ const customWhyUs = [
   {
     title: 'Deterministic contact-level resolution',
     description:
-      '360M+ first-party contacts, each signal tied to a specific person at a specific account. Contact dimension built in, not a model output layered on top.',
+      '125.3M first-party contacts (last 90 days), each signal tied to a specific person at a specific account. Contact dimension built in, not a model output layered on top.',
   },
   {
     title: 'Exclusive supply per partner',
@@ -66,7 +66,7 @@ const customWhyUs = [
   {
     title: 'Built for the agent era',
     description:
-      '650+ intent categories with refresh cadence and scoring tuned for AI workflows. The signal layer stays sharp as agent-driven GTM scales.',
+      '8,756 intent categories with refresh cadence and scoring tuned for AI workflows. The signal layer stays sharp as agent-driven GTM scales.',
   },
   {
     title: 'Supply layer, not platform competition',

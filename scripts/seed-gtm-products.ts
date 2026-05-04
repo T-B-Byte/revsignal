@@ -41,11 +41,11 @@ function buildProducts(): GtmProductSeed[] {
       name: 'DaaS Signal Licensing',
       category: 'data_feeds',
       tagline: 'First-party contacts + intent topic intelligence for platforms',
-      value_prop: 'OEM contact-level intent signals that platforms embed into their products. Your customers see better results, you differentiate vs. competitors. Built on 360M+ first-party contacts with 650+ intent categories. Standard offering includes contact records matched to intent topics.',
+      value_prop: 'OEM contact-level intent signals that platforms embed into their products. Your customers see better results, you differentiate vs. competitors. Built on 125.3M first-party contacts (last 90 days) with 8,756 intent categories. Standard offering includes contact records matched to intent topics.',
       problem_statement: 'Platforms need proprietary intent data to power lead scoring, account prioritization, and ad targeting. Co-op data (Bombora) is shared across competitors. Account-level signals miss the contact dimension.',
       key_stats: [
-        { stat: '360M+ first-party contacts across 25M+ companies', source: 'pharosIQ' },
-        { stat: '650+ intent categories with scores from 1-99', source: 'pharosIQ' },
+        { stat: '125.3M first-party contacts (last 90 days) across 25M+ companies', source: 'pharosIQ' },
+        { stat: '8,756 intent categories with scores from 1-99', source: 'pharosIQ' },
         { stat: '3-6M intent signals generated per month', source: 'pharosIQ' },
         { stat: 'Data Infrastructure companies trade at 24.4x EBITDA', source: 'Finro Q4 2025' },
       ],
@@ -53,7 +53,7 @@ function buildProducts(): GtmProductSeed[] {
         { name: 'Contact-level intent', description: 'Contact records matched to intent topics showing which contacts at which accounts are in-market, not just which accounts are surging' },
         { name: 'First-party signals', description: 'Generated from pharosIQ\'s owned content ecosystem. Not a co-op. Not scraped.' },
         { name: 'Exclusive to each buyer', description: 'Signals are not shared across competitors like co-op models' },
-        { name: '650+ intent categories', description: 'Granular topic coverage across the full B2B buying landscape' },
+        { name: '8,756 intent categories', description: 'Granular topic coverage across the full B2B buying landscape' },
         { name: 'Flexible delivery', description: 'API, flat file, cloud delivery, or embedded OEM' },
         { name: 'Real-time scoring (1-99)', description: 'Weighted by content type, seniority, recency, and momentum' },
       ],
@@ -157,11 +157,11 @@ function buildProducts(): GtmProductSeed[] {
       problem_statement: 'Sales teams waste time on accounts that aren\'t in-market. Without surge signals, outreach is untargeted and conversion rates are low. By the time an account raises their hand, competitors are already engaged.',
       key_stats: [
         { stat: 'Updated weekly with ranked surge activity', source: 'pharosIQ' },
-        { stat: '650+ intent topics to monitor', source: 'pharosIQ' },
+        { stat: '8,756 intent topics to monitor', source: 'pharosIQ' },
       ],
       features: [
         { name: 'Weekly ranked lists', description: 'Companies ranked by surge intensity on your selected topics' },
-        { name: 'Topic selection', description: 'Choose from 650+ intent categories to monitor' },
+        { name: 'Topic selection', description: 'Choose from 8,756 intent categories to monitor' },
         { name: 'Surge scoring', description: 'Intensity scoring shows which accounts are heating up fastest' },
         { name: 'Historical trending', description: 'See surge patterns over time, not just snapshots' },
       ],
@@ -205,7 +205,7 @@ function buildProducts(): GtmProductSeed[] {
       problem_statement: 'Account teams know which companies they want to sell to, but don\'t know what those accounts are evaluating right now. Outreach is generic because there\'s no insight into current research behavior.',
       key_stats: [
         { stat: 'Real-time intent topic monitoring for named accounts', source: 'pharosIQ' },
-        { stat: '650+ intent categories tracked per account', source: 'pharosIQ' },
+        { stat: '8,756 intent categories tracked per account', source: 'pharosIQ' },
       ],
       features: [
         { name: 'Named account monitoring', description: 'Upload your target account list and see what they\'re researching' },
@@ -252,7 +252,7 @@ function buildProducts(): GtmProductSeed[] {
       value_prop: 'Upload your closed-won accounts. ICP Analyzer cross-references against pharosIQ\'s intent data to reveal which firmographic, technographic, and behavioral patterns your best customers share. Stop guessing at ICP. Let the data tell you.',
       problem_statement: 'Most companies define their ICP based on gut feel or a handful of deals. They target accounts that "look right" without data to validate. The result: wasted outreach on accounts that will never close.',
       key_stats: [
-        { stat: 'Built on 360M+ contact records and 650+ intent categories', source: 'pharosIQ' },
+        { stat: 'Built on 125.3M contact records (last 90 days) and 8,756 intent categories', source: 'pharosIQ' },
       ],
       features: [
         { name: 'Closed-won pattern matching', description: 'Upload your wins, we find the common signals' },
@@ -295,7 +295,7 @@ function buildProducts(): GtmProductSeed[] {
       name: 'Jobson Title Expansion Engine',
       category: 'data_products',
       tagline: 'Your audience lists are missing half the buyers',
-      value_prop: 'Feed it one job title, get back every real-world variation across LinkedIn, CRMs, job boards, and 12+ languages. Powered by 360M+ business contacts. Increases matched audience coverage by ~40%.',
+      value_prop: 'Feed it one job title, get back every real-world variation across LinkedIn, CRMs, job boards, and 12+ languages. Powered by 125.3M business contacts (last 90 days). Increases matched audience coverage by ~40%.',
       problem_statement: 'LinkedIn only recognizes 55% of job titles on its own platform. When you target "VP of Marketing," you miss 200+ real-world variations. There\'s no broad match, no fuzzy logic. You\'re either in the list or invisible.',
       key_stats: [
         { stat: 'LinkedIn only recognizes 55% of job titles on its platform', source: 'LinkedIn/pharosIQ analysis' },

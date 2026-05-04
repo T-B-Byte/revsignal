@@ -99,7 +99,7 @@ Source: "Will 'Boring' DaaS Escape the AI-Fueled Slaughter of SaaS?" (LinkedIn, 
 "Long-term defensibility is more likely to come from differentiated technology and domain expertise, with data a key fuel for both."
 — a16z, "The Empty Promise of Data Moats"
 
-**Rebuttal:** a16z is talking about generic data that can be scraped or bought. pharosIQ's data is first-party, permission-based, human-verified, collected over years, with 360M+ contacts and 650+ proprietary intent categories. That is the opposite of generic, replicable data.
+**Rebuttal:** a16z is talking about generic data that can be scraped or bought. pharosIQ's data is first-party, permission-based, human-verified, collected over years, with 125.3M contacts (last 90 days) and 8,756 proprietary intent categories. That is the opposite of generic, replicable data.
 
 ---
 

@@ -85,7 +85,7 @@ score: null
 | Data source | First-party | Shared co-op |
 | Signal level | Contact (the person) | Account (the company) |
 | Exclusivity | Exclusive to buyer | Shared across all members |
-| Categories | 650+ | ~8,000 (broad, shallow) |
+| Categories | 8,756 | ~8,000 (broad, shallow) |
 | Volume | 3-6M signals/month | Varies |
 
 **Talking Points:**
@@ -100,17 +100,17 @@ score: null
 
 ## Slide 5: The Asset
 
-**Headline:** 360M+ contacts. 650+ intent categories. Scored 1-99.
+**Headline:** 125.3M contacts (last 90 days). 8,756 intent categories. Scored 1-99.
 
 **Visual:** Data asset infographic.
 
 | Asset | Scale |
 |---|---|
-| Total contacts | 360M+ across 25M+ companies |
+| Total contacts | 125.3M (last 90 days) across 25M+ companies |
 | B2B inboxable | 50M |
 | Active engagers (90-day) | 1.5M |
 | Monthly signals | 3-6M |
-| Intent categories | 650+ |
+| Intent categories | 8,756 |
 | Intent score range | 1-99 (weighted by content, seniority, recency, momentum) |
 
 **Talking Points:**
@@ -120,7 +120,7 @@ score: null
 - Delivery: API, flat file, cloud, embedded/OEM
 
 **Speaker Notes:**
-"The scale matters. 270 million contacts, 650 intent categories, 3 to 6 million signals every month. And because it's first-party, the quality holds. These aren't scraped records decaying in a database — they're active signals from real engagement."
+"The scale matters. 125.3 million contacts (last 90 days), 8,756 intent categories, 3 to 6 million signals every month. And because it's first-party, the quality holds. These aren't scraped records decaying in a database — they're active signals from real engagement."
 
 ---
 

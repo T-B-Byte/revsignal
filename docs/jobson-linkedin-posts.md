@@ -5,8 +5,8 @@
 > records for the buyers you're missing, with intent signals showing they're
 > actively in-market."
 >
-> Weaves in pharosIQ data advantage: 360M+ verified contacts, first-party intent
-> from owned content properties, persona-level resolution, 650+ intent categories,
+> Weaves in pharosIQ data advantage: 125.3M verified contacts (last 90 days), first-party intent
+> from owned content properties, persona-level resolution, 8,756 intent categories,
 > 1.6M engaged contacts in 90-day rolling window.
 >
 > LinkedIn-native formatting: line breaks, arrows, no markdown bold/italic/headers.
@@ -69,7 +69,7 @@ Same budget. Same platform. Same targeting logic. The only thing missing is the 
 
 → 55% of titles are recognized by LinkedIn's taxonomy
 → 45% of your target audience is invisible to title-based campaigns
-→ The contacts at those accounts are findable (360M+ verified business contacts exist outside LinkedIn)
+→ The contacts at those accounts are findable (125.3M verified business contacts (last 90 days) exist outside LinkedIn)
 → Many of those contacts are showing active intent signals right now
 → 30%+ annual decay rate for B2B contact data
 
@@ -138,11 +138,11 @@ So we built something. You give it a job title. Any title. "VP of Marketing."
 
 It gives you back every real-world variation of that title. Across LinkedIn, CRMs, job boards, and 12+ languages. Hundreds of permutations that actually exist in the wild.
 
-Not guesses. Not AI hallucinations. Real title data from 360M+ verified business contacts.
+Not guesses. Not AI hallucinations. Real title data from 125.3M verified business contacts (last 90 days).
 
 But that's just the title layer.
 
-The real unlock: once you expand the titles, you can get the actual contact records (verified emails, direct dials) for people holding those titles at your target accounts. And you can see which of those contacts are showing first-party intent signals right now, across 650+ categories.
+The real unlock: once you expand the titles, you can get the actual contact records (verified emails, direct dials) for people holding those titles at your target accounts. And you can see which of those contacts are showing first-party intent signals right now, across 8,756 categories.
 
 Not bid-stream data. Not co-op data. First-party signals from owned content properties. Persona-level resolution: not just "Company X is surging," but "this specific VP at Company X is actively researching your category this month."
 
@@ -229,7 +229,7 @@ But here's the part nobody talks about: those missing leads aren't hypothetical.
 
 You're not just losing impressions. You're losing access to real buyers who are in-market today, because your title data can't find them and your intent data can't identify them by name.
 
-The standard fix (Job Function + Seniority) helps but loses precision. The actual fix is verified title data from 360M+ contacts, connected to first-party intent signals that resolve to the persona level, not just the account level.
+The standard fix (Job Function + Seniority) helps but loses precision. The actual fix is verified title data from 125.3M contacts (last 90 days), connected to first-party intent signals that resolve to the persona level, not just the account level.
 
 Title inflation is a symptom. Bad title data is the disease. And account-only intent data is the missed opportunity. Fix all three and the math changes completely.
 
@@ -358,7 +358,7 @@ When people add "AI," "Sr.," "Director," or "VP" to their LinkedIn titles withou
 
 **In outreach emails:** Add a line to the DemandScience or Metadata.io sequences: "Title inflation is making this worse every month. The 55% recognition rate is declining, not improving. And account-only intent data can't solve it because it never tells you WHO at the account is the real buyer."
 
-**In sales conversations:** "You're not just fighting title fragmentation. You're fighting title inflation. The gap between what titles say and what they mean is growing. That's why you need ground-truth data from 360M+ verified contacts, not self-reported LinkedIn data. And when you combine that with persona-level intent signals, you're not guessing who to call. You know."
+**In sales conversations:** "You're not just fighting title fragmentation. You're fighting title inflation. The gap between what titles say and what they mean is growing. That's why you need ground-truth data from 125.3M verified contacts (last 90 days), not self-reported LinkedIn data. And when you combine that with persona-level intent signals, you're not guessing who to call. You know."
 
 **In conference talks/demos:** Show a live example. Type "AI" into the title expansion engine. Show how many people have added it to titles in roles that have nothing to do with AI. Then show what REAL AI decision-maker titles look like. Then show the contacts behind those titles with active intent signals. Title expansion to contact delivery to buyer intent, all in one flow. The contrast is visceral.
 

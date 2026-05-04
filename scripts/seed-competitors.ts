@@ -159,7 +159,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'TechTarget (Informa)',
       category: 'pharosiq_advantage',
-      data_point: 'pharosIQ covers all B2B verticals with 650+ intent categories vs. TechTarget\'s tech-only focus. 360M+ contacts vs. 32M active buying group members. pharosIQ has stable leadership and growing revenue vs. TechTarget\'s declining revenue, massive layoffs, and post-merger turmoil. DaaS licensing flexibility (API, flat file, cloud) vs. Priority Engine platform lock-in. NOTE: TechTarget has legitimate first-party data from owned properties (similar to pharosIQ model), but they are operationally distracted and financially weakened. Restricted to account-level-only data per leakage risk.',
+      data_point: 'pharosIQ covers all B2B verticals with 8,756 intent categories vs. TechTarget\'s tech-only focus. 125.3M contacts (last 90 days) vs. 32M active buying group members. pharosIQ has stable leadership and growing revenue vs. TechTarget\'s declining revenue, massive layoffs, and post-merger turmoil. DaaS licensing flexibility (API, flat file, cloud) vs. Priority Engine platform lock-in. NOTE: TechTarget has legitimate first-party data from owned properties (similar to pharosIQ model), but they are operationally distracted and financially weakened. Restricted to account-level-only data per leakage risk.',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -243,7 +243,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'Intentsify',
       category: 'pharosiq_advantage',
-      data_point: 'pharosIQ generates first-party intent from owned content ecosystem vs. Intentsify\'s aggregated multi-source model. pharosIQ has 650+ intent categories from proprietary taxonomy vs. Intentsify\'s AI-classified topics from third-party content. pharosIQ delivers contact-level intent natively; Intentsify is account-level only (contact activation requires separate paid programs). pharosIQ sells raw data (DaaS licensing via API/flat file); Intentsify bundles data with managed services. Data provenance is cleaner and more auditable with single-source first-party data.',
+      data_point: 'pharosIQ generates first-party intent from owned content ecosystem vs. Intentsify\'s aggregated multi-source model. pharosIQ has 8,756 intent categories from proprietary taxonomy vs. Intentsify\'s AI-classified topics from third-party content. pharosIQ delivers contact-level intent natively; Intentsify is account-level only (contact activation requires separate paid programs). pharosIQ sells raw data (DaaS licensing via API/flat file); Intentsify bundles data with managed services. Data provenance is cleaner and more auditable with single-source first-party data.',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -311,7 +311,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'ProspectBase',
       category: 'weakness',
-      data_point: 'Founded 2024 with zero disclosed funding (bootstrapped from DemandScience exits). No significant press coverage or market validation. Ex-DemandScience origin raises questions about IP independence and data provenance. CommitSignal is hiring/growth signal data, not content-consumption intent, making it complementary not competitive to first-party intent. 100% in-house delivery model is expensive to scale and limits margins. Contact universe (238M) is smaller than pharosIQ (360M+).',
+      data_point: 'Founded 2024 with zero disclosed funding (bootstrapped from DemandScience exits). No significant press coverage or market validation. Ex-DemandScience origin raises questions about IP independence and data provenance. CommitSignal is hiring/growth signal data, not content-consumption intent, making it complementary not competitive to first-party intent. 100% in-house delivery model is expensive to scale and limits margins. Contact universe (238M) is smaller than pharosIQ (125.3M (last 90 days)).',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -319,7 +319,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'ProspectBase',
       category: 'pharosiq_advantage',
-      data_point: 'ProspectBase sells leads, not data. No DaaS/data licensing offering means zero overlap with pharosIQ\'s DaaS revenue line. pharosIQ\'s first-party content-consumption intent signals are fundamentally different from (and more valuable than) ProspectBase\'s hiring/growth signals. 360M+ contacts vs. 238M. pharosIQ has 650+ intent categories from owned content ecosystem; ProspectBase has no comparable first-party intent taxonomy.',
+      data_point: 'ProspectBase sells leads, not data. No DaaS/data licensing offering means zero overlap with pharosIQ\'s DaaS revenue line. pharosIQ\'s first-party content-consumption intent signals are fundamentally different from (and more valuable than) ProspectBase\'s hiring/growth signals. 125.3M contacts (last 90 days) vs. 238M. pharosIQ has 8,756 intent categories from owned content ecosystem; ProspectBase has no comparable first-party intent taxonomy.',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -369,7 +369,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'Anteriad',
       category: 'pharosiq_advantage',
-      data_point: 'pharosIQ generates first-party intent from a single owned content ecosystem with clear provenance. Anteriad aggregates 2,500+ sources including bidstream and third-party data (provenance is murkier). pharosIQ\'s 650+ categories are purpose-built from owned content; Anteriad\'s 8,000+ topics are aggregated from diverse sources with varying quality. Both have large contact universes (pharosIQ 360M+ vs. Anteriad 414M+), but pharosIQ\'s data is first-party with cleaner consent chain. Anteriad is a closer competitor than most because they actually sell data (listed on Datarade), not just leads.',
+      data_point: 'pharosIQ generates first-party intent from a single owned content ecosystem with clear provenance. Anteriad aggregates 2,500+ sources including bidstream and third-party data (provenance is murkier). pharosIQ\'s 8,756 categories are purpose-built from owned content; Anteriad\'s 8,000+ topics are aggregated from diverse sources with varying quality. Both have large contact universes (pharosIQ 125.3M (last 90 days) vs. Anteriad 414M+), but pharosIQ\'s data is first-party with cleaner consent chain. Anteriad is a closer competitor than most because they actually sell data (listed on Datarade), not just leads.',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -403,7 +403,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'DigitalZone',
       category: 'weakness',
-      data_point: 'Pricing described as high and not competitive (primary G2 complaint). Small bootstrapped company with no external funding, limiting R&D investment and scaling capacity. 120M contacts vs. pharosIQ\'s 360M+. India-heavy operations (350+ staff, significant delivery in India). No evidence of DaaS/data licensing capability. Sells leads through managed programs, not raw data feeds. Proprietary database claims are hard to verify (10+ years of curation, but what is the data provenance and consent chain?).',
+      data_point: 'Pricing described as high and not competitive (primary G2 complaint). Small bootstrapped company with no external funding, limiting R&D investment and scaling capacity. 120M contacts vs. pharosIQ\'s 125.3M (last 90 days). India-heavy operations (350+ staff, significant delivery in India). No evidence of DaaS/data licensing capability. Sells leads through managed programs, not raw data feeds. Proprietary database claims are hard to verify (10+ years of curation, but what is the data provenance and consent chain?).',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -411,7 +411,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'DigitalZone',
       category: 'pharosiq_advantage',
-      data_point: 'pharosIQ has 360M+ contacts vs. DigitalZone\'s 120M. pharosIQ generates first-party intent from owned content ecosystem with 650+ categories; DigitalZone\'s "Data Cloud" combines multiple sources with AI enrichment (less transparent provenance). pharosIQ sells raw data via DaaS licensing (API, flat file, cloud); DigitalZone sells leads through managed campaigns only. pharosIQ can power companies like DigitalZone as a data supplier.',
+      data_point: 'pharosIQ has 125.3M contacts (last 90 days) vs. DigitalZone\'s 120M. pharosIQ generates first-party intent from owned content ecosystem with 8,756 categories; DigitalZone\'s "Data Cloud" combines multiple sources with AI enrichment (less transparent provenance). pharosIQ sells raw data via DaaS licensing (API, flat file, cloud); DigitalZone sells leads through managed campaigns only. pharosIQ can power companies like DigitalZone as a data supplier.',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -453,7 +453,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'Madison Logic',
       category: 'pharosiq_advantage',
-      data_point: 'First-party owned data vs. rented Bombora co-op. Contact-level intent vs. account-level only. Exclusive signals (competitors cannot buy pharosIQ data) vs. zero exclusivity (all Bombora customers see same signals). 360M+ contacts and 650+ intent categories vs. no proprietary contact database or taxonomy. DaaS licensing (API, flat file, cloud) vs. activation-only model. No platform lock-in. NOTE: Madison Logic is also a potential pharosIQ DaaS CUSTOMER (account-level data only per leakage risk restriction). Sell as complement to Bombora, not replacement (Bombora CEO on their board).',
+      data_point: 'First-party owned data vs. rented Bombora co-op. Contact-level intent vs. account-level only. Exclusive signals (competitors cannot buy pharosIQ data) vs. zero exclusivity (all Bombora customers see same signals). 125.3M contacts (last 90 days) and 8,756 intent categories vs. no proprietary contact database or taxonomy. DaaS licensing (API, flat file, cloud) vs. activation-only model. No platform lock-in. NOTE: Madison Logic is also a potential pharosIQ DaaS CUSTOMER (account-level data only per leakage risk restriction). Sell as complement to Bombora, not replacement (Bombora CEO on their board).',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -503,7 +503,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'DemandScience',
       category: 'pharosiq_advantage',
-      data_point: 'pharosIQ is a data supplier; DemandScience is a services company that happens to have data. pharosIQ has 360M+ contacts vs. 70M. First-party content-consumption intent from owned ecosystem vs. acquired/third-party signals. 650+ intent categories vs. ContentIQ (new, unproven). Clean data provenance vs. four merged databases. DaaS licensing model (API, flat file, cloud) vs. managed services only. DemandScience is actually a potential DaaS CUSTOMER for pharosIQ, not just a competitor.',
+      data_point: 'pharosIQ is a data supplier; DemandScience is a services company that happens to have data. pharosIQ has 125.3M contacts (last 90 days) vs. 70M. First-party content-consumption intent from owned ecosystem vs. acquired/third-party signals. 8,756 intent categories vs. ContentIQ (new, unproven). Clean data provenance vs. four merged databases. DaaS licensing model (API, flat file, cloud) vs. managed services only. DemandScience is actually a potential DaaS CUSTOMER for pharosIQ, not just a competitor.',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -545,7 +545,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'DemandWorks Media',
       category: 'pharosiq_advantage',
-      data_point: 'DemandWorks sells leads, not data. Zero DaaS/data licensing capability. pharosIQ has 360M+ first-party contacts vs. DemandWorks\' 87M subscribers. pharosIQ owns its content ecosystem and generates proprietary intent signals across 650+ categories; DemandWorks layers third-party intent onto email delivery. pharosIQ can power platforms like DemandWorks as a data supplier.',
+      data_point: 'DemandWorks sells leads, not data. Zero DaaS/data licensing capability. pharosIQ has 125.3M first-party contacts (last 90 days) vs. DemandWorks\' 87M subscribers. pharosIQ owns its content ecosystem and generates proprietary intent signals across 8,756 categories; DemandWorks layers third-party intent onto email delivery. pharosIQ can power platforms like DemandWorks as a data supplier.',
       source: 'web_research',
       captured_date: capturedDate,
       user_id: userId,
@@ -597,7 +597,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'Intentsify',
       category: 'demand_gen',
-      data_point: 'March 2026: Salutary Data acquisition (Jan 2026) framed by analysts as solving the "last mile" problem: the gap between an intent signal and a verified human contact. Confirms core weakness: account-level only, had to BUY contact-level capability. Industry shifting to "declared intent over inferred behavior" as 2026-2030 trend (per @360MarTech). Intentsify\'s aggregated/inferred model is on the wrong side of that shift. pharosIQ\'s first-party content consumption signals ARE declared intent. G2: 4.4/5, 33 reviews. #1 complaint: expensive CPL limits volume. 2-3 week onboarding for new campaigns.',
+      data_point: 'March 2026: Salutary Data acquisition (Jan 2026) framed by analysts as solving the "last mile" problem: the gap between an intent signal and a verified human contact. Confirms core weakness: account-level only, had to BUY contact-level capability. Industry shifting to "declared intent over inferred behavior" as 2026-2030 trend (per @125.3M (last 90 days)arTech). Intentsify\'s aggregated/inferred model is on the wrong side of that shift. pharosIQ\'s first-party content consumption signals ARE declared intent. G2: 4.4/5, 33 reviews. #1 complaint: expensive CPL limits volume. 2-3 week onboarding for new campaigns.',
       source: 'web_research_mar2026',
       captured_date: capturedDate,
       user_id: userId,
@@ -637,7 +637,7 @@ function buildCompetitorData(userId: string): CompetitiveIntelRecord[] {
     {
       competitor: 'Industry Trend',
       category: 'market_shift',
-      data_point: 'March 2026: "Buying Group Syndication" emerging as the next battleground in demand gen. Anteriad (Forrester 5/5 Buying Group), DemandScience, DemandWorks, and DigitalZone all messaging around targeting 10+ stakeholders per deal simultaneously. TechTarget launched Priority Engine Demand for buying group identification. pharosIQ advantage: we show the ACTUAL people who consumed content from owned properties, not AI-assembled profiles guessed from aggregated data. Also: industry shifting from inferred intent to declared intent (2026-2030 trend per @360MarTech). pharosIQ\'s first-party content consumption signals are declared intent by definition.',
+      data_point: 'March 2026: "Buying Group Syndication" emerging as the next battleground in demand gen. Anteriad (Forrester 5/5 Buying Group), DemandScience, DemandWorks, and DigitalZone all messaging around targeting 10+ stakeholders per deal simultaneously. TechTarget launched Priority Engine Demand for buying group identification. pharosIQ advantage: we show the ACTUAL people who consumed content from owned properties, not AI-assembled profiles guessed from aggregated data. Also: industry shifting from inferred intent to declared intent (2026-2030 trend per @125.3M (last 90 days)arTech). pharosIQ\'s first-party content consumption signals are declared intent by definition.',
       source: 'web_research_mar2026',
       captured_date: capturedDate,
       user_id: userId,

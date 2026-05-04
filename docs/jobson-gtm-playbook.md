@@ -1,6 +1,6 @@
 # Jobson Title Expansion Engine: Go-to-Market Playbook
 
-> pharosIQ's title expansion API. Feed it one job title, get back every real-world variation across LinkedIn, CRMs, job boards, and 12+ languages. Powered by 360M+ business contacts. A standalone product and the gateway to pharosIQ's full DaaS tier stack.
+> pharosIQ's title expansion API. Feed it one job title, get back every real-world variation across LinkedIn, CRMs, job boards, and 12+ languages. Powered by 125.3M business contacts (last 90 days). A standalone product and the gateway to pharosIQ's full DaaS tier stack.
 
 ---
 
@@ -66,7 +66,7 @@ Every Jobson customer is a future Tier 3 or Tier 4 prospect. The title expansion
 
 Jobson is not just about fixing title data for audience targeting. It is about delivering **actual contacts** at surging accounts with the right titles.
 
-When you pair Jobson's title expansion with pharosIQ's 360M+ contact database and intent signals, you are not just helping campaigns reach more people. You are delivering the specific buyers the campaign should target.
+When you pair Jobson's title expansion with pharosIQ's 125.3M contact database (last 90 days) and intent signals, you are not just helping campaigns reach more people. You are delivering the specific buyers the campaign should target.
 
 The pitch evolves naturally:
 
@@ -84,7 +84,7 @@ These advantages apply across Jobson and the entire DaaS tier stack. Lead with t
 
 **Persona-level resolution.** Most intent data providers (Bombora, G2, TrustRadius) tell you "Salesforce is surging on data orchestration." pharosIQ tells you "a VP of Revenue Operations at Salesforce is surging on data orchestration." That is a fundamentally different product. Account-level intent requires guesswork about who to contact. Persona-level intent tells you exactly who.
 
-**650+ intent categories on 360M+ contacts.** The deepest intent taxonomy in B2B, resolved against the largest contact database. This is not a sample. This is the full picture.
+**8,756 intent categories on 125.3M contacts (last 90 days).** The deepest intent taxonomy in B2B, resolved against the largest contact database. This is not a sample. This is the full picture.
 
 **1.6M engaged contacts in a 90-day rolling window.** Not historical data. Not modeled propensity scores. These are real people who consumed real content on pharosIQ's owned properties in the last 90 days.
 
@@ -149,7 +149,7 @@ That is exactly what Jobson + pharosIQ's DaaS tiers deliver:
 **Why pharosIQ beats Bombora at Tier 1:**
 - Bombora uses data co-op signals (publishers pool anonymous browsing data). pharosIQ uses first-party signals from owned content properties.
 - Bombora is account-level only. pharosIQ resolves to persona-level at Tier 2 and contact-level at Tier 3.
-- Bombora cannot tell you who to call. pharosIQ can, because the signals come from 360M+ contacts on owned properties.
+- Bombora cannot tell you who to call. pharosIQ can, because the signals come from 125.3M contacts (last 90 days) on owned properties.
 
 **Use this angle with:** Anyone buying Bombora, G2, TrustRadius, or other account-level intent data. Every Bombora customer is a Tier 1 prospect. Every Tier 1 customer is a Tier 3 prospect. The wedge opens the door, the contact data closes it.
 
@@ -179,7 +179,7 @@ You know the account is surging. Your intent signals are firing. But when your c
 
 Jobson is a title expansion API that plugs into your existing workflow. One title in, every real-world variation out, including international translations. Your customers build better audiences without leaving your platform.
 
-The next step: embed pharosIQ's persona-level intent signals alongside the expanded titles. Your platform doesn't just show title variations. It shows which personas at which accounts are actively in-market, resolved from first-party signals across 360M+ contacts.
+The next step: embed pharosIQ's persona-level intent signals alongside the expanded titles. Your platform doesn't just show title variations. It shows which personas at which accounts are actively in-market, resolved from first-party signals across 125.3M contacts (last 90 days).
 
 **CTA:** Let's run a proof of concept against your existing title taxonomy. We'll show you the gap.
 
@@ -205,7 +205,7 @@ When you're ready to go further: pharosIQ can deliver the actual contacts with t
 
 Bombora tells you "Acme Corp is researching cloud security." Great. Now what? You go hunting for the right people. You search for CISOs and hope your database is current. You miss half the title variations. You waste a week building a contact list that's already stale.
 
-pharosIQ starts where Bombora stops. Our intent signals come from first-party content properties (not bid-stream, not co-op), resolve to specific buyer personas (not just accounts), and map to 360M+ contacts. We don't just tell you the company is surging. We tell you a VP of Cybersecurity and Risk at Acme Corp consumed three pieces of content on zero-trust architecture last week.
+pharosIQ starts where Bombora stops. Our intent signals come from first-party content properties (not bid-stream, not co-op), resolve to specific buyer personas (not just accounts), and map to 125.3M contacts (last 90 days). We don't just tell you the company is surging. We tell you a VP of Cybersecurity and Risk at Acme Corp consumed three pieces of content on zero-trust architecture last week.
 
 Pair that with Jobson's title expansion, and you have every variation of that buyer's title across every platform and language. Account-level intent becomes contact-level activation.
 
@@ -291,7 +291,7 @@ You give it a job title. Any title. "VP of Marketing."
 
 It gives you back every real-world variation of that title. Across LinkedIn, CRMs, job boards, and 12+ languages. Hundreds of permutations that actually exist in the wild.
 
-Not guesses. Not AI hallucinations. Real title data from 360M+ business contacts.
+Not guesses. Not AI hallucinations. Real title data from 125.3M business contacts (last 90 days).
 
 Why? Because the #1 reason B2B campaigns underperform isn't strategy, creative, or budget.
 
@@ -355,7 +355,7 @@ Quick question: when your team builds a target audience for a B2B campaign, how 
 
 Because LinkedIn only recognizes 55% of the titles on its own platform. "VP of Marketing" doesn't match "Vice President, Growth Marketing" or "VP Marketing & Demand Gen." There's no broad match.
 
-We built something that solves this. You give it one title, it returns every real-world variation from 360M+ contacts, including international translations.
+We built something that solves this. You give it one title, it returns every real-world variation from 125.3M contacts (last 90 days), including international translations.
 
 One of our early users expanded their LinkedIn matched audience by 40% just by adding the title variations they didn't know existed.
 
@@ -401,7 +401,7 @@ At $50K/year for the data, it pays for itself in the first campaign cycle.
 
 And here's the next question every agency asks after they see the expanded titles: "Can you tell me which of these people are at accounts that are actually in-market right now?"
 
-We can. pharosIQ tracks 650+ intent categories across 360M+ contacts. We know which accounts are surging, which personas are doing the research, and every title variation needed to reach them.
+We can. pharosIQ tracks 8,756 intent categories across 125.3M contacts (last 90 days). We know which accounts are surging, which personas are doing the research, and every title variation needed to reach them.
 
 That's the full stack: title expansion + intent signals + contact data. But it starts with the titles.
 
@@ -419,7 +419,7 @@ Subject: Title taxonomy for your B2B targeting
 
 Your platform uses job title as a core targeting parameter. The quality of that taxonomy directly determines campaign performance for your customers.
 
-We've built a title expansion engine on top of 360M+ business contacts. One title in, every real-world variation out, including translations across 12+ languages. It's an API call.
+We've built a title expansion engine on top of 125.3M business contacts (last 90 days). One title in, every real-world variation out, including translations across 12+ languages. It's an API call.
 
 A few platforms are already exploring embedding this into their audience building workflows. The result: larger matched audiences, higher campaign performance, stickier customers.
 
@@ -439,7 +439,7 @@ No algorithm fixes a target list that's missing half the buyers.
 
 We provide the title infrastructure layer. You provide the platform. Your customers get better results without changing anything about how they use your product.
 
-And when you're ready to go deeper: our parent data asset includes 360M+ contacts with persona-level intent signals across 650+ categories. Title expansion is the entry point. Contact-level intent data (Tier 4, OEM) is the destination.
+And when you're ready to go deeper: our parent data asset includes 125.3M contacts (last 90 days) with persona-level intent signals across 8,756 categories. Title expansion is the entry point. Contact-level intent data (Tier 4, OEM) is the destination.
 
 Happy to share a technical brief on the API integration. It's lightweight.
 
@@ -457,7 +457,7 @@ Most Bombora signals originate from a data co-op. Publishers share anonymous bro
 
 We take a different approach. pharosIQ owns the content properties that generate the signals. CONTENTgine and MRP are our networks, not third-party co-op members. When someone at Salesforce consumes content on data orchestration, we know because it happened on our property.
 
-The result: intent signals that resolve to specific buyer personas (not just accounts), backed by 360M+ contacts, across 650+ intent categories. 1.6M engaged contacts in a rolling 90-day window.
+The result: intent signals that resolve to specific buyer personas (not just accounts), backed by 125.3M contacts (last 90 days), across 8,756 intent categories. 1.6M engaged contacts in a rolling 90-day window.
 
 Worth a 20-minute comparison? I can show you how our signals stack against what you're getting today.
 
@@ -531,7 +531,7 @@ Happy to run a side-by-side on a handful of your target accounts. Same accounts,
 
 | Company | Product | Approach | Pricing | Jobson Advantage |
 |---------|---------|----------|---------|-----------------|
-| Textkernel | Skills Intelligence API | 4,500+ professions, 12,000+ skills, 300K+ synonyms. Deep learning normalization + ONET/ISCO mapping | Custom (add-on charges per normalization call) | Textkernel is HR/recruiting-focused. Jobson is built for B2B marketing audience use cases on 360M+ real contacts |
+| Textkernel | Skills Intelligence API | 4,500+ professions, 12,000+ skills, 300K+ synonyms. Deep learning normalization + ONET/ISCO mapping | Custom (add-on charges per normalization call) | Textkernel is HR/recruiting-focused. Jobson is built for B2B marketing audience use cases on 125.3M real contacts (last 90 days) |
 | People Data Labs | Job Title Enrichment API | Returns top 5 matching titles + relevant skills. Launched April 2025 as free Support API | Pro plan: 1,000 free credits/mo. Free plan: 10 credits/mo | PDL returns only 5 matches. Jobson returns hundreds of real-world variations including translations. PDL doesn't specialize in audience building |
 | Cleanlist | Smart Agents (AI job title normalization) | Semantic AI normalization, groups titles into seniority levels. Launched Jan 2026. Included free with Smart Agents | Included with Smart Agents subscription | Cleanlist normalizes (standardizes) titles. Jobson expands them (finds all variations). Different use case: Cleanlist cleans your CRM, Jobson builds your audience |
 | CareerBuilder | Job Parse & Normalize | Recruiting-focused title parsing from resumes/job postings | Enterprise pricing | HR-focused, not built for marketing/advertising audience building |
@@ -541,9 +541,9 @@ Happy to run a side-by-side on a handful of your target accounts. Same accounts,
 | Company | Product | Approach | Pricing | pharosIQ Tier 1 Advantage |
 |---------|---------|----------|---------|--------------------------|
 | Bombora | Company Surge | Data co-op model. 5,000+ B2B publishers share anonymous browsing data. Bombora aggregates into account-level surge scores. Industry standard for account-level intent. | $25K-$100K+/yr depending on volume and segments | First-party signals (owned properties) vs. co-op (aggregated third-party). Persona-level resolution at Tier 2 (Bombora is account-only). Path to contact-level at Tier 3/4 (Bombora cannot deliver contacts). |
-| G2 | Buyer Intent | Intent signals from G2 review site traffic. Limited to software categories where G2 has review coverage. | Bundled with G2 seller plans ($15K-$50K+/yr) | G2 only captures intent from their review site. pharosIQ captures intent across owned content networks covering 650+ categories, not limited to software. |
+| G2 | Buyer Intent | Intent signals from G2 review site traffic. Limited to software categories where G2 has review coverage. | Bundled with G2 seller plans ($15K-$50K+/yr) | G2 only captures intent from their review site. pharosIQ captures intent across owned content networks covering 8,756 categories, not limited to software. |
 | TrustRadius | Buyer Intent | Similar to G2, intent from review site. Smaller publisher footprint. | Bundled with TrustRadius vendor plans | Same limitation as G2: single-site intent. pharosIQ's multi-property content network provides broader, deeper signal coverage. |
-| TechTarget | Priority Engine | Intent from TechTarget's owned media properties. Strong in IT/enterprise tech categories. Account-level and contact-level options. | Premium pricing ($50K-$200K+/yr) | TechTarget has strong IT coverage but limited outside technology. pharosIQ's 650+ categories span all B2B verticals. First-party signal quality is comparable, but pharosIQ has broader category coverage and 360M+ contacts. |
+| TechTarget | Priority Engine | Intent from TechTarget's owned media properties. Strong in IT/enterprise tech categories. Account-level and contact-level options. | Premium pricing ($50K-$200K+/yr) | TechTarget has strong IT coverage but limited outside technology. pharosIQ's 8,756 categories span all B2B verticals. First-party signal quality is comparable, but pharosIQ has broader category coverage and 125.3M contacts (last 90 days). |
 
 ### Why Jobson + pharosIQ Stacks Above All of Them
 
@@ -553,13 +553,13 @@ No competitor offers title expansion + account intent + persona intent + contact
 |------------|---------|----|-----------|-----------------------------|
 | Account-level intent | Yes (co-op) | Yes (single-site) | Yes (owned media) | Yes (first-party, owned media) |
 | Persona-level intent | No | No | Limited | Yes (Tier 2+) |
-| Contact-level intent | No | No | Yes (limited categories) | Yes (Tier 3/4, 360M+ contacts) |
+| Contact-level intent | No | No | Yes (limited categories) | Yes (Tier 3/4, 125.3M contacts (last 90 days)) |
 | Title expansion | No | No | No | Yes (Jobson, 200+ variations per title) |
-| Intent categories | ~8,000 topics | Software categories only | IT/enterprise tech | 650+ B2B categories |
+| Intent categories | ~8,000 topics | Software categories only | IT/enterprise tech | 8,756 B2B categories |
 | Signal source | Data co-op (third-party) | Review site traffic | Owned media (IT-focused) | Owned media (CONTENTgine + MRP, all B2B) |
 | 90-day engaged contacts | N/A | N/A | Not disclosed | 1.6M |
 
-**Jobson's structural advantage:** Built on pharosIQ's 360M+ real business contacts, not synthetic NLP models. Every title variation comes from an actual person's actual profile. This is ground truth, not inference.
+**Jobson's structural advantage:** Built on pharosIQ's 125.3M real business contacts (last 90 days), not synthetic NLP models. Every title variation comes from an actual person's actual profile. This is ground truth, not inference.
 
 **Key competitive distinction to lead with:** Cleanlist and PDL *normalize* (collapse messy titles into standard buckets). Jobson *expands* (takes one standard title and finds every real-world variation). These are opposite directions. Normalization cleans your database. Expansion builds your audience. Jobson does what nobody else does.
 

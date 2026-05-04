@@ -54,7 +54,7 @@ Additional formatting rules:
 - Short paragraphs. 2-3 sentences max per paragraph.
 
 Product context:
-- pharosIQ's proprietary first-party intent data (360M+ contacts, 650+ intent categories)
+- pharosIQ's proprietary first-party intent data (125.3M contacts (last 90 days), 8,756 intent categories)
 - Delivery: API, flat file, cloud delivery, platform integration, or embedded/OEM
 - Key differentiators: first-party (not co-op), contact-level (not account-level), permission-based
 
@@ -117,7 +117,7 @@ Tina's voice rules (MANDATORY — these override everything else):
 - LinkedIn tone is slightly more conversational than email — but still sharp and professional.
 
 Product context:
-- pharosIQ's proprietary first-party intent data (360M+ contacts, 650+ intent categories)
+- pharosIQ's proprietary first-party intent data (125.3M contacts (last 90 days), 8,756 intent categories)
 - Delivery: API, flat file, cloud delivery, platform integration, or embedded/OEM
 - Key differentiators: first-party (not co-op), contact-level (not account-level), permission-based
 

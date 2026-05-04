@@ -11,12 +11,12 @@
 
 **Tagline:** First-party signals. Contact-level precision. Zero guesswork.
 
-**Elevator Pitch:** Most intent data is modeled from bid-stream scraps or recycled from shared databases. Your team knows the difference, and so do your buyers. Surge Data delivers first-party buyer-level intelligence from 360M+ contacts across 650+ research categories, captured from owned content properties. Every signal is traceable to real buyer behavior. Five additive tiers let you license exactly the intelligence layer you need, from account-level signals to full behavioral fingerprints.
+**Elevator Pitch:** Most intent data is modeled from bid-stream scraps or recycled from shared databases. Your team knows the difference, and so do your buyers. Surge Data delivers first-party buyer-level intelligence from 125.3M contacts (last 90 days) across 8,756 research categories, captured from owned content properties. Every signal is traceable to real buyer behavior. Five additive tiers let you license exactly the intelligence layer you need, from account-level signals to full behavioral fingerprints.
 
 **Feature Callouts:**
 - **First-party sourced:** Every signal traced to real engagement on owned content properties. Not co-op. Not bid-stream.
 - **Contact-level precision:** Know WHO is researching, not just which company showed activity
-- **360M+ contacts, 650+ research categories:** Buyer-level intelligence across the full B2B landscape
+- **125.3M contacts (last 90 days), 8,756 research categories:** Buyer-level intelligence across the full B2B landscape
 - **1.6M engaged contacts** in a 90-day rolling window, verified through direct content interaction
 - **Five additive tiers:** License account-level signals or go all the way to full behavioral fingerprints
 - **Permission-based, contractually protected:** Clean data with documented provenance
@@ -34,7 +34,7 @@
 - **Weekly refresh** matched to your target account list, delivered with full topic-level detail
 - **First-party signals:** Sourced from owned content properties. Not modeled. Not shared.
 - **Starts at 5K accounts, scales to 50K+:** Sized for your pipeline, not ours
-- **650+ research categories:** Granular topic-level visibility into what buyers are researching
+- **8,756 research categories:** Granular topic-level visibility into what buyers are researching
 - **Bundles with Surge Dossiers** for instant account activation (signals tell you WHO, dossiers tell you HOW)
 - **Transparent sourcing:** See exactly where each signal comes from
 
@@ -45,10 +45,10 @@
 
 **Tagline:** One title in. Every variation out.
 
-**Elevator Pitch:** LinkedIn only recognizes 55% of job titles on its own platform. When you target "VP of Marketing," you miss 200+ real-world variations. That's half your buying committee invisible to your campaigns. Surge Title Expansion maps every documented variation of a job title from 360M+ contacts: abbreviations, international translations, hybrid roles, industry-specific naming. Plug it into your existing targeting stack and watch match rates climb from ~40% to 70%+.
+**Elevator Pitch:** LinkedIn only recognizes 55% of job titles on its own platform. When you target "VP of Marketing," you miss 200+ real-world variations. That's half your buying committee invisible to your campaigns. Surge Title Expansion maps every documented variation of a job title from 125.3M contacts (last 90 days): abbreviations, international translations, hybrid roles, industry-specific naming. Plug it into your existing targeting stack and watch match rates climb from ~40% to 70%+.
 
 **Feature Callouts:**
-- **360M+ contacts** powering title resolution with verified, real-world job title data
+- **125.3M contacts (last 90 days)** powering title resolution with verified, real-world job title data
 - **International translations** and localized variations across global markets
 - **API-first:** Plug into your existing targeting stack with zero migration overhead
 - **Documented match rate lift** from ~40% to 70%+, measurable from day one

@@ -9,7 +9,7 @@
 
 **What we're building**
 
-A stack of data products that turn our first-party intent signals and 360M+ contact universe into licensed, self-service, and embedded revenue lines.
+A stack of data products that turn our first-party intent signals and 125.3M contact universe (last 90 days) into licensed, self-service, and embedded revenue lines.
 
 **Why it matters**
 

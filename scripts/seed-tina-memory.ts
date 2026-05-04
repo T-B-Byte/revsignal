@@ -258,7 +258,7 @@ function buildNotes(): NoteSeed[] {
       category: "institutional_context",
       title: "pharosIQ Product Suite (Full Stack)",
       content:
-        "pharosIQ is NOT just a signal/data provider. They own signal AND activation: IQsyndicate (content syndication), IQengage (interactive display/Vyde), IQconnect (full-funnel lead gen + direct mail), IQconvert (confirmed buyer opportunities/SQLs), IQdirect (physical mail), IQevents (custom B2B events), IQappend (mobile phone data append), atlasIQ (free intent data, freemium entry), Channel marketing (partner/channel GTM). 360M+ contacts, 650+ intent categories. This is the moat: owning both signal generation AND activation. Nobody else does both.",
+        "pharosIQ is NOT just a signal/data provider. They own signal AND activation: IQsyndicate (content syndication), IQengage (interactive display/Vyde), IQconnect (full-funnel lead gen + direct mail), IQconvert (confirmed buyer opportunities/SQLs), IQdirect (physical mail), IQevents (custom B2B events), IQappend (mobile phone data append), atlasIQ (free intent data, freemium entry), Channel marketing (partner/channel GTM). 125.3M contacts (last 90 days), 8,756 intent categories. This is the moat: owning both signal generation AND activation. Nobody else does both.",
       source: "week1_meetings",
       tags: ["products", "moat", "foundational"],
     },
@@ -284,7 +284,7 @@ function buildNotes(): NoteSeed[] {
       category: "institutional_context",
       title: "Data Asset: The Numbers",
       content:
-        "300M total contacts, 50M B2B inboxable, 17M email openers, 1.5M active engagers (90-day window). 3-6M monthly signals, majority tied to a contact. 650+ intent categories. All contacts US-based. Weekly signal generation: 5M emails sent, 240K unique content clicks, 530K total clicks. contentree.com = signal collection platform. AtlasIQ = signal visibility layer.",
+        "125.3M contacts (last 90 days), 50M B2B inboxable, 17M email openers, 1.5M active engagers (90-day window). 3-6M monthly signals, majority tied to a contact. 8,756 intent categories. All contacts US-based. Weekly signal generation: 5M emails sent, 240K unique content clicks, 530K total clicks. contentree.com = signal collection platform. AtlasIQ = signal visibility layer.",
       source: "ben_luck_day1_tim_ribich",
       tags: ["data-asset", "scale", "numbers"],
     },
@@ -334,7 +334,7 @@ function buildNotes(): NoteSeed[] {
       category: "competitive_insight",
       title: "TechTarget: Positioning",
       content:
-        "TechTarget does offer contact-level data (Priority Engine, 32M contacts). But locked inside their platform. pharosIQ delivers 360M+ as an open feed. TechTarget weakness per Tim Ribich: 'Majority of their traffic is to a What-is page. Could be an intern. What is the real intent?' Beat them on: scale (360M vs 32M), delivery flexibility (open feed vs locked platform), content quality (case studies vs What-is pages).",
+        "TechTarget does offer contact-level data (Priority Engine, 32M contacts). But locked inside their platform. pharosIQ delivers 125.3M (last 90 days) as an open feed. TechTarget weakness per Tim Ribich: 'Majority of their traffic is to a What-is page. Could be an intern. What is the real intent?' Beat them on: scale (125.3M (last 90 days) vs 32M), delivery flexibility (open feed vs locked platform), content quality (case studies vs What-is pages).",
       source: "tim_ribich_competitive_analysis",
       tags: ["techtarget", "competitor", "positioning"],
     },

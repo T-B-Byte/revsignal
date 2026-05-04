@@ -27,7 +27,7 @@ These are the companies whose products depend on knowing which buyer personas ar
 
 | Company | Why They Need pharosIQ | Contact | Title | Why This Person |
 |---------|----------------------|---------|-------|-----------------|
-| **Demandbase** | Buying Groups AI auto-builds committees from 150M contacts. pharosIQ has 360M+. Title expansion fills gaps their AI can't see. Forrester Leader 2026. | **Vanessa Willett** | VP of Ecosystems | Runs data partnerships. Announced Informa TechTarget integration. This is her job. Also try **Rachel Truair** (CMO) for product marketing angle. |
+| **Demandbase** | Buying Groups AI auto-builds committees from 150M contacts. pharosIQ has 125.3M (last 90 days). Title expansion fills gaps their AI can't see. Forrester Leader 2026. | **Vanessa Willett** | VP of Ecosystems | Runs data partnerships. Announced Informa TechTarget integration. This is her job. Also try **Rachel Truair** (CMO) for product marketing angle. |
 | **6sense** | No dedicated buying group product. Account-level intent only. Biggest contact-level gap in the market. New CEO looking for quick wins. | **Chris Ball** | CEO | New CEO (ex-Instructure). Fresh strategic priorities. Also try **Tim O'Neil** (CSO, ex-ThoughtSpot/Alation) or **Amir Ravandoust** (COO, ex-Alteryx). |
 
 ### Tier 3: B2B DSPs & Enrichment Platforms (OEM/Embed)
@@ -35,7 +35,7 @@ These are the companies whose products depend on knowing which buyer personas ar
 | Company | Why They Need pharosIQ | Contact | Title | Why This Person |
 |---------|----------------------|---------|-------|-----------------|
 | **StackAdapt** | Fastest-growing B2B DSP. Just expanded ABM ecosystem with Bombora, Lead Forensics, Leadspace integrations. Actively adding data partners. | **Michael Shang** | SVP Advertising Technologies | Oversees data and technology strategy. Also check for Director, Data Partnerships (they were hiring for this role). |
-| **Clay** | Clay Ads launched. 60-70% match rates. But Clay enriches existing contacts, it doesn't discover new ones. pharosIQ's 360M+ contacts = bigger starting pool. | **Varun Anand** | Co-Founder & Head of Ops | Co-founder, COO. $1.25B valuation. Also **Kareem Amin** (CEO & Co-Founder). |
+| **Clay** | Clay Ads launched. 60-70% match rates. But Clay enriches existing contacts, it doesn't discover new ones. pharosIQ's 125.3M contacts (last 90 days) = bigger starting pool. | **Varun Anand** | Co-Founder & Head of Ops | Co-founder, COO. $1.25B valuation. Also **Kareem Amin** (CEO & Co-Founder). |
 
 ### Tier 4: Companies Already in Jobson Playbook (Now With Contact-Level Angle)
 
@@ -61,7 +61,7 @@ But here's the dependency: your customers can only target the right personas if 
 
 When a marketing team targets "VP of Marketing," they're guessing. They don't know if that persona at that account is actively researching their category right now, or which intent topics are driving the evaluation.
 
-We track 650+ intent categories across millions of accounts and resolve signals to specific buyer personas, not just account-level. Our title expansion engine then maps each persona to every real-world title variation (200+ per seed title, 12+ languages).
+We track 8,756 intent categories across millions of accounts and resolve signals to specific buyer personas, not just account-level. Our title expansion engine then maps each persona to every real-world title variation (200+ per seed title, 12+ languages).
 
 The combination tells your customers: which personas at which accounts are researching which topics right now, and every title variation needed to reach them.
 
@@ -103,7 +103,7 @@ Everyone is investing in activation. Nobody is investing in the intelligence lay
 
 Your platform already does activation well. The question is: does your data layer tell your customers which buyer personas are actively in-market and what topics are driving the evaluation?
 
-We provide that intelligence layer: 650+ intent categories resolved to specific buyer personas, plus title expansion that turns one seed title into every real-world variation. Your customers bring their own contacts. We tell them which personas to prioritize and why.
+We provide that intelligence layer: 8,756 intent categories resolved to specific buyer personas, plus title expansion that turns one seed title into every real-world variation. Your customers bring their own contacts. We tell them which personas to prioritize and why.
 
 If you're thinking about data partnerships for 2026, this is worth 15 minutes. If the timing isn't right, no worries.
 
@@ -114,13 +114,13 @@ If you're thinking about data partnerships for 2026, this is worth 15 minutes. I
 
 ### Email 1: The Gap in Buying Group Coverage
 
-Subject: 360M contacts vs. 150M
+Subject: 125.3M contacts (last 90 days) vs. 150M
 
 Your Buying Groups AI builds committees faster than any human could. But AI can only map contacts it knows about.
 
 Your Buying Groups AI can only map personas it has data on. When a committee includes a role with non-standard title variations, or buyers in non-English-speaking markets, those gaps show up as incomplete committees.
 
-We provide two things that fill those gaps: persona-level intent intelligence (which buyer personas at which accounts are actively researching which topics, across 650+ categories) and a title expansion engine that maps one job title to every real-world variation across 12+ languages.
+We provide two things that fill those gaps: persona-level intent intelligence (which buyer personas at which accounts are actively researching which topics, across 8,756 categories) and a title expansion engine that maps one job title to every real-world variation across 12+ languages.
 
 Your AI builds the committee. Our data tells you which personas are in-market and every title variation needed to find them. This isn't a competitive play. It's an intelligence partnership that makes Buying Groups more complete.
 
@@ -138,7 +138,7 @@ The question your customers ask next: "Who at those accounts should I contact?"
 
 Most buying committees have 11 to 13 stakeholders. If your title taxonomy covers 55% of real title variations, your customers are missing nearly half the personas they need to influence.
 
-We've built two things for this: a title expansion engine (one title in, every permutation out, from 360M+ verified records) and persona-level intent signals that tell you which buyer personas at those accounts are actively researching and what topics are driving the evaluation. Not just "this account is surging." Which personas, which topics, right now.
+We've built two things for this: a title expansion engine (one title in, every permutation out, from 125.3M (last 90 days) verified records) and persona-level intent signals that tell you which buyer personas at those accounts are actively researching and what topics are driving the evaluation. Not just "this account is surging." Which personas, which topics, right now.
 
 Companies layering persona-level intelligence on top of account-level intent are seeing 74% higher meeting conversion. That's a retention story for your platform.
 
@@ -169,7 +169,7 @@ Your platform is doing something important for B2B advertising. The recent momen
 
 One piece of the puzzle that keeps coming up in conversations I'm having: title data quality. When a customer builds a B2B audience targeting "Director of IT," they get the contacts that match that exact string. They miss "IT Director," "Director, Information Technology," "Head of IT," and 150+ other variations of the same buyer.
 
-We've built a title expansion engine on 360M+ first-party contacts. One title in, every real-world variation out. It's an API call.
+We've built a title expansion engine on 125.3M first-party contacts (last 90 days). One title in, every real-world variation out. It's an API call.
 
 A few platforms are exploring embedding this into their audience workflows. Would be worth a conversation to see if there's alignment.
 
@@ -185,7 +185,7 @@ But match rates only measure whether you can reach the contacts you already know
 
 Title expansion solves the upstream problem. Before you enrich, before you match, before you deliver an ad: are you starting with the full buying committee?
 
-Our data covers 360M+ contacts with title resolution across 12+ languages. When your customers start with a more complete contact list, everything downstream (enrichment, matching, ad delivery) performs better.
+Our data covers 125.3M contacts (last 90 days) with title resolution across 12+ languages. When your customers start with a more complete contact list, everything downstream (enrichment, matching, ad delivery) performs better.
 
 Happy to run a proof of concept against your existing title taxonomy if useful.
 
@@ -239,7 +239,7 @@ Start with the companies where pharosIQ's data fills the clearest gap:
 
 1. **Influ2** (Dmitri Lisitski, CEO) — their product literally targets named individuals. Title expansion = direct product quality improvement.
 2. **StackAdapt** (Michael Shang, SVP Ad Tech) — actively building data partnerships. Just integrated Bombora, Lead Forensics, Leadspace. Adding pharosIQ is a natural next step.
-3. **Demandbase** (Vanessa Willett, VP Ecosystems) — Buying Groups AI needs more contacts. 150M vs. 360M+ is a clear pitch.
+3. **Demandbase** (Vanessa Willett, VP Ecosystems) — Buying Groups AI needs more contacts. 150M vs. 125.3M (last 90 days) is a clear pitch.
 4. **Metadata.io** (Gil Allouche, CEO) — title is their primary targeting lever. Accessible founder.
 5. **6sense** (Chris Ball, CEO) — biggest gap (no buying group product). New CEO looking for quick wins.
 6. **Clay** (Varun Anand, COO) — Clay Ads momentum. pharosIQ data gives their enrichment a bigger starting pool.

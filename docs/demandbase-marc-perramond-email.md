@@ -10,7 +10,7 @@ Hi Marc,
 
 Congrats on the Demandbase AI launch and the Marketbridge partnership.
 
-Buying Group AI at enterprise scale runs on contact depth. pharosIQ sits on 360M+ first-party contacts and 650 intent categories, with a production-ready API (Jobson). Contact-level enterprise supply is on the table for the right partner.
+Buying Group AI at enterprise scale runs on contact depth. pharosIQ sits on 125.3M first-party contacts (last 90 days) and 8,756 intent categories, with a production-ready API (Jobson). Contact-level enterprise supply is on the table for the right partner.
 
 Curious how you're thinking about data supply as Context Intelligence scales. 45 minutes next week for a technical overview and match-rate conversation?
 

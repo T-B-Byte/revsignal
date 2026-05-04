@@ -25,15 +25,15 @@
 
 ### Email 1: The Data Stack
 
-Subject: First-party intent signals on 360M+ contacts
+Subject: First-party intent signals on 125.3M contacts (last 90 days)
 
 I've been watching DemandScience's data strategy: the Terminus merger, the Bound and DemandJump acquisitions, the Ionic/Labs/Central launch in January. You're building a buyer intelligence platform, not just a lead gen operation.
 
 Here's something that would accelerate what you're building. Three data layers:
 
-1. Title expansion: an API that expands any job title into every real-world variation from 360M+ business contacts. One title in, hundreds of permutations out, including international translations. Not NLP guesses. Actual titles from actual people.
-2. Contact data: 360M+ B2B contacts with persona-level resolution. Not just account-level signals, the actual buyers.
-3. First-party intent signals: 650+ intent categories from owned content properties (not bid-stream), with 1.6M engaged contacts in a 90-day rolling window.
+1. Title expansion: an API that expands any job title into every real-world variation from 125.3M business contacts (last 90 days). One title in, hundreds of permutations out, including international translations. Not NLP guesses. Actual titles from actual people.
+2. Contact data: 125.3M B2B contacts (last 90 days) with persona-level resolution. Not just account-level signals, the actual buyers.
+3. First-party intent signals: 8,756 intent categories from owned content properties (not bid-stream), with 1.6M engaged contacts in a 90-day rolling window.
 
 Your clients don't just get tighter persona targeting. They get the actual buyers at surging accounts, delivered with the right titles.
 
@@ -94,8 +94,8 @@ Here's something relevant to Pipeline360's lead routing business: when a buyer s
 
 We solve both problems:
 
-1. Title expansion: an API built on 360M+ business contacts. One title in, every real-world variation out. Plug it into the matching engine and lead acceptance rates go up immediately.
-2. Contact enrichment with intent: for every matched lead, we can tell you whether that account is surging on relevant intent signals right now. First-party data from owned properties, 650+ categories, persona-level resolution.
+1. Title expansion: an API built on 125.3M business contacts (last 90 days). One title in, every real-world variation out. Plug it into the matching engine and lead acceptance rates go up immediately.
+2. Contact enrichment with intent: for every matched lead, we can tell you whether that account is surging on relevant intent signals right now. First-party data from owned properties, 8,756 categories, persona-level resolution.
 
 The result: fewer rejections AND higher-quality leads that convert. Suppliers deliver better, buyers get better results, Pipeline360 gets credit for the match quality.
 
@@ -132,7 +132,7 @@ If better title matching cuts that rejection rate by 10 points (25% to 15%), tha
 
 Now add intent. If the leads that do get accepted are prioritized by buying propensity (because you know which accounts are surging on relevant intent signals), conversion rates go up. Buyers don't just get more accepted leads, they get leads that close.
 
-pharosIQ's first-party signals cover 650+ intent categories with 1.6M engaged contacts in a 90-day rolling window. That's not bid-stream inference. That's actual engagement on owned properties.
+pharosIQ's first-party signals cover 8,756 intent categories with 1.6M engaged contacts in a 90-day rolling window. That's not bid-stream inference. That's actual engagement on owned properties.
 
 Here's a sample of what title expansion returns for "VP of IT":
 
@@ -169,9 +169,9 @@ Quick question: when AdRoll ABM customers build a B2B audience and filter by job
 
 LinkedIn only recognizes 55% of titles on its platform. Every B2B ad platform that uses title as a targeting parameter has the same problem: customers type "VP of Marketing" and miss 200+ real variations of that title.
 
-We built an API that solves this. Feed it one title, get back every real-world variation from 360M+ business contacts. Embed it in the audience builder and customers get larger, more accurate audiences without changing how they use AdRoll ABM.
+We built an API that solves this. Feed it one title, get back every real-world variation from 125.3M business contacts (last 90 days). Embed it in the audience builder and customers get larger, more accurate audiences without changing how they use AdRoll ABM.
 
-But here's where it gets interesting: we can also deliver the actual contacts at accounts that are surging on intent right now. First-party signals from owned properties (not bid-stream), 650+ categories, persona-level resolution. Customers don't just build bigger audiences, they target the right accounts at the right time.
+But here's where it gets interesting: we can also deliver the actual contacts at accounts that are surging on intent right now. First-party signals from owned properties (not bid-stream), 8,756 categories, persona-level resolution. Customers don't just build bigger audiences, they target the right accounts at the right time.
 
 Would 20 minutes make sense to explore a data partnership?
 
@@ -186,7 +186,7 @@ In B2B advertising, when a customer complains "my audience is too small" or "I'm
 
 Title expansion fixes the first problem. Intent signals fix the second. Together, customers get better results without changing anything about how they use AdRoll ABM. That shows up in retention, not just performance metrics.
 
-pharosIQ's 360M+ contact database with 650+ intent categories and 1.6M engaged contacts in a rolling 90-day window gives you both layers. It's modular: start with titles, add contacts + intent when you're ready.
+pharosIQ's 125.3M contact database (last 90 days) with 8,756 intent categories and 1.6M engaged contacts in a rolling 90-day window gives you both layers. It's modular: start with titles, add contacts + intent when you're ready.
 
 Happy to share a technical brief. The title API is a single endpoint, straightforward to embed.
 
@@ -232,9 +232,9 @@ But normalization and expansion are two different problems. Normalization collap
 
 Normalization cleans your database. Expansion builds your audience.
 
-We built an expansion API on 360M+ business contacts. For any title, it returns every real-world variation, including international translations. It's the complement to what Leadspace already does, not a replacement.
+We built an expansion API on 125.3M business contacts (last 90 days). For any title, it returns every real-world variation, including international translations. It's the complement to what Leadspace already does, not a replacement.
 
-And here's where it gets strategic: that same 360M+ contact database includes first-party intent signals across 650+ categories. Leadspace customers don't just score leads by persona fit. They score by persona fit AND buying propensity. A "VP of Marketing" at an account surging on marketing automation intent is a fundamentally different lead than a "VP of Marketing" at a dormant account.
+And here's where it gets strategic: that same 125.3M contact database (last 90 days) includes first-party intent signals across 8,756 categories. Leadspace customers don't just score leads by persona fit. They score by persona fit AND buying propensity. A "VP of Marketing" at an account surging on marketing automation intent is a fundamentally different lead than a "VP of Marketing" at a dormant account.
 
 Would a 20-minute conversation make sense?
 
@@ -267,9 +267,9 @@ Quick note on how our data is different from inference-based approaches.
 
 People Data Labs returns the top 5 matching titles. Textkernel uses a taxonomy of 4,500 professions with synonyms. Both predict what similar titles might look like.
 
-We start from 360M+ actual business contact records. Every title variation in our engine comes from a real person's real profile. That's ground truth, not inference. The difference matters when you're scoring leads and building personas.
+We start from 125.3M (last 90 days) actual business contact records. Every title variation in our engine comes from a real person's real profile. That's ground truth, not inference. The difference matters when you're scoring leads and building personas.
 
-Same principle applies to our intent data. pharosIQ's signals come from first-party engagement on owned properties across 650+ categories. Not modeled. Not inferred from bid-stream. Actual engagement from actual people. That's the kind of signal that makes lead scoring predictive instead of probabilistic.
+Same principle applies to our intent data. pharosIQ's signals come from first-party engagement on owned properties across 8,756 categories. Not modeled. Not inferred from bid-stream. Actual engagement from actual people. That's the kind of signal that makes lead scoring predictive instead of probabilistic.
 
 The title expansion API is $50K/year standalone. But the real value for a CDP like Leadspace is the full data stack: titles + contacts + intent. That's the conversation I'd like to have.
 
@@ -297,11 +297,11 @@ MetaMatch is the best identity graph for B2B campaign automation. The patent is 
 
 Here's a gap worth exploring: when a customer defines a persona by title, MetaMatch can only match against titles it recognizes. LinkedIn only understands 55% of titles on its platform. Even with a proprietary graph, title fragmentation limits audience coverage.
 
-We built an API that expands any title into every real-world variation from 360M+ contacts. Feed it "VP of Marketing," get back 200+ permutations including international translations.
+We built an API that expands any title into every real-world variation from 125.3M contacts (last 90 days). Feed it "VP of Marketing," get back 200+ permutations including international translations.
 
 Plug it into MetaMatch and customers' audiences get larger and more precise. Their campaigns perform better. They attribute that to Metadata.
 
-But here's the bigger play: pharosIQ also delivers first-party intent signals across 650+ categories, with persona-level resolution on 360M+ contacts. Customers don't just build bigger audiences. They target accounts that are actively in-market right now. 1.6M engaged contacts in a 90-day rolling window, from owned properties (not bid-stream).
+But here's the bigger play: pharosIQ also delivers first-party intent signals across 8,756 categories, with persona-level resolution on 125.3M contacts (last 90 days). Customers don't just build bigger audiences. They target accounts that are actively in-market right now. 1.6M engaged contacts in a 90-day rolling window, from owned properties (not bid-stream).
 
 Would 15 minutes work to explore this?
 
@@ -318,7 +318,7 @@ What if an agent could automatically expand a customer's target persona into eve
 
 No manual title list building. No blind targeting. No missed buyers. The agent handles it.
 
-We have the APIs: title expansion (Jobson), contact data (360M+), and first-party intent signals (650+ categories). Metadata has the agent platform. The integration is modular.
+We have the APIs: title expansion (Jobson), contact data (125.3M (last 90 days)), and first-party intent signals (8,756 categories). Metadata has the agent platform. The integration is modular.
 
 Tina
 
@@ -362,9 +362,9 @@ HockeyStack's attribution is only as accurate as its persona mapping. When track
 
 But job titles fragment across companies. "VP of Marketing" at one account is "Head of Growth" at another. If persona mapping doesn't account for those variations, attribution gets noisy. You're tracking the journey of "unknown persona" instead of "marketing decision maker."
 
-We built an API that expands any title into every real-world variation from 360M+ contacts. Integrate it into persona mapping and customers get cleaner attribution with more complete buying committee coverage.
+We built an API that expands any title into every real-world variation from 125.3M contacts (last 90 days). Integrate it into persona mapping and customers get cleaner attribution with more complete buying committee coverage.
 
-And here's where it gets interesting for the GTM operating system you're building: pharosIQ's 360M+ contact database includes first-party intent signals across 650+ categories. Customers don't just see what happened. They see which accounts are surging on intent right now, and who the actual buyers are at those accounts.
+And here's where it gets interesting for the GTM operating system you're building: pharosIQ's 125.3M contact database (last 90 days) includes first-party intent signals across 8,756 categories. Customers don't just see what happened. They see which accounts are surging on intent right now, and who the actual buyers are at those accounts.
 
 Would a quick call make sense? I know you're building fast.
 
@@ -380,8 +380,8 @@ HockeyStack is building a GTM operating system with AI agents and an execution l
 Here's a full data layer for that execution layer:
 
 1. Title expansion: customer defines a persona, agent expands it into every real variation, audience builds itself with maximum coverage from day one.
-2. Contact data: 360M+ verified B2B contacts. Customers don't just know which accounts to target. They get the actual people.
-3. Intent signals: first-party data from owned properties (not bid-stream), 650+ categories, 1.6M engaged contacts in a 90-day rolling window. Customers know which accounts are actively buying.
+2. Contact data: 125.3M (last 90 days) verified B2B contacts. Customers don't just know which accounts to target. They get the actual people.
+3. Intent signals: first-party data from owned properties (not bid-stream), 8,756 categories, 1.6M engaged contacts in a 90-day rolling window. Customers know which accounts are actively buying.
 
 That's not a single data partnership. That's the data infrastructure for the entire execution layer. Customer says "show me who to target," and HockeyStack delivers the surging accounts, the right contacts at those accounts, with the right titles.
 
@@ -403,8 +403,8 @@ Blind targeting: Without intent signals, every account gets the same priority. B
 
 pharosIQ solves all three:
 → Title expansion API: any title into 200+ real variations
-→ 360M+ B2B contacts with persona-level resolution
-→ First-party intent signals across 650+ categories, 1.6M engaged contacts in a 90-day window
+→ 125.3M B2B contacts (last 90 days) with persona-level resolution
+→ First-party intent signals across 8,756 categories, 1.6M engaged contacts in a 90-day window
 
 The data problem he described has a specific fix. 15 minutes and I'll show the full stack.
 
@@ -478,6 +478,6 @@ All sequences follow these rules:
 Every sequence weaves in these differentiators where relevant:
 - First-party signals: from owned properties, not bid-stream data
 - Persona-level resolution: not just account-level, actual individual engagement
-- Scale: 650+ intent categories across 360M+ contacts
+- Scale: 8,756 intent categories across 125.3M contacts (last 90 days)
 - Recency: 1.6M engaged contacts in a rolling 90-day window
 - Modular entry: start with Jobson (title expansion, $50K/yr), expand to contacts + intent (Tier 3: $144K-$300K/yr) or full platform embed (Tier 4: $300K-$504K/yr)

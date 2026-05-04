@@ -93,7 +93,7 @@ function buildCompanies(): CompanySeed[] {
       slug: 'demandbase',
       name: 'Demandbase',
       description: 'ABM platform leader. Buying Groups AI auto-builds committees from 150M contacts. Forrester Leader 2026.',
-      why_they_need_us: 'Buying Groups AI needs more contacts (150M vs. 360M+). Title expansion fills gaps their AI can\'t see. First-party intent differentiates from co-op reliance.',
+      why_they_need_us: 'Buying Groups AI needs more contacts (150M vs. 125.3M (last 90 days)). Title expansion fills gaps their AI can\'t see. First-party intent differentiates from co-op reliance.',
       company_tier: 'tier_1',
       contacts: [
         { name: 'Vanessa Willett', title: 'VP of Ecosystems', why_this_person: 'Runs data partnerships. Announced Informa TechTarget integration. This is her job.' },
@@ -102,7 +102,7 @@ function buildCompanies(): CompanySeed[] {
       tags: ['abm_platform', 'buying_groups', 'forrester_leader', 'data_partnerships'],
       recommendations: [
         { product_slug: 'daas-signal-licensing', fit_strength: 'strong', custom_angle: 'First-party intent differentiates from competitors relying on Bombora co-op. Persona-level precision improves Buying Groups AI.', suggested_tier: 'Enterprise Platform' },
-        { product_slug: 'jobson-title-expansion', fit_strength: 'strong', custom_angle: '150M contacts vs 360M+. Title expansion fills buying committee gaps their AI surfaces but can\'t resolve.', suggested_tier: 'OEM Embed' },
+        { product_slug: 'jobson-title-expansion', fit_strength: 'strong', custom_angle: '150M contacts vs 125.3M (last 90 days). Title expansion fills buying committee gaps their AI surfaces but can\'t resolve.', suggested_tier: 'OEM Embed' },
       ],
     },
     {
@@ -194,7 +194,7 @@ function buildCompanies(): CompanySeed[] {
       slug: 'clay',
       name: 'Clay',
       description: 'Data orchestration platform chaining 75+ enrichment providers. Clay Ads launched: 60-70% match rates on Meta for B2B. $1.25B valuation.',
-      why_they_need_us: 'Clay enriches existing contacts but doesn\'t discover new ones. pharosIQ\'s 360M+ contacts = bigger starting pool. Title expansion adds value to their audience building.',
+      why_they_need_us: 'Clay enriches existing contacts but doesn\'t discover new ones. pharosIQ\'s 125.3M contacts (last 90 days) = bigger starting pool. Title expansion adds value to their audience building.',
       company_tier: 'tier_2',
       contacts: [
         { name: 'Varun Anand', title: 'Co-Founder & Head of Ops', why_this_person: 'COO path for data partnerships.' },

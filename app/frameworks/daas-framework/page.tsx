@@ -152,7 +152,7 @@ export default function DaasFrameworkPage() {
       {/* Data points */}
       <div className="mt-12 grid grid-cols-3 gap-6">
         <div className="border border-zinc-200 rounded-lg p-5 text-center">
-          <div className="text-2xl font-bold text-zinc-900">360M+</div>
+          <div className="text-2xl font-bold text-zinc-900">125.3M (last 90 days)</div>
           <div className="text-xs text-zinc-500 mt-1">Full contact universe</div>
         </div>
         <div className="border border-zinc-200 rounded-lg p-5 text-center">

@@ -30,7 +30,7 @@ The platforms that win in 2026 are the ones with proprietary data baked in. Not 
 
 ### What pharosIQ delivers
 
-**650+ intent categories. 3-6M signals per month.** Resolved to specific buyer personas, not just accounts. Built on 360M+ first-party contacts across 25M+ global companies.
+**8,756 intent categories. 3-6M signals per month.** Resolved to specific buyer personas, not just accounts. Built on 125.3M first-party contacts (last 90 days) across 25M+ global companies.
 
 This is first-party intelligence collected through our owned content ecosystem. Not a co-op. Not scraped. Not shared across your competitors.
 
@@ -40,7 +40,7 @@ This is first-party intelligence collected through our owned content ecosystem. 
 |---|---|
 | **Persona-level intent** | Your users know which buyer roles are researching, not just which company is surging |
 | **First-party signals** | Exclusive data your competitors can't buy from the same source |
-| **650+ intent categories** | Granular topic coverage across the full B2B buying landscape |
+| **8,756 intent categories** | Granular topic coverage across the full B2B buying landscape |
 | **Flexible delivery** | API, flat file, cloud delivery, or embedded OEM |
 | **Real-time scoring (1-99)** | Weighted by content type, seniority, recency, momentum |
 
@@ -79,7 +79,7 @@ Your platform either owns its intelligence layer or rents it from the same sourc
 | **Signal level** | Persona-level (which roles are in-market for which topics) | Account-level (which company is surging) |
 | **Exclusivity** | Exclusive to the buyer | Shared across all members |
 | **Signal volume** | 3-6M/month | Varies |
-| **Intent categories** | 650+ | ~8,000 (broad but shallow) |
+| **Intent categories** | 8,756 | ~8,000 (broad but shallow) |
 
 ---
 

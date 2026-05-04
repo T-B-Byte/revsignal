@@ -69,7 +69,7 @@ const customWhyUs = [
   {
     title: 'First-party signal, deterministic resolution',
     description:
-      '360M+ first-party contacts, 650+ intent categories. Every signal originates from owned content consumption, tied to a specific person at a specific account.',
+      '125.3M first-party contacts (last 90 days), 8,756 intent categories. Every signal originates from owned content consumption, tied to a specific person at a specific account.',
   },
   {
     title: 'Built to plug into the spine',

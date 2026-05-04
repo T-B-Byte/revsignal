@@ -14,7 +14,7 @@
 LinkedIn recognizes 55% of job titles. That means 45% of your target audience is invisible to title-based targeting. You're paying full price to reach roughly half your buyers.
 
 **Gap 2: Account-Level Ceiling (pharosIQ Contacts + Intent solves this)**
-Most intent data tells you "Company X is surging on cloud security." Great. But who at Company X? Bombora, G2, and TrustRadius give you the account. They can't give you the people. pharosIQ delivers the actual contact records (name, title, verified email) at surging accounts, with persona-level intent signals from first-party content properties (not bid-stream). 650+ intent categories. 360M+ contacts. 1.6M engaged contacts in any 90-day window.
+Most intent data tells you "Company X is surging on cloud security." Great. But who at Company X? Bombora, G2, and TrustRadius give you the account. They can't give you the people. pharosIQ delivers the actual contact records (name, title, verified email) at surging accounts, with persona-level intent signals from first-party content properties (not bid-stream). 8,756 intent categories. 125.3M contacts (last 90 days). 1.6M engaged contacts in any 90-day window.
 
 **Combined:** Your campaigns miss half the buyers (title gap) and treat every account equally (intent gap). Fix both and the math changes completely.
 

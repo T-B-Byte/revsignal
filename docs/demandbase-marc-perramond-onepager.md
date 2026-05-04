@@ -20,8 +20,8 @@ At enterprise scale, data supply becomes the bottleneck.
 
 | Asset | Scale | API |
 |---|---|---|
-| First-party B2B contacts | 360M+ | Jobson |
-| Intent signal categories | 650+ | Holmes |
+| First-party B2B contacts | 125.3M (last 90 days) | Jobson |
+| Intent signal categories | 8,756 | Holmes |
 | Target account lists | Custom TAL | Talison |
 | Content engagement signals | Proprietary | Holmes |
 
@@ -33,7 +33,7 @@ All signals are first-party sourced. Not syndicated. Not scraped.
 
 Agent-driven workflows fail silently when signal decay hits. First-party, consent-based data sustains match rates and keeps decay low, which is what Context Intelligence needs to scale without hallucination risk.
 
-The industry average is ~300 intent categories. pharosIQ delivers 650+, across both content engagement and research behavior.
+The industry average is ~300 intent categories. pharosIQ delivers 8,756, across both content engagement and research behavior.
 
 ---
 

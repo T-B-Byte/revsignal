@@ -39,8 +39,8 @@ I'm Tina. I'm joining pharosIQ as SVP, Data Monetization & Partnerships in March
 **The data asset:**
 - First-party, permission-based engagement signals (not scraped, not third-party co-op)
 - Contact-level intent (identifies WHO is engaging, not just which company)
-- 360M+ contacts across 25M+ global companies
-- 650+ product intent categories
+- 125.3M contacts (last 90 days) across 25M+ global companies
+- 8,756 product intent categories
 - Rooftop-level geographic precision
 - Down-funnel buying signals (content consumption, newsletter engagement)
 
@@ -252,7 +252,7 @@ This app needs to be wired into everything I use. Build real integrations, not j
 - Use Salesforce REST API (or Bulk API for initial data load)
 
 **pharosIQ Business Contacts Database (CRITICAL — this is the product I'm selling):**
-- **Read access to pharosIQ's contact and intent data store** — the 360M+ contacts, 650+ intent categories, and engagement signals that make up the DaaS product
+- **Read access to pharosIQ's contact and intent data store** — the 125.3M contacts (last 90 days), 8,756 intent categories, and engagement signals that make up the DaaS product
 - Use this to:
   - Build sample data files for prospects (e.g., "Here's 500 contacts showing IT decision-makers at mid-market companies researching cybersecurity tools")
   - Understand exactly what data fields, signal types, and categories are available so I can sell accurately
