@@ -474,6 +474,151 @@
       font-size: 11.5px; color: var(--gray-700); line-height: 1.5;
     }
 
+    /* Topic cloud (old-school) */
+    .topic-cloud {
+      background: var(--gray-50);
+      border: 1px solid var(--gray-200);
+      padding: 38px 32px;
+      text-align: center;
+      line-height: 1.9;
+      margin-bottom: 24px;
+    }
+    .topic-cloud span {
+      display: inline-block;
+      margin: 4px 9px;
+      font-weight: 700;
+      vertical-align: middle;
+    }
+    .topic-cloud .tc-xxl { font-size: 40px; color: var(--gray-900); letter-spacing: -1px; }
+    .topic-cloud .tc-xl  { font-size: 30px; color: var(--blue); letter-spacing: -0.5px; }
+    .topic-cloud .tc-l   { font-size: 24px; color: var(--gray-800); }
+    .topic-cloud .tc-m   { font-size: 19px; color: var(--gray-600); }
+    .topic-cloud .tc-s   { font-size: 15px; color: var(--gray-500); }
+    .topic-cloud .tc-xs  { font-size: 12.5px; color: var(--gray-400); font-weight: 500; }
+    .topic-cloud .tc-rot-l3 { transform: rotate(-3deg); }
+    .topic-cloud .tc-rot-l1 { transform: rotate(-1.5deg); }
+    .topic-cloud .tc-rot-r1 { transform: rotate(1.5deg); }
+    .topic-cloud .tc-rot-r3 { transform: rotate(3deg); }
+    .topic-cloud .tc-accent { color: #d97706; }
+    .topic-cloud .tc-gold { color: #b45309; }
+
+    /* DaaS definition block */
+    .daas-definition {
+      background: var(--navy);
+      color: #fff;
+      padding: 28px 32px;
+      margin-bottom: 12px;
+      position: relative;
+      overflow: hidden;
+    }
+    .daas-definition::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; bottom: 0;
+      width: 4px;
+      background: #fbbf24;
+    }
+    .daas-definition-eyebrow {
+      font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.5px;
+      color: #fbbf24; margin-bottom: 12px;
+    }
+    .daas-definition-body {
+      font-size: 17px; font-weight: 600; color: #fff; line-height: 1.5;
+      letter-spacing: -0.2px;
+    }
+    .daas-definition-body strong {
+      color: #fde68a;
+    }
+    .daas-definition-foot {
+      margin-top: 18px; padding-top: 16px;
+      border-top: 1px solid rgba(255,255,255,0.15);
+      font-size: 13px; color: #cbd5e1;
+    }
+    .daas-definition-foot strong {
+      color: #fbbf24; font-weight: 800;
+    }
+
+    /* Discovery questions (door section) */
+    .discovery-hero {
+      display: grid;
+      grid-template-columns: 220px 1fr;
+      gap: 32px;
+      align-items: center;
+      background: linear-gradient(135deg, #0f2a4a 0%, #1a3d6b 100%);
+      color: #fff;
+      padding: 32px 36px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+    }
+    @media (max-width: 800px) {
+      .discovery-hero { grid-template-columns: 1fr; gap: 18px; }
+      .door-svg { max-width: 180px; margin: 0 auto; }
+    }
+    .door-svg { width: 100%; height: auto; display: block; }
+    .discovery-hero-title {
+      font-size: 22px; font-weight: 800; color: #fff; margin-bottom: 8px; letter-spacing: -0.4px;
+    }
+    .discovery-hero-body {
+      font-size: 13.5px; color: #cbd5e1; line-height: 1.6;
+    }
+    .discovery-hero-body strong { color: #fbbf24; }
+
+    .cluster-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+    @media (max-width: 900px) {
+      .cluster-grid { grid-template-columns: 1fr; }
+    }
+    .cluster {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      border-top: 3px solid var(--blue);
+      padding: 18px 20px 20px;
+      display: flex;
+      flex-direction: column;
+    }
+    .cluster.c-stack { border-top-color: #2a5fa5; }
+    .cluster.c-pain  { border-top-color: #d97706; }
+    .cluster.c-build { border-top-color: #2d7a4f; }
+    .cluster-label {
+      font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px;
+      color: var(--gray-500); margin-bottom: 4px;
+    }
+    .cluster-title {
+      font-size: 14px; font-weight: 800; color: var(--gray-900); margin-bottom: 14px;
+      letter-spacing: -0.2px;
+    }
+    .cluster-question {
+      font-size: 12.5px; color: var(--gray-800); line-height: 1.55;
+      padding: 8px 0 10px;
+      border-top: 1px dashed var(--gray-200);
+    }
+    .cluster-question:first-of-type { border-top: none; padding-top: 0; }
+    .cluster-question::before {
+      content: "“";
+      font-family: Georgia, serif;
+      color: var(--blue);
+      font-size: 22px;
+      font-weight: 700;
+      vertical-align: -8px;
+      margin-right: 4px;
+      line-height: 0;
+    }
+    .cluster-question::after {
+      content: "”";
+      font-family: Georgia, serif;
+      color: var(--blue);
+      font-size: 22px;
+      font-weight: 700;
+      vertical-align: -8px;
+      margin-left: 2px;
+      line-height: 0;
+    }
+
     a { color: var(--blue); text-decoration: none; }
     a:hover { text-decoration: underline; }
 
@@ -516,7 +661,7 @@
   </div>
 
   <div class="tldr">
-    <strong>The 30-second version.</strong> pharosIQ has a data product line (DaaS) that runs alongside demand gen. When a client asks for contacts, intent signals, enrichment, an API feed, or a data partnership, that is a Tina conversation. Listen for the trigger phrases in Section 3. Use the email template in Section 5 to hand off cleanly. Tina handles assessment, pricing, and the client conversation from there.
+    <strong>The 30-second version.</strong> pharosIQ has a data product line (DaaS) that runs alongside demand gen. When a client asks for contacts, intent signals, enrichment, an API feed, or a data partnership, that is a Tina conversation. Listen for the trigger phrases in Section 4 and use the discovery questions in Section 5 to surface opportunities. Use the email template in Section 7 to hand off cleanly. Tina handles assessment, pricing, and the client conversation from there.
   </div>
 
   <a class="hero-dashboard" href="https://atlasiq.pharosiq.com/audience-dashboard.html" target="_blank">
@@ -558,9 +703,68 @@
     <span class="secondary-anchor-cta">Open the Framework<span class="secondary-anchor-cta-arrow">→</span></span>
   </a>
 
-  <!-- SECTION 1 -->
+  <!-- SECTION 1: NEW -->
   <div class="section">
     <div class="section-num">Section 1</div>
+    <h2>What Is "Data"? Defining Data-as-a-Service</h2>
+    <p class="section-lede">Before reps walk into a DaaS conversation, they need to know what we mean by "data" and what we don't. Buyers use the word to mean a thousand different things.</p>
+
+    <div class="topic-cloud">
+      <span class="tc-xxl">Contacts</span>
+      <span class="tc-l tc-rot-l3">Audiences</span>
+      <span class="tc-m tc-rot-r1">PMP</span>
+      <span class="tc-xl tc-rot-l1">Enrichment</span>
+      <span class="tc-s">Cookies</span>
+      <span class="tc-l tc-accent">Intent Signals</span>
+      <span class="tc-xs">Hashed Emails</span>
+      <span class="tc-m tc-rot-r3">Account Lists</span>
+      <span class="tc-xl tc-rot-l3">Leads</span>
+      <span class="tc-s">Firmographics</span>
+      <span class="tc-l tc-rot-r1">First-Party</span>
+      <span class="tc-m">Third-Party</span>
+      <span class="tc-xs tc-rot-l1">Bid Stream</span>
+      <span class="tc-l">Lookalikes</span>
+      <span class="tc-m tc-rot-r3">Segments</span>
+      <span class="tc-s">Identity Resolution</span>
+      <span class="tc-xl tc-rot-r1">Personas</span>
+      <span class="tc-l">Engagement</span>
+      <span class="tc-m">Title Data</span>
+      <span class="tc-s tc-rot-l3">Lead Routing</span>
+      <span class="tc-l tc-gold">Deterministic</span>
+      <span class="tc-m tc-rot-r1">Probabilistic</span>
+      <span class="tc-s">Inferred</span>
+      <span class="tc-xs">Modeled</span>
+      <span class="tc-m tc-accent">GDPR</span>
+      <span class="tc-s">CCPA</span>
+      <span class="tc-xs tc-rot-l1">Co-op</span>
+      <span class="tc-m">Permission-Based</span>
+      <span class="tc-s tc-rot-r3">Opt-In</span>
+      <span class="tc-l">CDP Data</span>
+      <span class="tc-m">B2B Data</span>
+      <span class="tc-xs">Email Lists</span>
+      <span class="tc-m tc-rot-l1">Demographics</span>
+      <span class="tc-xl">Behavioral</span>
+      <span class="tc-s">Match Rate</span>
+      <span class="tc-xs tc-rot-r1">Clean Room</span>
+      <span class="tc-m tc-rot-l3">Refresh Cadence</span>
+    </div>
+
+    <div class="daas-definition">
+      <div class="daas-definition-eyebrow">When we say "Data-as-a-Service" we mean</div>
+      <div class="daas-definition-body">
+        Licensed access to pharosIQ's <strong>first-party contact universe</strong> and <strong>intent signals</strong>, delivered to the client's own stack via API, file, MCP, or self-service platform. The client owns and operates the data inside their systems. We refresh it.
+      </div>
+      <div class="daas-definition-foot">
+        <strong>Not</strong> leads. <strong>Not</strong> campaigns. <strong>Not</strong> content syndication. <strong>Not</strong> media spend. If it's a campaign with a CPL, it's not DaaS.
+      </div>
+    </div>
+
+    <p style="font-size: 12.5px; color: var(--gray-500); margin-top: 12px;">When a prospect says "data," your first job is figuring out which of the words above they mean. Most of the time they mean two or three at once. Section 4 (triggers) and Section 5 (discovery questions) help you decode it fast.</p>
+  </div>
+
+  <!-- SECTION 2: was 1 -->
+  <div class="section page-break">
+    <div class="section-num">Section 2</div>
     <h2>What Tina Sells, and How It Fits Alongside Demand Gen</h2>
     <p class="section-lede">Reps should be able to explain this in two sentences without confusing it with our demand gen business.</p>
 
@@ -668,7 +872,7 @@
 
   <!-- SECTION 2 -->
   <div class="section page-break">
-    <div class="section-num">Section 2</div>
+    <div class="section-num">Section 3</div>
     <h2>Who Tina Is Selling To, and the Use Cases They Buy For</h2>
     <p class="section-lede">Two views: the companies Tina is actively going after, and the use cases your existing demand gen customers (AWS, Cisco, IBM, and similar) typically have when there's a DaaS opportunity hiding inside the account.</p>
 
@@ -724,7 +928,7 @@
 
   <!-- SECTION 3 -->
   <div class="section page-break">
-    <div class="section-num">Section 3</div>
+    <div class="section-num">Section 4</div>
     <h2>Keyword Triggers: When to Send the Conversation to Tina</h2>
     <p class="section-lede">Real phrases from active pipeline. If a client says something close to any of these, it's a DaaS conversation. Loop in Tina.</p>
 
@@ -798,9 +1002,77 @@
     </div>
   </div>
 
-  <!-- SECTION 4 -->
+  <!-- SECTION 5: NEW Door Opening Discovery Questions -->
   <div class="section page-break">
-    <div class="section-num">Section 4</div>
+    <div class="section-num">Section 5</div>
+    <h2>Door-Opening Discovery Questions</h2>
+    <p class="section-lede">Triggers tell you when a client has already revealed an opportunity. Discovery questions help you surface one before they say it out loud. Drop these into normal sales conversations to find the data layer hiding inside the account.</p>
+
+    <div class="discovery-hero">
+      <svg class="door-svg" viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="door-light-beam" x1="0%" y1="50%" x2="100%" y2="50%">
+            <stop offset="0%" stop-color="#fcd34d" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#fef3c7" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="door-panel-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0a1f38"/>
+            <stop offset="100%" stop-color="#1e3a5f"/>
+          </linearGradient>
+        </defs>
+        <path d="M 95 30 L 240 110 L 240 170 L 95 250 Z" fill="url(#door-light-beam)" opacity="0.85"/>
+        <rect x="95" y="30" width="22" height="220" fill="#fcd34d"/>
+        <path d="M 25 40 L 95 30 L 95 250 L 25 240 Z" fill="url(#door-panel-grad)"/>
+        <path d="M 25 40 L 95 30 L 95 250 L 25 240 Z" fill="none" stroke="#020617" stroke-width="1.2"/>
+        <rect x="38" y="60" width="44" height="62" fill="none" stroke="#020617" stroke-width="0.9" rx="1"/>
+        <rect x="38" y="138" width="44" height="62" fill="none" stroke="#020617" stroke-width="0.9" rx="1"/>
+        <circle cx="84" cy="142" r="4" fill="#fcd34d"/>
+        <circle cx="84" cy="142" r="2.2" fill="#b45309"/>
+      </svg>
+      <div>
+        <div class="discovery-hero-title">Open the door before they close it</div>
+        <div class="discovery-hero-body">Most DaaS opportunities are sitting one question away from the surface. Reps who ask these on every meaningful conversation surface DaaS deals their demand gen counterparts never see. <strong>Use one or two per call.</strong> You don't need to run the whole list.</div>
+      </div>
+    </div>
+
+    <div class="cluster-grid">
+      <div class="cluster c-stack">
+        <div class="cluster-label">Cluster 01</div>
+        <div class="cluster-title">Their Stack &amp; Sources</div>
+        <div class="cluster-question">Are you using any second or third party data sources right now?</div>
+        <div class="cluster-question">Where do your account lists come from, and what gets done to them before sellers see them?</div>
+        <div class="cluster-question">What does your intent stack look like? Bombora, 6sense, ZoomInfo, Demandbase, anything else?</div>
+        <div class="cluster-question">Is your data first-party, third-party, or a mix? How are you thinking about that mix going forward?</div>
+      </div>
+
+      <div class="cluster c-pain">
+        <div class="cluster-label">Cluster 02</div>
+        <div class="cluster-title">Where the Cracks Are</div>
+        <div class="cluster-question">When an account is interesting but you don't have the right contacts, what does your team do?</div>
+        <div class="cluster-question">How fresh is the contact data your sellers are working with day-to-day?</div>
+        <div class="cluster-question">Are reps ever hitting the wrong personas, or struggling to map the buying committee?</div>
+        <div class="cluster-question">What's your match rate when you push an account list through enrichment?</div>
+      </div>
+
+      <div class="cluster c-build">
+        <div class="cluster-label">Cluster 03</div>
+        <div class="cluster-title">Build, Buy &amp; Future State</div>
+        <div class="cluster-question">If you had a continuous feed of contact-level intent on your top accounts, where would it plug in?</div>
+        <div class="cluster-question">Is your team building anything in-house with data? Internal scoring, AI products, custom workflows?</div>
+        <div class="cluster-question">What does your data partnership stack look like? Any vendors you're evaluating or unhappy with?</div>
+        <div class="cluster-question">Who owns data partnerships and vendor decisions on your side?</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 22px;">
+      <h4>How to use these in a real call</h4>
+      <p>Pick one question from each cluster ahead of a call. Drop them in conversationally, not in sequence. The answers tell you whether a DaaS opportunity exists and where (stack gap, pain point, or strategic build). When you hear something interesting, jot the exact phrasing and use it in your handoff email to Tina.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 6: was 4 -->
+  <div class="section page-break">
+    <div class="section-num">Section 6</div>
     <h2>Talking Points on pharosIQ Data</h2>
     <p class="section-lede">Enough to hold a credible data conversation. Use these directly. When the questions go deeper, that's the cue to bring Tina in.</p>
 
@@ -868,7 +1140,7 @@
 
   <!-- SECTION 5 -->
   <div class="section page-break">
-    <div class="section-num">Section 5</div>
+    <div class="section-num">Section 7</div>
     <h2>How to Hand Off: The Email Framework</h2>
     <p class="section-lede">When you flag a conversation, send Tina an email with these fields. The more complete the email, the faster she can move.</p>
 
@@ -948,7 +1220,7 @@ Thanks,
 
   <!-- SECTION 6 -->
   <div class="section page-break">
-    <div class="section-num">Section 6</div>
+    <div class="section-num">Section 8</div>
     <h2>Real Examples</h2>
     <p class="section-lede">Two emails from active pipeline that show what good looks like.</p>
 
@@ -1026,7 +1298,7 @@ Valentina</div>
     <a class="resource-link" href="mailto:tbean@pharosiq.com" style="background: var(--blue);">
       <div>
         <div class="resource-link-title">Email Tina</div>
-        <div class="resource-link-sub">tbean@pharosiq.com · Use the email framework in Section 5. Cc your manager.</div>
+        <div class="resource-link-sub">tbean@pharosiq.com · Use the email framework in Section 7. Cc your manager.</div>
       </div>
       <div class="resource-link-arrow">→</div>
     </a>
