@@ -286,6 +286,59 @@
       margin-top: 14px;
     }
 
+    /* Audience by Vertical chart inside hero-dashboard */
+    .hd-chart {
+      background: rgba(0, 0, 0, 0.22);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 6px;
+      padding: 18px 22px 20px;
+      margin: 22px 0 16px;
+    }
+    .hd-chart-header {
+      display: flex; justify-content: space-between; align-items: baseline;
+      margin-bottom: 14px;
+    }
+    .hd-chart-title {
+      font-size: 11.5px; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1.2px; color: #fbbf24;
+    }
+    .hd-chart-source {
+      font-size: 10px; color: #94a3b8; font-style: italic;
+    }
+    .hd-chart-row {
+      display: grid;
+      grid-template-columns: 116px 1fr 60px;
+      align-items: center;
+      gap: 12px;
+      margin: 6px 0;
+    }
+    .hd-chart-label {
+      font-size: 11.5px; color: #cbd5e1; text-align: right; font-weight: 500;
+    }
+    .hd-chart-bar-wrap {
+      position: relative; height: 18px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 2px;
+    }
+    .hd-chart-bar {
+      height: 100%; border-radius: 2px;
+      transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+    .hd-chart-value {
+      font-size: 11px; color: #fff; font-weight: 600;
+      font-variant-numeric: tabular-nums;
+    }
+    /* Bar colors */
+    .hd-bar-it      { background: linear-gradient(90deg, #6366f1, #818cf8); }
+    .hd-bar-sales   { background: linear-gradient(90deg, #a855f7, #c084fc); }
+    .hd-bar-health  { background: linear-gradient(90deg, #06b6d4, #22d3ee); }
+    .hd-bar-finance { background: linear-gradient(90deg, #10b981, #34d399); }
+    .hd-bar-exec    { background: linear-gradient(90deg, #f59e0b, #fbbf24); }
+    .hd-bar-ops     { background: linear-gradient(90deg, #ef4444, #f87171); }
+    .hd-bar-mkt     { background: linear-gradient(90deg, #ec4899, #f472b6); }
+    .hd-bar-hr      { background: linear-gradient(90deg, #8b5cf6, #a78bfa); }
+    .hd-bar-legal   { background: linear-gradient(90deg, #14b8a6, #2dd4bf); }
+
     .secondary-anchor {
       display: block;
       background: #fff;
@@ -963,6 +1016,58 @@
         <div class="hero-dashboard-stat-label">Always Current</div>
       </div>
     </div>
+    <div class="hd-chart">
+      <div class="hd-chart-header">
+        <div class="hd-chart-title">Audience by Vertical</div>
+        <div class="hd-chart-source">Source: pharosIQ Audience Dashboard</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">IT</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-it" style="width: 96%;"></div></div>
+        <div class="hd-chart-value">24.1M</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">Sales</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-sales" style="width: 95%;"></div></div>
+        <div class="hd-chart-value">23.8M</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">Healthcare</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-health" style="width: 68%;"></div></div>
+        <div class="hd-chart-value">17.0M</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">Finance</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-finance" style="width: 56%;"></div></div>
+        <div class="hd-chart-value">14.0M</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">Executive Mgmt</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-exec" style="width: 53%;"></div></div>
+        <div class="hd-chart-value">13.3M</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">Operations</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-ops" style="width: 52%;"></div></div>
+        <div class="hd-chart-value">13.0M</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">Marketing</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-mkt" style="width: 33%;"></div></div>
+        <div class="hd-chart-value">8.3M</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">Human Resources</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-hr" style="width: 32%;"></div></div>
+        <div class="hd-chart-value">8.0M</div>
+      </div>
+      <div class="hd-chart-row">
+        <div class="hd-chart-label">Legal</div>
+        <div class="hd-chart-bar-wrap"><div class="hd-chart-bar hd-bar-legal" style="width: 12%;"></div></div>
+        <div class="hd-chart-value">3.0M</div>
+      </div>
+    </div>
+
     <span class="hero-dashboard-cta">Open the Dashboard <span class="hero-dashboard-cta-arrow">→</span></span>
     <div class="hero-dashboard-url">atlasiq.pharosiq.com/audience-dashboard.html</div>
   </a>
