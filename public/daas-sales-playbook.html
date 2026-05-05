@@ -136,6 +136,12 @@
     }
     .card.green { background: var(--green-light); border-color: #b6dec5; }
     .card.red { background: var(--red-light); border-color: var(--red-border); }
+    /* Colored top accents for plain cards (matches Delivery Models pattern) */
+    .card.b1 { border-top: 3px solid #2a5fa5; }
+    .card.b2 { border-top: 3px solid #2d7a4f; }
+    .card.b3 { border-top: 3px solid #9333ea; }
+    .card.b4 { border-top: 3px solid #d97706; }
+    .card.b5 { border-top: 3px solid var(--navy); }
     .card.navy { background: linear-gradient(135deg, var(--navy) 0%, #1a3d6b 100%); color: #fff; border-color: var(--navy); }
     .card.navy h4, .card.navy p, .card.navy li { color: #fff; }
     .card.navy h4 { font-weight: 600; letter-spacing: 0.3px; }
@@ -520,9 +526,16 @@
     .insight-card {
       background: #fff;
       border: 1px solid var(--gray-200);
+      border-top: 3px solid var(--blue);
       padding: 18px 20px;
       position: relative;
     }
+    .insight-card.i1 { border-top-color: #2a5fa5; }
+    .insight-card.i2 { border-top-color: #2d7a4f; }
+    .insight-card.i3 { border-top-color: #9333ea; }
+    .insight-card.i4 { border-top-color: #d97706; }
+    .insight-card.i5 { border-top-color: #b91c1c; }
+    .insight-card.i6 { border-top-color: var(--navy); }
     .insight-card-num {
       position: absolute;
       top: 16px; right: 18px;
@@ -553,9 +566,14 @@
     .step {
       background: var(--gray-50);
       border: 1px solid var(--gray-200);
+      border-top: 3px solid var(--blue);
       padding: 16px 18px 18px;
       position: relative;
     }
+    .step.s1 { border-top-color: #2a5fa5; }
+    .step.s2 { border-top-color: #2d7a4f; }
+    .step.s3 { border-top-color: #d97706; }
+    .step.s4 { border-top-color: var(--navy); }
     .step:not(:last-child) { border-right: none; }
     .step:not(:last-child)::after {
       content: "›";
@@ -1316,17 +1334,17 @@
     <div class="h3">Tina's Target Buyers (Three Buckets)</div>
 
     <div class="threecol">
-      <div class="card">
+      <div class="card b1">
         <h4>1. Data + Intent Platforms</h4>
         <p style="font-size: 12.5px;">Companies whose product is data. They license pharosIQ to enrich their own offering, fill coverage gaps, or layer signals on top.</p>
         <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">Examples: Bombora, 6sense, ZoomInfo, Demandbase, TechTarget, Madison Logic. Often OEM or reseller structures.</p>
       </div>
-      <div class="card">
+      <div class="card b2">
         <h4>2. Enterprise Tech + Brands</h4>
         <p style="font-size: 12.5px;">Large companies licensing data to power internal ABM, enrich CRM, or build a contact and intent layer their teams operate against directly.</p>
         <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">Examples: AWS, Cisco, IBM, SAP, Lenovo, DocuSign. Same logos your demand gen team already sells into, often a different team and budget.</p>
       </div>
-      <div class="card">
+      <div class="card b3">
         <h4>3. Agencies + Resellers</h4>
         <p style="font-size: 12.5px;">Demand gen, ABM, and data agencies that need a data layer to deliver services to their own clients. Reseller program territory.</p>
         <p style="font-size: 12px; color: var(--gray-500); margin-top: 8px;">Examples: white-label data feeds, embedded intent for agency tooling, packaged dossiers.</p>
@@ -1471,32 +1489,32 @@
 
     <div class="h3">What Makes the Data Different (in plain language)</div>
     <div class="insight-grid">
-      <div class="insight-card">
+      <div class="insight-card i1">
         <div class="insight-card-num">01</div>
         <div class="insight-card-title">First-Party Source</div>
         <div class="insight-card-body">Our intelligent buying signals come from real engagement on content we publish, not from aggregating cookies or modeling third-party data. That's why the signals hold up.</div>
       </div>
-      <div class="insight-card">
+      <div class="insight-card i2">
         <div class="insight-card-num">02</div>
         <div class="insight-card-title">Topic Depth</div>
         <div class="insight-card-body">8,756 topics covers categories most platforms collapse into broad buckets. Useful when a client sells into a niche.</div>
       </div>
-      <div class="insight-card">
+      <div class="insight-card i3">
         <div class="insight-card-num">03</div>
         <div class="insight-card-title">Contact-Level Signals</div>
         <div class="insight-card-body">Most intent platforms tell you the company is interested. We can tell you which people are showing interest, by topic.</div>
       </div>
-      <div class="insight-card">
+      <div class="insight-card i4">
         <div class="insight-card-num">04</div>
         <div class="insight-card-title">Combinable with TAL</div>
         <div class="insight-card-body">Bring us your target account list. We match signals and contacts against it. Their list, our data layer.</div>
       </div>
-      <div class="insight-card">
+      <div class="insight-card i5">
         <div class="insight-card-num">05</div>
         <div class="insight-card-title">Title Taxonomy</div>
         <div class="insight-card-body">Jobson expands "the right titles" into a fuller persona universe instead of guessing job title strings.</div>
       </div>
-      <div class="insight-card">
+      <div class="insight-card i6">
         <div class="insight-card-num">06</div>
         <div class="insight-card-title">Compliance Ready</div>
         <div class="insight-card-body">Opt-in sourced, GDPR and CCPA compliant. Ready answers for security review.</div>
@@ -1564,22 +1582,22 @@ Thanks,
 
     <div class="h3">What Happens Next</div>
     <div class="step-flow">
-      <div class="step">
+      <div class="step s1">
         <span class="step-num">Step 01</span>
         <div class="step-title">Tina Replies</div>
         <div class="step-body">Within 24 business hours of a clean handoff email.</div>
       </div>
-      <div class="step">
+      <div class="step s2">
         <span class="step-num">Step 02</span>
         <div class="step-title">Fit Assessment</div>
         <div class="step-body">She'll ask for more info, propose a fit, or recommend declining.</div>
       </div>
-      <div class="step">
+      <div class="step s3">
         <span class="step-num">Step 03</span>
         <div class="step-title">Tina Joins</div>
         <div class="step-body">If it's a fit, she joins the next call or takes the lead, depending on the deal.</div>
       </div>
-      <div class="step">
+      <div class="step s4">
         <span class="step-num">Step 04</span>
         <div class="step-title">You Stay On</div>
         <div class="step-body">You stay on the account. DaaS is additive to the relationship, not a takeover.</div>
