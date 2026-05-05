@@ -474,18 +474,28 @@
       font-size: 11.5px; color: var(--gray-700); line-height: 1.5;
     }
 
-    /* Topic cloud (old-school) */
+    /* Topic cloud (old-school, oval) */
     .topic-cloud {
-      background: var(--gray-50);
-      border: 1px solid var(--gray-200);
-      padding: 38px 32px;
+      background: radial-gradient(ellipse at center, #fff 0%, var(--gray-50) 55%, var(--gray-100) 100%);
+      border: 2px solid var(--gray-200);
+      border-radius: 50%;
+      aspect-ratio: 1.7 / 1;
+      max-width: 880px;
+      margin: 28px auto;
+      padding: 5% 10%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
       text-align: center;
-      line-height: 1.9;
-      margin-bottom: 24px;
+      line-height: 1.7;
+      box-shadow: inset 0 0 60px rgba(15, 42, 74, 0.04);
+    }
+    .topic-cloud-inner {
+      max-width: 78%;
     }
     .topic-cloud span {
       display: inline-block;
-      margin: 4px 9px;
+      margin: 3px 8px;
       font-weight: 700;
       vertical-align: middle;
     }
@@ -598,6 +608,31 @@
       border-top: 1px dashed var(--gray-200);
     }
     .cluster-question:first-of-type { border-top: none; padding-top: 0; }
+    .cluster-question.highlight {
+      background: linear-gradient(90deg, #fef3c7 0%, #fffbeb 100%);
+      border: 1px solid #fcd34d;
+      border-left: 3px solid #d97706;
+      padding: 10px 12px;
+      margin: 0 -4px 10px;
+      color: var(--gray-900);
+      font-weight: 600;
+      position: relative;
+    }
+    .cluster-question.highlight::before {
+      color: #d97706;
+    }
+    .cluster-question.highlight::after {
+      color: #d97706;
+    }
+    .cluster-question.highlight .star-tag {
+      display: inline-block;
+      font-size: 9px; font-weight: 800;
+      color: #d97706;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      margin-right: 6px;
+      vertical-align: 2px;
+    }
     .cluster-question::before {
       content: "“";
       font-family: Georgia, serif;
@@ -661,7 +696,7 @@
   </div>
 
   <div class="tldr">
-    <strong>The 30-second version.</strong> pharosIQ has a data product line (DaaS) that runs alongside demand gen. When a client asks for contacts, intent signals, enrichment, an API feed, or a data partnership, that is a Tina conversation. Listen for the trigger phrases in Section 4 and use the discovery questions in Section 5 to surface opportunities. Use the email template in Section 7 to hand off cleanly. Tina handles assessment, pricing, and the client conversation from there.
+    <strong>The 30-second version.</strong> pharosIQ has a data product line (DaaS) that runs alongside demand gen. When a client asks for contacts, intent signals, enrichment, an API feed, or a data partnership, that is a Tina conversation. Use the discovery questions in Section 2 to open the door, then listen for the trigger phrases in Section 5 once they're talking. Use the email template in Section 7 to hand off cleanly. Tina handles assessment, pricing, and the client conversation from there.
   </div>
 
   <a class="hero-dashboard" href="https://atlasiq.pharosiq.com/audience-dashboard.html" target="_blank">
@@ -710,43 +745,42 @@
     <p class="section-lede">Before reps walk into a DaaS conversation, they need to know what we mean by "data" and what we don't. Buyers use the word to mean a thousand different things.</p>
 
     <div class="topic-cloud">
-      <span class="tc-xxl">Contacts</span>
-      <span class="tc-l tc-rot-l3">Audiences</span>
-      <span class="tc-m tc-rot-r1">PMP</span>
-      <span class="tc-xl tc-rot-l1">Enrichment</span>
-      <span class="tc-s">Cookies</span>
-      <span class="tc-l tc-accent">Intent Signals</span>
-      <span class="tc-xs">Hashed Emails</span>
-      <span class="tc-m tc-rot-r3">Account Lists</span>
-      <span class="tc-xl tc-rot-l3">Leads</span>
-      <span class="tc-s">Firmographics</span>
-      <span class="tc-l tc-rot-r1">First-Party</span>
-      <span class="tc-m">Third-Party</span>
-      <span class="tc-xs tc-rot-l1">Bid Stream</span>
-      <span class="tc-l">Lookalikes</span>
-      <span class="tc-m tc-rot-r3">Segments</span>
-      <span class="tc-s">Identity Resolution</span>
-      <span class="tc-xl tc-rot-r1">Personas</span>
-      <span class="tc-l">Engagement</span>
-      <span class="tc-m">Title Data</span>
-      <span class="tc-s tc-rot-l3">Lead Routing</span>
-      <span class="tc-l tc-gold">Deterministic</span>
-      <span class="tc-m tc-rot-r1">Probabilistic</span>
-      <span class="tc-s">Inferred</span>
-      <span class="tc-xs">Modeled</span>
-      <span class="tc-m tc-accent">GDPR</span>
-      <span class="tc-s">CCPA</span>
-      <span class="tc-xs tc-rot-l1">Co-op</span>
-      <span class="tc-m">Permission-Based</span>
-      <span class="tc-s tc-rot-r3">Opt-In</span>
-      <span class="tc-l">CDP Data</span>
-      <span class="tc-m">B2B Data</span>
-      <span class="tc-xs">Email Lists</span>
-      <span class="tc-m tc-rot-l1">Demographics</span>
-      <span class="tc-xl">Behavioral</span>
-      <span class="tc-s">Match Rate</span>
-      <span class="tc-xs tc-rot-r1">Clean Room</span>
-      <span class="tc-m tc-rot-l3">Refresh Cadence</span>
+      <div class="topic-cloud-inner">
+        <span class="tc-xs">Cookies</span>
+        <span class="tc-s tc-rot-l1">Email Lists</span>
+        <span class="tc-m tc-rot-r1">Account Lists</span>
+        <span class="tc-s">Hashed Emails</span>
+        <span class="tc-xs">Bid Stream</span>
+        <span class="tc-l tc-rot-l3">Audiences</span>
+        <span class="tc-xl">Enrichment</span>
+        <span class="tc-m tc-accent">GDPR</span>
+        <span class="tc-l tc-rot-r1">First-Party</span>
+        <span class="tc-xxl">Contacts</span>
+        <span class="tc-l tc-accent">Intent Signals</span>
+        <span class="tc-m">Third-Party</span>
+        <span class="tc-l tc-gold">Deterministic</span>
+        <span class="tc-xl tc-rot-l1">Personas</span>
+        <span class="tc-m tc-rot-r3">Probabilistic</span>
+        <span class="tc-l">Engagement</span>
+        <span class="tc-xl tc-rot-l3">Leads</span>
+        <span class="tc-s">Inferred</span>
+        <span class="tc-m">Permission-Based</span>
+        <span class="tc-l">Lookalikes</span>
+        <span class="tc-m">PMP</span>
+        <span class="tc-s">Modeled</span>
+        <span class="tc-l">CDP Data</span>
+        <span class="tc-m tc-rot-r1">Behavioral</span>
+        <span class="tc-s tc-rot-l3">Identity Resolution</span>
+        <span class="tc-m">Title Data</span>
+        <span class="tc-s">Firmographics</span>
+        <span class="tc-m">Segments</span>
+        <span class="tc-s tc-rot-r1">CCPA</span>
+        <span class="tc-xs">Co-op</span>
+        <span class="tc-s">Match Rate</span>
+        <span class="tc-xs">Clean Room</span>
+        <span class="tc-s tc-rot-l1">Opt-In</span>
+        <span class="tc-xs">Demographics</span>
+      </div>
     </div>
 
     <div class="daas-definition">
@@ -759,12 +793,80 @@
       </div>
     </div>
 
-    <p style="font-size: 12.5px; color: var(--gray-500); margin-top: 12px;">When a prospect says "data," your first job is figuring out which of the words above they mean. Most of the time they mean two or three at once. Section 4 (triggers) and Section 5 (discovery questions) help you decode it fast.</p>
+    <p style="font-size: 12.5px; color: var(--gray-500); margin-top: 12px;">When a prospect says "data," your first job is figuring out which of the words above they mean. Most of the time they mean two or three at once. Section 2 (discovery questions) and Section 5 (triggers) help you decode it fast.</p>
   </div>
 
-  <!-- SECTION 2: was 1 -->
+  <!-- SECTION 2: NEW Door Opening Discovery Questions -->
   <div class="section page-break">
     <div class="section-num">Section 2</div>
+    <h2>Door-Opening Discovery Questions</h2>
+    <p class="section-lede">Triggers tell you when a client has already revealed an opportunity. Discovery questions help you surface one before they say it out loud. Drop these into normal sales conversations to find the data layer hiding inside the account.</p>
+
+    <div class="discovery-hero">
+      <svg class="door-svg" viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <defs>
+          <linearGradient id="door-light-beam" x1="0%" y1="50%" x2="100%" y2="50%">
+            <stop offset="0%" stop-color="#fcd34d" stop-opacity="1"/>
+            <stop offset="100%" stop-color="#fef3c7" stop-opacity="0"/>
+          </linearGradient>
+          <linearGradient id="door-panel-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#0a1f38"/>
+            <stop offset="100%" stop-color="#1e3a5f"/>
+          </linearGradient>
+        </defs>
+        <path d="M 95 30 L 240 110 L 240 170 L 95 250 Z" fill="url(#door-light-beam)" opacity="0.85"/>
+        <rect x="95" y="30" width="22" height="220" fill="#fcd34d"/>
+        <path d="M 25 40 L 95 30 L 95 250 L 25 240 Z" fill="url(#door-panel-grad)"/>
+        <path d="M 25 40 L 95 30 L 95 250 L 25 240 Z" fill="none" stroke="#020617" stroke-width="1.2"/>
+        <rect x="38" y="60" width="44" height="62" fill="none" stroke="#020617" stroke-width="0.9" rx="1"/>
+        <rect x="38" y="138" width="44" height="62" fill="none" stroke="#020617" stroke-width="0.9" rx="1"/>
+        <circle cx="84" cy="142" r="4" fill="#fcd34d"/>
+        <circle cx="84" cy="142" r="2.2" fill="#b45309"/>
+      </svg>
+      <div>
+        <div class="discovery-hero-title">Open the door before they close it</div>
+        <div class="discovery-hero-body">Most DaaS opportunities are sitting one question away from the surface. Reps who ask these on every meaningful conversation surface DaaS deals their demand gen counterparts never see. <strong>Use one or two per call.</strong> You don't need to run the whole list.</div>
+      </div>
+    </div>
+
+    <div class="cluster-grid">
+      <div class="cluster c-stack">
+        <div class="cluster-label">Cluster 01</div>
+        <div class="cluster-title">Their Stack &amp; Sources</div>
+        <div class="cluster-question highlight"><span class="star-tag">★ Lead with this</span>Are you using any second or third party data sources right now?</div>
+        <div class="cluster-question">Where do your account lists come from, and what gets done to them before sellers see them?</div>
+        <div class="cluster-question">What does your intent stack look like? Bombora, 6sense, ZoomInfo, Demandbase, anything else?</div>
+        <div class="cluster-question">Is your data first-party, third-party, or a mix? How are you thinking about that mix going forward?</div>
+      </div>
+
+      <div class="cluster c-pain">
+        <div class="cluster-label">Cluster 02</div>
+        <div class="cluster-title">Where the Cracks Are</div>
+        <div class="cluster-question highlight"><span class="star-tag">★ Lead with this</span>When an account is interesting but you don't have the right contacts, what does your team do?</div>
+        <div class="cluster-question">How fresh is the contact data your sellers are working with day-to-day?</div>
+        <div class="cluster-question">Are reps ever hitting the wrong personas, or struggling to map the buying committee?</div>
+        <div class="cluster-question">What's your match rate when you push an account list through enrichment?</div>
+      </div>
+
+      <div class="cluster c-build">
+        <div class="cluster-label">Cluster 03</div>
+        <div class="cluster-title">Build, Buy &amp; Future State</div>
+        <div class="cluster-question highlight"><span class="star-tag">★ Lead with this</span>Is your team building anything in-house with data? Internal scoring, AI products, custom workflows?</div>
+        <div class="cluster-question">If you had a continuous feed of contact-level intent on your top accounts, where would it plug in?</div>
+        <div class="cluster-question">What does your data partnership stack look like? Any vendors you're evaluating or unhappy with?</div>
+        <div class="cluster-question">Who owns data partnerships and vendor decisions on your side?</div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 22px;">
+      <h4>How to use these in a real call</h4>
+      <p>Pick one question from each cluster ahead of a call. Drop them in conversationally, not in sequence. The answers tell you whether a DaaS opportunity exists and where (stack gap, pain point, or strategic build). When you hear something interesting, jot the exact phrasing and use it in your handoff email to Tina.</p>
+    </div>
+  </div>
+
+  <!-- SECTION 3: was 2 -->
+  <div class="section page-break">
+    <div class="section-num">Section 3</div>
     <h2>What Tina Sells, and How It Fits Alongside Demand Gen</h2>
     <p class="section-lede">Reps should be able to explain this in two sentences without confusing it with our demand gen business.</p>
 
@@ -872,7 +974,7 @@
 
   <!-- SECTION 2 -->
   <div class="section page-break">
-    <div class="section-num">Section 3</div>
+    <div class="section-num">Section 4</div>
     <h2>Who Tina Is Selling To, and the Use Cases They Buy For</h2>
     <p class="section-lede">Two views: the companies Tina is actively going after, and the use cases your existing demand gen customers (AWS, Cisco, IBM, and similar) typically have when there's a DaaS opportunity hiding inside the account.</p>
 
@@ -928,7 +1030,7 @@
 
   <!-- SECTION 3 -->
   <div class="section page-break">
-    <div class="section-num">Section 4</div>
+    <div class="section-num">Section 5</div>
     <h2>Keyword Triggers: When to Send the Conversation to Tina</h2>
     <p class="section-lede">Real phrases from active pipeline. If a client says something close to any of these, it's a DaaS conversation. Loop in Tina.</p>
 
@@ -999,74 +1101,6 @@
     <div class="card navy" style="margin-top: 24px;">
       <h4 style="color: #fff;">When in doubt, ask one question</h4>
       <p>"Are you looking for a campaign that delivers leads, or are you looking to license data your team uses inside your own systems?" If the answer is anything but "campaign with leads," it's a Tina conversation.</p>
-    </div>
-  </div>
-
-  <!-- SECTION 5: NEW Door Opening Discovery Questions -->
-  <div class="section page-break">
-    <div class="section-num">Section 5</div>
-    <h2>Door-Opening Discovery Questions</h2>
-    <p class="section-lede">Triggers tell you when a client has already revealed an opportunity. Discovery questions help you surface one before they say it out loud. Drop these into normal sales conversations to find the data layer hiding inside the account.</p>
-
-    <div class="discovery-hero">
-      <svg class="door-svg" viewBox="0 0 240 280" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <defs>
-          <linearGradient id="door-light-beam" x1="0%" y1="50%" x2="100%" y2="50%">
-            <stop offset="0%" stop-color="#fcd34d" stop-opacity="1"/>
-            <stop offset="100%" stop-color="#fef3c7" stop-opacity="0"/>
-          </linearGradient>
-          <linearGradient id="door-panel-grad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#0a1f38"/>
-            <stop offset="100%" stop-color="#1e3a5f"/>
-          </linearGradient>
-        </defs>
-        <path d="M 95 30 L 240 110 L 240 170 L 95 250 Z" fill="url(#door-light-beam)" opacity="0.85"/>
-        <rect x="95" y="30" width="22" height="220" fill="#fcd34d"/>
-        <path d="M 25 40 L 95 30 L 95 250 L 25 240 Z" fill="url(#door-panel-grad)"/>
-        <path d="M 25 40 L 95 30 L 95 250 L 25 240 Z" fill="none" stroke="#020617" stroke-width="1.2"/>
-        <rect x="38" y="60" width="44" height="62" fill="none" stroke="#020617" stroke-width="0.9" rx="1"/>
-        <rect x="38" y="138" width="44" height="62" fill="none" stroke="#020617" stroke-width="0.9" rx="1"/>
-        <circle cx="84" cy="142" r="4" fill="#fcd34d"/>
-        <circle cx="84" cy="142" r="2.2" fill="#b45309"/>
-      </svg>
-      <div>
-        <div class="discovery-hero-title">Open the door before they close it</div>
-        <div class="discovery-hero-body">Most DaaS opportunities are sitting one question away from the surface. Reps who ask these on every meaningful conversation surface DaaS deals their demand gen counterparts never see. <strong>Use one or two per call.</strong> You don't need to run the whole list.</div>
-      </div>
-    </div>
-
-    <div class="cluster-grid">
-      <div class="cluster c-stack">
-        <div class="cluster-label">Cluster 01</div>
-        <div class="cluster-title">Their Stack &amp; Sources</div>
-        <div class="cluster-question">Are you using any second or third party data sources right now?</div>
-        <div class="cluster-question">Where do your account lists come from, and what gets done to them before sellers see them?</div>
-        <div class="cluster-question">What does your intent stack look like? Bombora, 6sense, ZoomInfo, Demandbase, anything else?</div>
-        <div class="cluster-question">Is your data first-party, third-party, or a mix? How are you thinking about that mix going forward?</div>
-      </div>
-
-      <div class="cluster c-pain">
-        <div class="cluster-label">Cluster 02</div>
-        <div class="cluster-title">Where the Cracks Are</div>
-        <div class="cluster-question">When an account is interesting but you don't have the right contacts, what does your team do?</div>
-        <div class="cluster-question">How fresh is the contact data your sellers are working with day-to-day?</div>
-        <div class="cluster-question">Are reps ever hitting the wrong personas, or struggling to map the buying committee?</div>
-        <div class="cluster-question">What's your match rate when you push an account list through enrichment?</div>
-      </div>
-
-      <div class="cluster c-build">
-        <div class="cluster-label">Cluster 03</div>
-        <div class="cluster-title">Build, Buy &amp; Future State</div>
-        <div class="cluster-question">If you had a continuous feed of contact-level intent on your top accounts, where would it plug in?</div>
-        <div class="cluster-question">Is your team building anything in-house with data? Internal scoring, AI products, custom workflows?</div>
-        <div class="cluster-question">What does your data partnership stack look like? Any vendors you're evaluating or unhappy with?</div>
-        <div class="cluster-question">Who owns data partnerships and vendor decisions on your side?</div>
-      </div>
-    </div>
-
-    <div class="card" style="margin-top: 22px;">
-      <h4>How to use these in a real call</h4>
-      <p>Pick one question from each cluster ahead of a call. Drop them in conversationally, not in sequence. The answers tell you whether a DaaS opportunity exists and where (stack gap, pain point, or strategic build). When you hear something interesting, jot the exact phrasing and use it in your handoff email to Tina.</p>
     </div>
   </div>
 
