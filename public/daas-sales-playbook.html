@@ -201,15 +201,60 @@
     .email-template .placeholder { color: #fbbf24; }
 
     .example-email {
-      background: var(--gray-50);
+      background: #fff;
       border: 1px solid var(--gray-200);
-      padding: 20px 24px;
-      margin-bottom: 16px;
+      border-left: 4px solid var(--gray-300);
+      padding: 22px 26px 24px;
+      margin-bottom: 18px;
       font-size: 13px;
       color: var(--gray-800);
       line-height: 1.65;
+      position: relative;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.03), 0 8px 18px rgba(15,42,74,0.06);
+      border-radius: 2px;
     }
-    .example-email .meta { font-size: 12px; color: var(--gray-500); margin-bottom: 10px; padding-bottom: 10px; border-bottom: 1px solid var(--gray-200); }
+    .example-email::before {
+      content: "";
+      position: absolute;
+      top: 0; left: 0; right: 0;
+      height: 3px;
+    }
+    .example-email.email-trigger {
+      border-left-color: #d97706;
+      background: linear-gradient(180deg, #fffbeb 0%, #fff 60px);
+    }
+    .example-email.email-trigger::before {
+      background: linear-gradient(90deg, #d97706 0%, #fbbf24 100%);
+    }
+    .example-email.email-gold {
+      border-left-color: #2d7a4f;
+      background: linear-gradient(180deg, #f0fdf4 0%, #fff 60px);
+    }
+    .example-email.email-gold::before {
+      background: linear-gradient(90deg, #2d7a4f 0%, #4ade80 100%);
+    }
+    .example-email .meta {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-bottom: 14px;
+      padding-bottom: 14px;
+      border-bottom: 1px solid var(--gray-200);
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .example-email .meta-icon {
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 13px;
+      font-weight: 800;
+      letter-spacing: -0.3px;
+    }
+    .email-trigger .meta-icon { background: #fef3c7; color: #b45309; border: 1.5px solid #fcd34d; }
+    .email-gold .meta-icon { background: #dcfce7; color: #15803d; border: 1.5px solid #86efac; }
+    .example-email .meta-text { flex: 1; line-height: 1.65; }
     .example-email .meta strong { color: var(--gray-900); }
     .example-email .body { white-space: pre-wrap; }
     .example-tag {
@@ -1551,8 +1596,11 @@ Thanks,
     <div class="h3">Example 1: Spotting the trigger in the wild <span class="example-tag trigger">Trigger Spot</span></div>
     <p>Carolina was on the ground in Brazil, heard a Cohesity stakeholder describe an account-list-plus-enrichment need, and flagged it the same day. Short email, but it nailed the trigger phrase verbatim.</p>
 
-    <div class="example-email">
-      <div class="meta"><strong>From:</strong> Carolina Williams &lt;cwilliams@pharosiq.com&gt;<br><strong>To:</strong> Tina Bean &lt;tbean@pharosiq.com&gt;<br><strong>Cc:</strong> Gustavo Nunez<br><strong>Subject:</strong> Data Enrichment Opportunity: Cohesity LATAM<br><strong>Date:</strong> Monday, April 20, 2026</div>
+    <div class="example-email email-trigger">
+      <div class="meta">
+        <div class="meta-icon">CW</div>
+        <div class="meta-text"><strong>From:</strong> Carolina Williams &lt;cwilliams@pharosiq.com&gt;<br><strong>To:</strong> Tina Bean &lt;tbean@pharosiq.com&gt;<br><strong>Cc:</strong> Gustavo Nunez<br><strong>Subject:</strong> Data Enrichment Opportunity: Cohesity LATAM<br><strong>Date:</strong> Monday, April 20, 2026</div>
+      </div>
       <div class="body">Hi there Tina!! How are you?
 
 I was in Brazil last week and came across an opportunity we believe you may be able to support. Our Cohesity stakeholder for LATAM expressed a need to "enhance/enrich" their Accounts List they receive from 6sense with contacts/intel/business needs "feeds" to enrich their CRM before reaching their commercial team, or append information to these "raw" accounts.
@@ -1568,8 +1616,11 @@ Carolina</div>
     <div class="h3" style="margin-top: 28px;">Example 2: A clean handoff with everything in one email <span class="example-tag">Gold Standard</span></div>
     <p>Valentina took it one step further. After Carolina flagged the trigger, Valentina sent a structured handoff with every field Tina needs to assess fit. This is the format to copy.</p>
 
-    <div class="example-email">
-      <div class="meta"><strong>From:</strong> Valentina, LATAM Sales<br><strong>To:</strong> Tina Bean<br><strong>Subject:</strong> Congero Technology · DaaS handoff</div>
+    <div class="example-email email-gold">
+      <div class="meta">
+        <div class="meta-icon">VL</div>
+        <div class="meta-text"><strong>From:</strong> Valentina, LATAM Sales<br><strong>To:</strong> Tina Bean<br><strong>Subject:</strong> Congero Technology · DaaS handoff</div>
+      </div>
       <div class="body">Hi Tina!
 
 Nice to meet you through here. I am Valentina from the LATAM sales team.
