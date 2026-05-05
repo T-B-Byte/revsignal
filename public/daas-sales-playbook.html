@@ -633,6 +633,73 @@
       margin-right: 6px;
       vertical-align: 2px;
     }
+
+    /* Data-type definition cards (first/second/third/bidstream) */
+    .data-type-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    @media (max-width: 1000px) {
+      .data-type-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 600px) {
+      .data-type-grid { grid-template-columns: 1fr; }
+    }
+    .data-type-card {
+      background: #fff;
+      border: 1px solid var(--gray-200);
+      padding: 16px 18px 18px;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+    .data-type-card.dt-first { border-top: 4px solid #2d7a4f; }
+    .data-type-card.dt-second { border-top: 4px solid #2a5fa5; }
+    .data-type-card.dt-third { border-top: 4px solid #d97706; }
+    .data-type-card.dt-bid { border-top: 4px solid #dc2626; }
+    .data-type-card.dt-first.us { background: #f0fdf4; border-color: #86efac; }
+    .data-type-card.dt-first.us::after {
+      content: "← pharosIQ";
+      position: absolute;
+      top: 12px; right: 14px;
+      font-size: 9.5px; font-weight: 800; color: #15803d;
+      letter-spacing: 0.5px; text-transform: uppercase;
+    }
+    .data-type-tag {
+      font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 1.2px;
+      margin-bottom: 6px;
+    }
+    .dt-first .data-type-tag { color: #15803d; }
+    .dt-second .data-type-tag { color: #2a5fa5; }
+    .dt-third .data-type-tag { color: #b45309; }
+    .dt-bid .data-type-tag { color: #b91c1c; }
+    .data-type-name {
+      font-size: 15px; font-weight: 800; color: var(--gray-900); letter-spacing: -0.3px;
+      margin-bottom: 4px;
+    }
+    .data-type-tagline {
+      font-size: 11.5px; color: var(--gray-500); font-style: italic;
+      margin-bottom: 12px;
+    }
+    .data-type-body {
+      font-size: 12px; color: var(--gray-800); line-height: 1.55;
+      flex: 1;
+    }
+    .data-type-trust {
+      margin-top: 12px; padding-top: 10px;
+      border-top: 1px dashed var(--gray-200);
+      font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px;
+      color: var(--gray-500);
+    }
+    .data-type-trust strong {
+      letter-spacing: 0;
+    }
+    .dt-first .data-type-trust strong { color: #15803d; }
+    .dt-second .data-type-trust strong { color: #2a5fa5; }
+    .dt-third .data-type-trust strong { color: #b45309; }
+    .dt-bid .data-type-trust strong { color: #b91c1c; }
     .cluster-question::before {
       content: "“";
       font-family: Georgia, serif;
@@ -793,7 +860,49 @@
       </div>
     </div>
 
-    <p style="font-size: 12.5px; color: var(--gray-500); margin-top: 12px;">When a prospect says "data," your first job is figuring out which of the words above they mean. Most of the time they mean two or three at once. Section 2 (discovery questions) and Section 5 (triggers) help you decode it fast.</p>
+    <div class="h3" style="margin-top: 32px;">First, Second, Third, and Bid Stream Data: Know the Difference</div>
+    <p>The most common confusion in a data conversation is which kind of data the buyer is actually talking about. These four definitions are the table stakes of holding a credible conversation. Memorize them.</p>
+
+    <div class="data-type-grid">
+      <div class="data-type-card dt-first us">
+        <div class="data-type-tag">Type 01</div>
+        <div class="data-type-name">First-Party Data</div>
+        <div class="data-type-tagline">"You own it. You collected it."</div>
+        <div class="data-type-body">Data the company collects directly from its own properties: owned websites, content, apps, CRM, events. The collector controls the source, the consent, and the chain of custody. Highest trust because nothing about it is borrowed or modeled.</div>
+        <div class="data-type-trust">Trust: <strong>Highest</strong></div>
+      </div>
+
+      <div class="data-type-card dt-second">
+        <div class="data-type-tag">Type 02</div>
+        <div class="data-type-name">Second-Party Data</div>
+        <div class="data-type-tagline">"Their first-party, shared with you."</div>
+        <div class="data-type-body">Someone else's first-party data, shared with you directly under an agreement. Co-marketing partnerships, content syndication relationships, data co-ops between trusted partners. Quality depends on the partner's own data hygiene.</div>
+        <div class="data-type-trust">Trust: <strong>High (partner-dependent)</strong></div>
+      </div>
+
+      <div class="data-type-card dt-third">
+        <div class="data-type-tag">Type 03</div>
+        <div class="data-type-name">Third-Party Data</div>
+        <div class="data-type-tagline">"Aggregated and resold."</div>
+        <div class="data-type-body">Data assembled by a vendor from many sources and sold to anyone who pays. Often cookie-based, scraped, or modeled. The buyer rarely knows where any specific record came from or how it was collected. Provenance is the weak point.</div>
+        <div class="data-type-trust">Trust: <strong>Mixed</strong></div>
+      </div>
+
+      <div class="data-type-card dt-bid">
+        <div class="data-type-tag">Type 04</div>
+        <div class="data-type-name">Bid Stream Data</div>
+        <div class="data-type-tagline">"Captured from ad auctions."</div>
+        <div class="data-type-body">A subset of third-party data. Collected from real-time bid requests in the programmatic ad ecosystem. Every ad slot auctioned leaks signals (URL, IP, device, geo). Aggregators package those bids and resell them as intent. Loud, noisy, and the chain of custody is weak.</div>
+        <div class="data-type-trust">Trust: <strong>Weak</strong></div>
+      </div>
+    </div>
+
+    <div class="card navy" style="margin-top: 8px;">
+      <h4 style="color: #fff;">Where pharosIQ sits</h4>
+      <p>pharosIQ is <strong style="color: #86efac;">first-party</strong>. Our intent signals come from real engagement on content we own and operate. Not aggregated. Not modeled. Not bid-stream. That is the structural advantage. When a prospect compares us to Bombora (co-op) or 6sense (modeled, partial bid-stream), this is the line that wins.</p>
+    </div>
+
+    <p style="font-size: 12.5px; color: var(--gray-500); margin-top: 18px;">When a prospect says "data," your first job is figuring out which of the words above they mean. Most of the time they mean two or three at once. Section 2 (discovery questions) and Section 5 (triggers) help you decode it fast.</p>
   </div>
 
   <!-- SECTION 2: NEW Door Opening Discovery Questions -->
