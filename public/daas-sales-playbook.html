@@ -488,43 +488,56 @@
       font-size: 11.5px; color: var(--gray-700); line-height: 1.5;
     }
 
-    /* Topic cloud (old-school, oval) */
+    /* Topic cloud (densely-packed Wordle-style) */
     .topic-cloud {
-      background: radial-gradient(ellipse at center, #fff 0%, var(--gray-50) 55%, var(--gray-100) 100%);
-      border: 2px solid var(--gray-200);
-      border-radius: 50%;
-      aspect-ratio: 1.7 / 1;
-      max-width: 880px;
+      background: linear-gradient(180deg, #fff 0%, var(--gray-50) 100%);
+      border: 1px solid var(--gray-200);
+      padding: 36px 30px;
       margin: 28px auto;
-      padding: 5% 10%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
       text-align: center;
-      line-height: 1.7;
-      box-shadow: inset 0 0 60px rgba(15, 42, 74, 0.04);
-    }
-    .topic-cloud-inner {
-      max-width: 78%;
+      line-height: 1.05;
+      font-size: 0;
+      position: relative;
+      overflow: hidden;
     }
     .topic-cloud span {
       display: inline-block;
-      margin: 3px 8px;
-      font-weight: 700;
+      margin: 5px 7px;
+      font-weight: 800;
       vertical-align: middle;
+      line-height: 1;
+      white-space: nowrap;
     }
-    .topic-cloud .tc-xxl { font-size: 40px; color: var(--gray-900); letter-spacing: -1px; }
-    .topic-cloud .tc-xl  { font-size: 30px; color: var(--blue); letter-spacing: -0.5px; }
-    .topic-cloud .tc-l   { font-size: 24px; color: var(--gray-800); }
-    .topic-cloud .tc-m   { font-size: 19px; color: var(--gray-600); }
-    .topic-cloud .tc-s   { font-size: 15px; color: var(--gray-500); }
-    .topic-cloud .tc-xs  { font-size: 12.5px; color: var(--gray-400); font-weight: 500; }
-    .topic-cloud .tc-rot-l3 { transform: rotate(-3deg); }
-    .topic-cloud .tc-rot-l1 { transform: rotate(-1.5deg); }
-    .topic-cloud .tc-rot-r1 { transform: rotate(1.5deg); }
-    .topic-cloud .tc-rot-r3 { transform: rotate(3deg); }
-    .topic-cloud .tc-accent { color: #d97706; }
-    .topic-cloud .tc-gold { color: #b45309; }
+    /* Sizes - dramatic spread */
+    .topic-cloud .tc-z1 { font-size: 62px; letter-spacing: -1.6px; margin: 6px 8px; }
+    .topic-cloud .tc-z2 { font-size: 48px; letter-spacing: -1px; }
+    .topic-cloud .tc-z3 { font-size: 38px; letter-spacing: -0.6px; }
+    .topic-cloud .tc-z4 { font-size: 30px; letter-spacing: -0.3px; }
+    .topic-cloud .tc-z5 { font-size: 22px; }
+    .topic-cloud .tc-z6 { font-size: 17px; font-weight: 700; }
+    .topic-cloud .tc-z7 { font-size: 13px; font-weight: 700; }
+    .topic-cloud .tc-z8 { font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; }
+    /* Earthy + brand palette */
+    .topic-cloud .tc-navy     { color: #0f2a4a; }
+    .topic-cloud .tc-blue     { color: #2a5fa5; }
+    .topic-cloud .tc-skyblue  { color: #3b82f6; }
+    .topic-cloud .tc-amber    { color: #d97706; }
+    .topic-cloud .tc-gold     { color: #b45309; }
+    .topic-cloud .tc-darkgold { color: #78350f; }
+    .topic-cloud .tc-forest   { color: #2d7a4f; }
+    .topic-cloud .tc-olive    { color: #65a30d; }
+    .topic-cloud .tc-rust     { color: #b91c1c; }
+    .topic-cloud .tc-darkrust { color: #7c2d12; }
+    .topic-cloud .tc-slate    { color: #475569; }
+    .topic-cloud .tc-gray     { color: #6b7280; }
+    .topic-cloud .tc-lightgray { color: #9ca3af; }
+    /* Rotations */
+    .topic-cloud .tc-vert    { transform: rotate(-90deg) translateY(-2px); }
+    .topic-cloud .tc-vert-r  { transform: rotate(90deg) translateY(-2px); }
+    .topic-cloud .tc-tilt-l  { transform: rotate(-8deg); }
+    .topic-cloud .tc-tilt-r  { transform: rotate(8deg); }
+    .topic-cloud .tc-tilt-ls { transform: rotate(-3deg); }
+    .topic-cloud .tc-tilt-rs { transform: rotate(3deg); }
 
     /* DaaS definition block */
     .daas-definition {
@@ -776,49 +789,6 @@
     </div>
   </div>
 
-  <div class="tldr">
-    <strong>The 30-second version.</strong> pharosIQ has a data product line (DaaS) that runs alongside demand gen. When a client asks for contacts, intent signals, enrichment, an API feed, or a data partnership, that is a Tina conversation. Use the discovery questions in Section 2 to open the door, then listen for the trigger phrases in Section 5 once they're talking. Use the email template in Section 7 to hand off cleanly. Tina handles assessment, pricing, and the client conversation from there.
-  </div>
-
-  <a class="hero-dashboard" href="https://atlasiq.pharosiq.com/audience-dashboard.html" target="_blank">
-    <div class="hero-dashboard-eyebrow">★ The one tool to bookmark</div>
-    <div class="hero-dashboard-title">Audience Intelligence Dashboard</div>
-    <div class="hero-dashboard-sub">Live, interactive coverage view of the entire pharosIQ universe. Filter by industry, geo, company size, persona, and intent topic. Pull this up on every prospect call. When a client asks "do you have data on…" you have the answer in 5 seconds.</div>
-    <div class="hero-dashboard-stats">
-      <div>
-        <div class="hero-dashboard-stat-num">125.3M</div>
-        <div class="hero-dashboard-stat-label">Contacts · Last 90 Days</div>
-      </div>
-      <div>
-        <div class="hero-dashboard-stat-num">8,756</div>
-        <div class="hero-dashboard-stat-label">Intent Topics</div>
-      </div>
-      <div>
-        <div class="hero-dashboard-stat-num">Global</div>
-        <div class="hero-dashboard-stat-label">NA · EMEA · APAC · LATAM</div>
-      </div>
-      <div>
-        <div class="hero-dashboard-stat-num">Live</div>
-        <div class="hero-dashboard-stat-label">Always Current</div>
-      </div>
-    </div>
-    <span class="hero-dashboard-cta">Open the Dashboard <span class="hero-dashboard-cta-arrow">→</span></span>
-    <div class="hero-dashboard-url">atlasiq.pharosiq.com/audience-dashboard.html</div>
-  </a>
-
-  <a class="secondary-anchor" href="https://revsignal.vercel.app/frameworks/daas-framework" target="_blank">
-    <div class="secondary-anchor-eyebrow">Bookmark this for tier conversations</div>
-    <div class="secondary-anchor-title">DaaS Product Framework: Tiered Licensing Model</div>
-    <div class="secondary-anchor-sub">The four-tier structure for Full Database Access. Use this to explain pricing scope, what each tier delivers, and where a client's ask fits. The doc Tina uses to walk Jeff, Marty, and Chris through DaaS pricing.</div>
-    <div class="secondary-anchor-tiers">
-      <span class="tier-pill t1">Tier 1 · Accounts + Intent</span>
-      <span class="tier-pill t2">Tier 2 · Persona + Intent</span>
-      <span class="tier-pill t3">Tier 3 · Contacts + Intent</span>
-      <span class="tier-pill t4">Tier 4 · Contacts + Content (Enterprise)</span>
-    </div>
-    <span class="secondary-anchor-cta">Open the Framework<span class="secondary-anchor-cta-arrow">→</span></span>
-  </a>
-
   <!-- SECTION 1: NEW -->
   <div class="section">
     <div class="section-num">Section 1</div>
@@ -826,42 +796,81 @@
     <p class="section-lede">Before reps walk into a DaaS conversation, they need to know what we mean by "data" and what we don't. Buyers use the word to mean a thousand different things.</p>
 
     <div class="topic-cloud">
-      <div class="topic-cloud-inner">
-        <span class="tc-xs">Cookies</span>
-        <span class="tc-s tc-rot-l1">Email Lists</span>
-        <span class="tc-m tc-rot-r1">Account Lists</span>
-        <span class="tc-s">Hashed Emails</span>
-        <span class="tc-xs">Bid Stream</span>
-        <span class="tc-l tc-rot-l3">Audiences</span>
-        <span class="tc-xl">Enrichment</span>
-        <span class="tc-m tc-accent">GDPR</span>
-        <span class="tc-l tc-rot-r1">First-Party</span>
-        <span class="tc-xxl">Contacts</span>
-        <span class="tc-l tc-accent">Intent Signals</span>
-        <span class="tc-m">Third-Party</span>
-        <span class="tc-l tc-gold">Deterministic</span>
-        <span class="tc-xl tc-rot-l1">Personas</span>
-        <span class="tc-m tc-rot-r3">Probabilistic</span>
-        <span class="tc-l">Engagement</span>
-        <span class="tc-xl tc-rot-l3">Leads</span>
-        <span class="tc-s">Inferred</span>
-        <span class="tc-m">Permission-Based</span>
-        <span class="tc-l">Lookalikes</span>
-        <span class="tc-m">PMP</span>
-        <span class="tc-s">Modeled</span>
-        <span class="tc-l">CDP Data</span>
-        <span class="tc-m tc-rot-r1">Behavioral</span>
-        <span class="tc-s tc-rot-l3">Identity Resolution</span>
-        <span class="tc-m">Title Data</span>
-        <span class="tc-s">Firmographics</span>
-        <span class="tc-m">Segments</span>
-        <span class="tc-s tc-rot-r1">CCPA</span>
-        <span class="tc-xs">Co-op</span>
-        <span class="tc-s">Match Rate</span>
-        <span class="tc-xs">Clean Room</span>
-        <span class="tc-s tc-rot-l1">Opt-In</span>
-        <span class="tc-xs">Demographics</span>
-      </div>
+      <span class="tc-z7 tc-gray">TCPA</span>
+      <span class="tc-z6 tc-slate">Permission-Based</span>
+      <span class="tc-z3 tc-navy tc-tilt-ls">First-Party</span>
+      <span class="tc-z5 tc-amber">GDPR</span>
+      <span class="tc-z6 tc-slate">Clean Room</span>
+      <span class="tc-z7 tc-lightgray">DNT</span>
+      <span class="tc-z5 tc-blue">ABM</span>
+      <span class="tc-z3 tc-forest">Audiences</span>
+      <span class="tc-z6 tc-gray">Cookies</span>
+      <span class="tc-z7 tc-slate">Schrems II</span>
+      <span class="tc-z4 tc-darkrust">Probabilistic</span>
+      <span class="tc-z5 tc-slate">Identity Resolution</span>
+      <span class="tc-z2 tc-rust tc-tilt-rs">Deterministic</span>
+      <span class="tc-z4 tc-olive">Behavioral</span>
+      <span class="tc-z6 tc-blue">CCPA</span>
+      <span class="tc-z2 tc-amber">Intelligent Buying Signals</span>
+      <span class="tc-z5 tc-navy">Decision Maker</span>
+      <span class="tc-z7 tc-gray">Co-op</span>
+      <span class="tc-z1 tc-navy">Contacts</span>
+      <span class="tc-z6 tc-slate">Bid Stream</span>
+      <span class="tc-z3 tc-blue">Personas</span>
+      <span class="tc-z5 tc-amber">Inferred</span>
+      <span class="tc-z6 tc-darkgold">PMP</span>
+      <span class="tc-z4 tc-slate">Modeled</span>
+      <span class="tc-z3 tc-darkgold tc-tilt-ls">Enrichment</span>
+      <span class="tc-z5 tc-forest">Engagement</span>
+      <span class="tc-z7 tc-lightgray">DSP</span>
+      <span class="tc-z4 tc-rust">Lookalikes</span>
+      <span class="tc-z5 tc-blue">Buying Committee</span>
+      <span class="tc-z6 tc-navy">ICP</span>
+      <span class="tc-z6 tc-gold">TAL</span>
+      <span class="tc-z3 tc-blue tc-tilt-rs">Leads</span>
+      <span class="tc-z6 tc-slate">Hashed Emails</span>
+      <span class="tc-z7 tc-gray">DMP</span>
+      <span class="tc-z5 tc-darkrust">Champion</span>
+      <span class="tc-z6 tc-navy">Account Lists</span>
+      <span class="tc-z5 tc-slate">Match Rate</span>
+      <span class="tc-z6 tc-amber">Title Data</span>
+      <span class="tc-z7 tc-slate">CDP Data</span>
+      <span class="tc-z6 tc-forest">Opt-In</span>
+      <span class="tc-z7 tc-gray">Pixel</span>
+      <span class="tc-z5 tc-olive">Surge</span>
+      <span class="tc-z6 tc-blue">Refresh Cadence</span>
+      <span class="tc-z6 tc-darkgold">Topic Score</span>
+      <span class="tc-z7 tc-lightgray">Tag Manager</span>
+      <span class="tc-z6 tc-slate">Firmographics</span>
+      <span class="tc-z5 tc-rust">Lead Score</span>
+      <span class="tc-z6 tc-gray">Demographics</span>
+      <span class="tc-z7 tc-slate">Walled Garden</span>
+      <span class="tc-z6 tc-forest">Verified Emails</span>
+      <span class="tc-z6 tc-slate">Direct Dials</span>
+      <span class="tc-z7 tc-gray">Open Web</span>
+      <span class="tc-z5 tc-blue">Identity Graph</span>
+      <span class="tc-z6 tc-darkgold">Funding Signal</span>
+      <span class="tc-z6 tc-olive">Hiring Signal</span>
+      <span class="tc-z7 tc-slate">Suppression</span>
+      <span class="tc-z6 tc-navy">Tech Stack</span>
+      <span class="tc-z6 tc-gray">Reverse IP</span>
+      <span class="tc-z7 tc-lightgray">Waterfall</span>
+      <span class="tc-z6 tc-blue">Segments</span>
+      <span class="tc-z6 tc-slate">Tech Install</span>
+      <span class="tc-z6 tc-amber">Mobile Numbers</span>
+      <span class="tc-z7 tc-gray">Email Lists</span>
+      <span class="tc-z7 tc-slate">Reach</span>
+      <span class="tc-z7 tc-gray">Frequency</span>
+      <span class="tc-z6 tc-rust">ABX</span>
+      <span class="tc-z7 tc-slate">Form Fills</span>
+      <span class="tc-z7 tc-gray">Page Views</span>
+      <span class="tc-z6 tc-navy">Buyer Signal</span>
+      <span class="tc-z7 tc-lightgray">Job Postings</span>
+      <span class="tc-z7 tc-slate">LinkedIn Data</span>
+      <span class="tc-z7 tc-gray">B2B Database</span>
+      <span class="tc-z6 tc-darkgold">Third-Party</span>
+      <span class="tc-z7 tc-lightgray">Lead Routing</span>
+      <span class="tc-z7 tc-slate">Dwell Time</span>
     </div>
 
     <div class="daas-definition">
@@ -913,11 +922,54 @@
 
     <div class="card navy" style="margin-top: 8px;">
       <h4 style="color: #fff;">Where pharosIQ sits</h4>
-      <p>pharosIQ is <strong style="color: #86efac;">first-party</strong>. Our intent signals come from real engagement on content we own and operate. Not aggregated. Not modeled. Not bid-stream. That is the structural advantage. When a prospect compares us to Bombora (co-op) or 6sense (modeled, partial bid-stream), this is the line that wins.</p>
+      <p>pharosIQ is <strong style="color: #86efac;">first-party</strong>. Our intelligent buying signals come from real engagement on content we own and operate. Not aggregated. Not modeled. Not bid-stream. That is the structural advantage. When a prospect compares us to Bombora (co-op) or 6sense (modeled, partial bid-stream), this is the line that wins.</p>
     </div>
 
     <p style="font-size: 12.5px; color: var(--gray-500); margin-top: 18px;">When a prospect says "data," your first job is figuring out which of the words above they mean. Most of the time they mean two or three at once. Section 2 (discovery questions) and Section 5 (triggers) help you decode it fast.</p>
   </div>
+
+  <div class="tldr">
+    <strong>The 30-second version.</strong> pharosIQ has a data product line (DaaS) that runs alongside demand gen. When a client asks for contacts, intelligent buying signals, enrichment, an API feed, or a data partnership, that is a Tina conversation. Use the discovery questions in Section 2 to open the door, then listen for the trigger phrases in Section 5 once they're talking. Use the email template in Section 7 to hand off cleanly. Tina handles assessment, pricing, and the client conversation from there.
+  </div>
+
+  <a class="hero-dashboard" href="https://atlasiq.pharosiq.com/audience-dashboard.html" target="_blank">
+    <div class="hero-dashboard-eyebrow">★ The one tool to bookmark</div>
+    <div class="hero-dashboard-title">Audience Intelligence Dashboard</div>
+    <div class="hero-dashboard-sub">Live, interactive coverage view of the entire pharosIQ universe. Filter by industry, geo, company size, persona, and intent topic. Pull this up on every prospect call. When a client asks "do you have data on…" you have the answer in 5 seconds.</div>
+    <div class="hero-dashboard-stats">
+      <div>
+        <div class="hero-dashboard-stat-num">125.3M</div>
+        <div class="hero-dashboard-stat-label">Contacts · Last 90 Days</div>
+      </div>
+      <div>
+        <div class="hero-dashboard-stat-num">8,756</div>
+        <div class="hero-dashboard-stat-label">Intent Topics</div>
+      </div>
+      <div>
+        <div class="hero-dashboard-stat-num">Global</div>
+        <div class="hero-dashboard-stat-label">NA · EMEA · APAC · LATAM</div>
+      </div>
+      <div>
+        <div class="hero-dashboard-stat-num">Live</div>
+        <div class="hero-dashboard-stat-label">Always Current</div>
+      </div>
+    </div>
+    <span class="hero-dashboard-cta">Open the Dashboard <span class="hero-dashboard-cta-arrow">→</span></span>
+    <div class="hero-dashboard-url">atlasiq.pharosiq.com/audience-dashboard.html</div>
+  </a>
+
+  <a class="secondary-anchor" href="https://revsignal.vercel.app/frameworks/daas-framework" target="_blank">
+    <div class="secondary-anchor-eyebrow">Bookmark this for tier conversations</div>
+    <div class="secondary-anchor-title">DaaS Product Framework: Tiered Licensing Model</div>
+    <div class="secondary-anchor-sub">The four-tier structure for Full Database Access. Use this to explain pricing scope, what each tier delivers, and where a client's ask fits. The doc Tina uses to walk Jeff, Marty, and Chris through DaaS pricing.</div>
+    <div class="secondary-anchor-tiers">
+      <span class="tier-pill t1">Tier 1 · Accounts + Intent</span>
+      <span class="tier-pill t2">Tier 2 · Persona + Intent</span>
+      <span class="tier-pill t3">Tier 3 · Contacts + Intent</span>
+      <span class="tier-pill t4">Tier 4 · Contacts + Content (Enterprise)</span>
+    </div>
+    <span class="secondary-anchor-cta">Open the Framework<span class="secondary-anchor-cta-arrow">→</span></span>
+  </a>
 
   <!-- SECTION 2: NEW Door Opening Discovery Questions -->
   <div class="section page-break">
@@ -1008,7 +1060,7 @@
         <div class="product-card-accent"></div>
         <div class="product-card-num">Product 02</div>
         <div class="product-card-title">TAL-Matched Signal Delivery</div>
-        <div class="product-card-desc">Client gives us a target account list. We deliver matched intent signals against it on a recurring basis.</div>
+        <div class="product-card-desc">Client gives us a target account list. We deliver matched intelligent buying signals against it on a recurring basis.</div>
         <div class="product-card-link">Learn more →</div>
       </a>
       <a class="product-card p3" href="https://pharosiq.com/solutions/data-as-a-service/" target="_blank">
@@ -1054,7 +1106,7 @@
       <div class="delivery-card c4">
         <div class="delivery-card-tag">04</div>
         <div class="delivery-card-title">TAL-Matched Signals</div>
-        <div class="delivery-card-desc">Client gives us a target account list. We deliver matched intent signals against it on a recurring cadence.</div>
+        <div class="delivery-card-desc">Client gives us a target account list. We deliver matched intelligent buying signals against it on a recurring cadence.</div>
       </div>
       <div class="delivery-card c5">
         <div class="delivery-card-tag">05</div>
@@ -1070,7 +1122,7 @@
       <li>ABM teams working a defined account list who need depth, not breadth</li>
       <li>Sales leadership tired of stale contact data and wrong personas</li>
       <li>Companies building a data partnership or evaluating data vendors</li>
-      <li>Heads of Product at martech companies embedding intent signals or contact data into their own platform</li>
+      <li>Heads of Product at martech companies embedding intelligent buying signals or contact data into their own platform</li>
     </ul>
 
     <div class="twocol" style="margin-top: 24px;">
@@ -1185,7 +1237,7 @@
       <div class="trigger-num">4</div>
       <div class="trigger-content">
         <div class="trigger-quote">"We need intent data on this account or this list."</div>
-        <div class="trigger-meaning">Direct ask for intent signals. Could be a one-time match or a recurring feed.</div>
+        <div class="trigger-meaning">Direct ask for intelligent buying signals. Could be a one-time match or a recurring feed.</div>
       </div>
     </div>
 
@@ -1245,7 +1297,7 @@
       </div>
       <div class="data-stat">
         <div class="data-stat-num">First-party</div>
-        <div class="data-stat-label">intent signals from our own content engagement, not aggregated or modeled</div>
+        <div class="data-stat-label">intelligent buying signals from our own content engagement, not aggregated or modeled</div>
       </div>
       <div class="data-stat">
         <div class="data-stat-num">Deterministic</div>
@@ -1262,7 +1314,7 @@
       <div class="insight-card">
         <div class="insight-card-num">01</div>
         <div class="insight-card-title">First-Party Source</div>
-        <div class="insight-card-body">Our intent signals come from real engagement on content we publish, not from aggregating cookies or modeling third-party data. That's why the signals hold up.</div>
+        <div class="insight-card-body">Our intelligent buying signals come from real engagement on content we publish, not from aggregating cookies or modeling third-party data. That's why the signals hold up.</div>
       </div>
       <div class="insight-card">
         <div class="insight-card-num">02</div>
