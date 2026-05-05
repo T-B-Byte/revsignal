@@ -489,35 +489,36 @@
       font-size: 11.5px; color: var(--gray-700); line-height: 1.5;
     }
 
-    /* Topic cloud (densely-packed Wordle-style) */
+    /* Topic cloud (densely-packed, capped height) */
     .topic-cloud {
       background: linear-gradient(180deg, #fff 0%, var(--gray-50) 100%);
       border: 1px solid var(--gray-200);
-      padding: 36px 30px;
-      margin: 28px auto;
+      padding: 18px 22px;
+      margin: 22px auto;
       text-align: center;
-      line-height: 1.05;
+      line-height: 1.15;
       font-size: 0;
       position: relative;
       overflow: hidden;
+      max-height: 5in;
     }
     .topic-cloud span {
       display: inline-block;
-      margin: 5px 7px;
-      font-weight: 800;
+      margin: 3px 5px;
+      font-weight: 700;
       vertical-align: middle;
       line-height: 1;
       white-space: nowrap;
     }
-    /* Sizes - dramatic spread */
-    .topic-cloud .tc-z1 { font-size: 62px; letter-spacing: -1.6px; margin: 6px 8px; }
-    .topic-cloud .tc-z2 { font-size: 48px; letter-spacing: -1px; }
-    .topic-cloud .tc-z3 { font-size: 38px; letter-spacing: -0.6px; }
-    .topic-cloud .tc-z4 { font-size: 30px; letter-spacing: -0.3px; }
-    .topic-cloud .tc-z5 { font-size: 22px; }
-    .topic-cloud .tc-z6 { font-size: 17px; font-weight: 700; }
-    .topic-cloud .tc-z7 { font-size: 13px; font-weight: 700; }
-    .topic-cloud .tc-z8 { font-size: 10.5px; font-weight: 700; letter-spacing: 0.3px; }
+    /* Sizes - tighter spread to fit within 5in */
+    .topic-cloud .tc-z1 { font-size: 32px; letter-spacing: -0.7px; margin: 4px 6px; font-weight: 800; }
+    .topic-cloud .tc-z2 { font-size: 26px; letter-spacing: -0.4px; font-weight: 800; }
+    .topic-cloud .tc-z3 { font-size: 21px; letter-spacing: -0.2px; font-weight: 800; }
+    .topic-cloud .tc-z4 { font-size: 17px; }
+    .topic-cloud .tc-z5 { font-size: 14px; }
+    .topic-cloud .tc-z6 { font-size: 12px; font-weight: 600; }
+    .topic-cloud .tc-z7 { font-size: 10.5px; font-weight: 600; }
+    .topic-cloud .tc-z8 { font-size: 9.5px; font-weight: 600; letter-spacing: 0.3px; }
     /* Earthy + brand palette */
     .topic-cloud .tc-navy     { color: #0f2a4a; }
     .topic-cloud .tc-blue     { color: #2a5fa5; }
@@ -807,14 +808,14 @@
       <span class="tc-z7 tc-gray">TCPA</span>
       <span class="tc-z6 tc-slate">Permission-Based</span>
       <span class="tc-z3 tc-navy tc-tilt-ls">First-Party</span>
-      <span class="tc-z5 tc-amber tc-vert">GDPR</span>
+      <span class="tc-z5 tc-amber">GDPR</span>
       <span class="tc-z6 tc-slate">Clean Room</span>
       <span class="tc-z7 tc-lightgray">DNT</span>
       <span class="tc-z5 tc-blue">ABM</span>
       <span class="tc-z3 tc-forest">Audiences</span>
-      <span class="tc-z6 tc-gray tc-vert-r">Cookies</span>
+      <span class="tc-z6 tc-gray">Cookies</span>
       <span class="tc-z7 tc-slate">Schrems II</span>
-      <span class="tc-z4 tc-darkrust tc-vert">Probabilistic</span>
+      <span class="tc-z4 tc-darkrust">Probabilistic</span>
       <span class="tc-z5 tc-slate">Identity Resolution</span>
       <span class="tc-z2 tc-rust tc-tilt-rs">Deterministic</span>
       <span class="tc-z4 tc-olive">Behavioral</span>
@@ -823,48 +824,48 @@
       <span class="tc-z5 tc-navy">Decision Maker</span>
       <span class="tc-z7 tc-gray">Co-op</span>
       <span class="tc-z1 tc-navy">Contacts</span>
-      <span class="tc-z6 tc-slate tc-vert">Bid Stream</span>
+      <span class="tc-z6 tc-slate">Bid Stream</span>
       <span class="tc-z3 tc-blue">Personas</span>
       <span class="tc-z5 tc-amber">Inferred</span>
       <span class="tc-z6 tc-darkgold">PMP</span>
-      <span class="tc-z4 tc-slate tc-vert-r">Modeled</span>
+      <span class="tc-z4 tc-slate">Modeled</span>
       <span class="tc-z3 tc-darkgold tc-tilt-ls">Enrichment</span>
-      <span class="tc-z5 tc-forest tc-vert">Engagement</span>
+      <span class="tc-z5 tc-forest">Engagement</span>
       <span class="tc-z7 tc-lightgray">DSP</span>
       <span class="tc-z4 tc-rust">Lookalikes</span>
       <span class="tc-z5 tc-blue">Buying Committee</span>
       <span class="tc-z6 tc-navy">ICP</span>
-      <span class="tc-z6 tc-gold tc-vert-r">TAL</span>
+      <span class="tc-z6 tc-gold">TAL</span>
       <span class="tc-z3 tc-blue tc-tilt-rs">Leads</span>
       <span class="tc-z6 tc-slate">Hashed Emails</span>
       <span class="tc-z7 tc-gray">DMP</span>
-      <span class="tc-z5 tc-darkrust tc-vert">Champion</span>
+      <span class="tc-z5 tc-darkrust">Champion</span>
       <span class="tc-z6 tc-navy">Account Lists</span>
       <span class="tc-z5 tc-slate">Match Rate</span>
-      <span class="tc-z6 tc-amber tc-vert-r">Title Data</span>
+      <span class="tc-z6 tc-amber">Title Data</span>
       <span class="tc-z7 tc-slate">CDP Data</span>
       <span class="tc-z6 tc-forest">Opt-In</span>
       <span class="tc-z7 tc-gray">Pixel</span>
       <span class="tc-z5 tc-olive">Surge</span>
-      <span class="tc-z6 tc-blue tc-vert">Refresh Cadence</span>
+      <span class="tc-z6 tc-blue">Refresh Cadence</span>
       <span class="tc-z6 tc-darkgold">Topic Score</span>
       <span class="tc-z7 tc-lightgray">Tag Manager</span>
       <span class="tc-z6 tc-slate">Firmographics</span>
-      <span class="tc-z5 tc-rust tc-vert-r">Lead Score</span>
+      <span class="tc-z5 tc-rust">Lead Score</span>
       <span class="tc-z6 tc-gray">Demographics</span>
       <span class="tc-z7 tc-slate">Walled Garden</span>
       <span class="tc-z6 tc-forest">Verified Emails</span>
-      <span class="tc-z6 tc-slate tc-vert">Direct Dials</span>
+      <span class="tc-z6 tc-slate">Direct Dials</span>
       <span class="tc-z7 tc-gray">Open Web</span>
       <span class="tc-z5 tc-blue">Identity Graph</span>
       <span class="tc-z6 tc-darkgold">Funding Signal</span>
-      <span class="tc-z6 tc-olive tc-vert-r">Hiring Signal</span>
+      <span class="tc-z6 tc-olive">Hiring Signal</span>
       <span class="tc-z7 tc-slate">Suppression</span>
       <span class="tc-z6 tc-navy">Tech Stack</span>
       <span class="tc-z6 tc-gray">Reverse IP</span>
       <span class="tc-z7 tc-lightgray">Waterfall</span>
       <span class="tc-z6 tc-blue">Segments</span>
-      <span class="tc-z6 tc-slate tc-vert">Tech Install</span>
+      <span class="tc-z6 tc-slate">Tech Install</span>
       <span class="tc-z6 tc-amber">Mobile Numbers</span>
       <span class="tc-z7 tc-gray">Email Lists</span>
       <span class="tc-z7 tc-slate">Reach</span>
@@ -872,7 +873,7 @@
       <span class="tc-z6 tc-rust">ABX</span>
       <span class="tc-z7 tc-slate">Form Fills</span>
       <span class="tc-z7 tc-gray">Page Views</span>
-      <span class="tc-z6 tc-navy tc-vert-r">Buyer Signal</span>
+      <span class="tc-z6 tc-navy">Buyer Signal</span>
       <span class="tc-z7 tc-lightgray">Job Postings</span>
       <span class="tc-z7 tc-slate">LinkedIn Data</span>
       <span class="tc-z7 tc-gray">B2B Database</span>
